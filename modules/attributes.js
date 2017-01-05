@@ -27,13 +27,13 @@ function updateAttrs(oldVnode, vnode) {
 
   object.each(
     newAttrs,
-    function (newValue, name) {
-      if (newValue !== oldAttrs[name]) {
-        if (!newValue && booleanMap[name]) {
+    function (value, name) {
+      if (value !== oldAttrs[name]) {
+        if (!value && booleanMap[name]) {
           elm.removeAttribute(name)
         }
         else {
-          elm.setAttribute(name, newValue)
+          elm.setAttribute(name, value)
         }
       }
     }
@@ -41,7 +41,7 @@ function updateAttrs(oldVnode, vnode) {
 
   object.each(
     oldAttrs,
-    function (oldValue, name) {
+    function (value, name) {
       if (!object.has(newAttrs, name)) {
         elm.removeAttribute(name)
       }
