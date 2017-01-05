@@ -1,6 +1,3 @@
-vnode// jshint newcap: false
-/* global require, module, document, Node */
-'use strict';
 
 var VNode = require('./vnode');
 var is = require('./is');
@@ -11,8 +8,11 @@ function isDef(s) { return s !== undefined; }
 
 var emptyNode = VNode('', {}, [], undefined, undefined);
 
-function sameVnode(vnode1, vnode2) {
-  return vnode1.key === vnode2.key && vnode1.sel === vnode2.sel;
+import execute from 'yox-common/function/execute'
+
+function isSameVnode(vnode1, vnode2) {
+  return vnode1.key === vnode2.key
+    && vnode1.sel === vnode2.sel
 }
 
 function createKeyToOldIdx(children, beginIdx, endIdx) {
@@ -24,72 +24,130 @@ function createKeyToOldIdx(children, beginIdx, endIdx) {
   return map;
 }
 
-var hooks = ['create', 'update', 'remove', 'destroy', 'pre', 'post'];
+const hooks = [ 'create', 'update', 'remove', 'destroy', 'pre', 'post' ]
 
-function init(modules, api) {
+function createRemove(elm, count) {
+  return function () {
+    if (--count === 0) {
+      api.removeChild(
+        api.parentNode(elm),
+        elm
+      )
+    }
+  }
+}
+
+function parseSel(sel) {
+
+  let tagName = env.EMPTY
+  let id = env.EMPTY
+  let className = env.EMPTY
+
+  let hashIndex = sel.indexOf('#')
+  let dotIndex = sel.indexOf('.', hashIndex)
+  if (hashIndex > 0) {
+
+  }
+
+  return { tagName, id, className }
+}
+
+function init(modules, api = domApi) {
+
   var i, j, cbs = {};
 
-  if (isUndef(api)) api = domApi;
-
-  for (i = 0; i < hooks.length; ++i) {
-    cbs[hooks[i]] = [];
-    for (j = 0; j < modules.length; ++j) {
-      if (modules[j][hooks[i]] !== undefined) cbs[hooks[i]].push(modules[j][hooks[i]]);
+  array.each(
+    hooks,
+    function (hook) {
+      let callbacks = [ ]
+      array.each(
+        modules,
+        function (mod) {
+          if (mod[hook]) {
+            array.push(
+              callbacks,
+              mod[hook]
+            )
+          }
+        }
+      )
+      cbs[hook] = callbacks
     }
-  }
+  )
 
   function emptyNodeAt(elm) {
-    var id = elm.id ? '#' + elm.id : '';
-    var c = elm.className ? '.' + elm.className.split(' ').join('.') : '';
-    return VNode(api.tagName(elm).toLowerCase() + id + c, {}, [], undefined, elm);
+    let { id, className } = elm
+    id = id ? `#${id}` : ''
+    className = className ? `.${className.split(/\s+/).join('.')}` : ''
+    return new VNode(
+      api.tagName(elm).toLowerCase() + id + className,
+      { },
+      [ ],
+      env.UNDEFINED,
+      elm
+    )
   }
 
-  function createRmCb(childElm, listeners) {
-    return function() {
-      if (--listeners === 0) {
-        var parent = api.parentNode(childElm);
-        api.removeChild(parent, childElm);
-      }
-    };
-  }
+
 
   function createElm(vnode, insertedVnodeQueue) {
-    var i, data = vnode.data;
-    if (isDef(data)) {
-      if (isDef(i = data.hook) && isDef(i = i.init)) {
-        i(vnode);
-        data = vnode.data;
-      }
+
+    let hook = object.get(vnode, 'data.hook')
+    hook = hook ? hook.value : { }
+
+    // 调用生命周期 - init
+    if (hook.init) {
+      hook.init(vnode)
     }
-    var elm, children = vnode.children, sel = vnode.sel;
-    if (isDef(sel)) {
-      // Parse selector
-      var hashIdx = sel.indexOf('#');
-      var dotIdx = sel.indexOf('.', hashIdx);
-      var hash = hashIdx > 0 ? hashIdx : sel.length;
-      var dot = dotIdx > 0 ? dotIdx : sel.length;
-      var tag = hashIdx !== -1 || dotIdx !== -1 ? sel.slice(0, Math.min(hash, dot)) : sel;
-      elm = vnode.elm = isDef(data) && isDef(i = data.ns) ? api.createElementNS(i, tag)
-                                                          : api.createElement(tag);
-      if (hash < dot) elm.id = sel.slice(hash + 1, dot);
-      if (dotIdx > 0) elm.className = sel.slice(dot + 1).replace(/\./g, ' ');
+
+    let elm
+    let { sel, children, text } = vnode
+    if (is.string(sel)) {
+      let { tagName, id, className } = parseSel(sel)
+      elm = api.createElement(tagName)
+      if (id) {
+        elm.id = id
+      }
+      if (className) {
+        elm.className = className
+      }
+
       if (is.array(children)) {
-        for (i = 0; i < children.length; ++i) {
-          api.appendChild(elm, createElm(children[i], insertedVnodeQueue));
-        }
-      } else if (is.primitive(vnode.text)) {
-        api.appendChild(elm, api.createTextNode(vnode.text));
+        array.each(
+          children,
+          function (child) {
+            api.appendChild(elm, createElm(child, insertedVnodeQueue))
+          }
+        )
       }
-      for (i = 0; i < cbs.create.length; ++i) cbs.create[i](emptyNode, vnode);
-      i = vnode.data.hook; // Reuse variable
-      if (isDef(i)) {
-        if (i.create) i.create(emptyNode, vnode);
-        if (i.insert) insertedVnodeQueue.push(vnode);
+      else if (is.string(text)) {
+        api.appendChild(elm, api.createTextNode(text))
       }
-    } else {
-      elm = vnode.elm = api.createTextNode(vnode.text);
+
+      vnode.elm = elm
+
+      // 调用生命周期 - create
+      if (cbs.create) {
+        array.each(
+          cbs.create,
+          function (hook) {
+            hook(emptyNode, vnode)
+          }
+        )
+      }
+
+      if (hook.create) {
+        hook.create(emptyNode, vnode)
+      }
+      if (hook.insert) {
+        insertedVnodeQueue.push(vnode)
+      }
     }
-    return vnode.elm;
+    else {
+      elm = vnode.elm = api.createTextNode(text)
+    }
+
+    return elm
   }
 
   function addVnodes(parentElm, before, vnodes, startIdx, endIdx, insertedVnodeQueue) {
@@ -118,7 +176,7 @@ function init(modules, api) {
         if (isDef(ch.sel)) {
           invokeDestroyHook(ch);
           listeners = cbs.remove.length + 1;
-          rm = createRmCb(ch.elm, listeners);
+          rm = createRemove(ch.elm, listeners);
           for (i = 0; i < cbs.remove.length; ++i) cbs.remove[i](ch, rm);
           if (isDef(i = ch.data) && isDef(i = i.hook) && isDef(i = i.remove)) {
             i(ch, rm);
@@ -147,20 +205,20 @@ function init(modules, api) {
         oldStartVnode = oldCh[++oldStartIdx]; // Vnode has been moved left
       } else if (isUndef(oldEndVnode)) {
         oldEndVnode = oldCh[--oldEndIdx];
-      } else if (sameVnode(oldStartVnode, newStartVnode)) {
+      } else if (isSameVnode(oldStartVnode, newStartVnode)) {
         patchVnode(oldStartVnode, newStartVnode, insertedVnodeQueue);
         oldStartVnode = oldCh[++oldStartIdx];
         newStartVnode = newCh[++newStartIdx];
-      } else if (sameVnode(oldEndVnode, newEndVnode)) {
+      } else if (isSameVnode(oldEndVnode, newEndVnode)) {
         patchVnode(oldEndVnode, newEndVnode, insertedVnodeQueue);
         oldEndVnode = oldCh[--oldEndIdx];
         newEndVnode = newCh[--newEndIdx];
-      } else if (sameVnode(oldStartVnode, newEndVnode)) { // Vnode moved right
+      } else if (isSameVnode(oldStartVnode, newEndVnode)) { // Vnode moved right
         patchVnode(oldStartVnode, newEndVnode, insertedVnodeQueue);
         api.insertBefore(parentElm, oldStartVnode.elm, api.nextSibling(oldEndVnode.elm));
         oldStartVnode = oldCh[++oldStartIdx];
         newEndVnode = newCh[--newEndIdx];
-      } else if (sameVnode(oldEndVnode, newStartVnode)) { // Vnode moved left
+      } else if (isSameVnode(oldEndVnode, newStartVnode)) { // Vnode moved left
         patchVnode(oldEndVnode, newStartVnode, insertedVnodeQueue);
         api.insertBefore(parentElm, oldEndVnode.elm, oldStartVnode.elm);
         oldEndVnode = oldCh[--oldEndIdx];
@@ -195,7 +253,7 @@ function init(modules, api) {
     }
     var elm = vnode.elm = oldVnode.elm, oldCh = oldVnode.children, ch = vnode.children;
     if (oldVnode === vnode) return;
-    if (!sameVnode(oldVnode, vnode)) {
+    if (!isSameVnode(oldVnode, vnode)) {
       var parentElm = api.parentNode(oldVnode.elm);
       elm = createElm(vnode, insertedVnodeQueue);
       api.insertBefore(parentElm, elm, oldVnode.elm);
@@ -235,7 +293,7 @@ function init(modules, api) {
       oldVnode = emptyNodeAt(oldVnode);
     }
 
-    if (sameVnode(oldVnode, vnode)) {
+    if (isSameVnode(oldVnode, vnode)) {
       patchVnode(oldVnode, vnode, insertedVnodeQueue);
     } else {
       elm = oldVnode.elm;
@@ -254,7 +312,9 @@ function init(modules, api) {
     }
     for (i = 0; i < cbs.post.length; ++i) cbs.post[i]();
     return vnode;
-  };
+  }
 }
 
-module.exports = {init: init};
+export default {
+  init
+}
