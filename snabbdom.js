@@ -203,12 +203,8 @@ function init(modules, api = domApi) {
       }
 
       hookEmitter.fire(HOOK_DESTROY, vnode)
-
     }
-
   }
-
-
 
   function updateChildren(parentElm, oldChildren, newChildren, insertedVnodeQueue) {
     var oldStartIdx = 0, newStartIdx = 0;

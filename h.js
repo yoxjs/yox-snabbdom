@@ -24,10 +24,6 @@ export default function (sel, data) {
     text = lastArg
   }
 
-  if (!is.object(data)) {
-    data = { }
-  }
-
-  return new VNode(sel, data, children, text)
+  return new VNode(sel, is.object(data) ? data : { }, children, text)
 
 }
