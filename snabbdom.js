@@ -30,7 +30,9 @@ function isSameVnode(vnode1, vnode2) {
 }
 
 function stringifySel(elm) {
-  let terms = [ ]
+  let terms = [
+    api.tagName(elm).toLowerCase()
+  ]
   let { id, className } = elm
   if (id) {
     array.push(terms, `${HASH}${id}`)
@@ -38,7 +40,7 @@ function stringifySel(elm) {
   if (className) {
     array.push(terms, `${DOT}${className.split(whitespacePattern).join(DOT)}`)
   }
-  return api.tagName(elm).toLowerCase() + terms.join(env.EMPTY)
+  return terms.join(env.EMPTY)
 }
 
 function parseSel(sel) {
