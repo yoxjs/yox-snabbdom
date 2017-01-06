@@ -1,29 +1,12 @@
 
-var VNode = require('./vnode');
-var is = require('./is');
-var domApi = require('./htmldomapi');
-
-function isUndef(s) { return s === undefined; }
-function isDef(s) { return s !== undefined; }
-
-var emptyNode = VNode('', {}, [], undefined, undefined);
-
 import execute from 'yox-common/function/execute'
+import is from 'yox-common/util/is'
+import env from 'yox-common/util/env'
+import array from 'yox-common/util/array'
 import Emitter from 'yox-common/util/Emitter'
 
-function isSameVnode(vnode1, vnode2) {
-  return vnode1.key === vnode2.key
-    && vnode1.sel === vnode2.sel
-}
-
-function createKeyToOldIdx(children, beginIdx, endIdx) {
-  var i, map = {}, key;
-  for (i = beginIdx; i <= endIdx; ++i) {
-    key = children[i].key;
-    if (isDef(key)) map[key] = i;
-  }
-  return map;
-}
+import VNode from './vnode'
+import domApi from './htmldomapi'
 
 const CREATE = 'create'
 const UPDATE = 'update'
@@ -34,30 +17,71 @@ const POST = 'post'
 
 const hooks = [ CREATE, UPDATE, HOOK_REMOVE, HOOK_DESTROY, PRE, POST ]
 
-function createRemove(elm, count) {
-  return function () {
-    if (--count === 0) {
-      api.removeChild(
-        api.parentNode(elm),
-        elm
-      )
-    }
+const whitespacePattern = /\s+/
+
+const HASH = '#'
+const DOT = '.'
+
+let emptyNode = VNode(env.EMPTY, { }, [ ])
+
+function isSameVnode(vnode1, vnode2) {
+  return vnode1.key === vnode2.key
+    && vnode1.sel === vnode2.sel
+}
+
+function stringifySel(elm) {
+  let terms = [ ]
+  let { id, className } = elm
+  if (id) {
+    array.push(terms, `${HASH}${id}`)
   }
+  if (className) {
+    array.push(terms, `${DOT}${className.split(whitespacePattern).join(DOT)}`)
+  }
+  return api.tagName(elm).toLowerCase() + terms.join(env.EMPTY)
 }
 
 function parseSel(sel) {
 
-  let tagName = env.EMPTY
-  let id = env.EMPTY
-  let className = env.EMPTY
+  let tagName, id, className
 
-  let hashIndex = sel.indexOf('#')
-  let dotIndex = sel.indexOf('.', hashIndex)
+  let hashIndex = sel.indexOf(HASH)
   if (hashIndex > 0) {
+    tagName = sel.slice(0, hashIndex)
+    sel = sel.slice(hashIndex + 1)
+  }
 
+  let dotIndex = sel.indexOf(DOT)
+  if (dotIndex > 0) {
+    let temp = sel.slice(0, dotIndex)
+    if (tagName) {
+      id = temp
+    }
+    else {
+      tagName = temp
+    }
+    className = sel.slice(dotIndex + 1).split(DOT).join(' ')
+  }
+  else {
+    if (tagName) {
+      id = sel
+    }
+    else {
+      tagName = sel
+    }
   }
 
   return { tagName, id, className }
+
+}
+
+function createKeyToOldIdx(children, beginIdx, endIdx) {
+  var i, map = {}, key;
+  for (i = beginIdx; i <= endIdx; ++i) {
+    key = children[i].key;
+    if (isDef(key)) map[key] = i;
+  }
+  return map;
 }
 
 function init(modules, api = domApi) {
@@ -78,11 +102,8 @@ function init(modules, api = domApi) {
   )
 
   function emptyNodeAt(elm) {
-    let { id, className } = elm
-    id = id ? `#${id}` : ''
-    className = className ? `.${className.split(/\s+/).join('.')}` : ''
     return new VNode(
-      api.tagName(elm).toLowerCase() + id + className,
+      stringifySel(elm),
       { },
       [ ],
       env.UNDEFINED,
@@ -155,12 +176,6 @@ function init(modules, api = domApi) {
   function addVnodes(parentElm, before, vnodes, start, end, insertedVnodeQueue) {
     for (; start <= end; ++start) {
       api.insertBefore(parentElm, createElm(vnodes[start], insertedVnodeQueue), before);
-    }
-  }
-
-  function removeVnodes(parentElm, vnodes, start = 0, end = vnodes.length - 1) {
-    for (let i = start; i < end; i++) {
-      removeVnode(parentElm, nodes[i])
     }
   }
 
@@ -276,7 +291,7 @@ function init(modules, api = domApi) {
     hook = hook ? hook.value : { }
 
     if (hook.prepatch) {
-      hook.prepatch(oldNode, vnode)
+      hook.prepatch(oldVnode, vnode)
     }
 
     // 不可变数据，引用一样不用比了
@@ -293,7 +308,7 @@ function init(modules, api = domApi) {
       return
     }
 
-    let { elm, children } = oldNode
+    let { elm, children } = oldVnode
     vnode.elm = elm
 
     // 调用生命周期 - update
@@ -318,20 +333,25 @@ function init(modules, api = domApi) {
     }
     else {
       if (children && oldVnode.children) {
-        if (children !== oldNode.children) {
-          updateChildren(elm, oldNode.children, children, insertedVnodeQueue)
+        if (children !== oldVnode.children) {
+          updateChildren(elm, oldVnode.children, children, insertedVnodeQueue)
         }
       }
       else if (children) {
-        if (is.string(oldNode.text)) {
+        if (is.string(oldVnode.text)) {
           api.setTextContent(elm, '')
         }
         addVnodes(elm, env.NULL, children, 0, children.length - 1, insertedVnodeQueue)
       }
-      else if (oldNode.children) {
-        removeVnodes(elm, oldNode.children)
+      else if (oldVnode.children) {
+        array.each(
+          oldVnode.children,
+          function (child) {
+            removeVnode(elm, child)
+          }
+        )
       }
-      else if (is.string(oldNode.text)) {
+      else if (is.string(oldVnode.text)) {
         api.setTextContent(elm, '')
       }
     }
