@@ -1,13 +1,12 @@
 
+import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
 
-export default class VNode(sel, data, children, text, elm) {
+export default class VNode(sel, data, children, text, el) {
   this.sel = sel
   this.data = data
   this.children = children
   this.text = text
-  this.elm = elm
-  if (data && object.has(data, 'key')) {
-    this.key = data.key
-  }
+  this.el = el
+  this.key = data && object.has(data, 'key') ? data.key : env.UNDEFINED
 }

@@ -1,4 +1,5 @@
 
+import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
 
@@ -9,7 +10,7 @@ const booleanLiteral = 'allowfullscreen,async,autofocus,autoplay,checked,compact
   + 'required,reversed,scoped,seamless,selected,sortable,spellcheck,translate'
   + 'truespeed,typemustmatch,visible'
 
-const booleanMap = array.toObject(booleanAttrs.split(','))
+const booleanMap = array.toObject(booleanAttrs.split(char.CHAR_COMMA))
 
 function updateAttrs(oldVnode, vnode) {
 
@@ -23,17 +24,17 @@ function updateAttrs(oldVnode, vnode) {
   oldAttrs = oldAttrs || { }
   newAttrs = newAttrs || { }
 
-  let { elm } = vnode
+  let { el } = vnode
 
   object.each(
     newAttrs,
     function (value, name) {
       if (value !== oldAttrs[name]) {
         if (!value && booleanMap[name]) {
-          elm.removeAttribute(name)
+          el.removeAttribute(name)
         }
         else {
-          elm.setAttribute(name, value)
+          el.setAttribute(name, value)
         }
       }
     }
@@ -43,7 +44,7 @@ function updateAttrs(oldVnode, vnode) {
     oldAttrs,
     function (value, name) {
       if (!object.has(newAttrs, name)) {
-        elm.removeAttribute(name)
+        el.removeAttribute(name)
       }
     }
   )

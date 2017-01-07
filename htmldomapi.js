@@ -1,44 +1,38 @@
 
 import * as env from 'yox-common/util/env'
 
-export default {
-  createElement(tagName) {
-    return env.doc.createElement(tagName)
-  },
+export function createElement(tagName) {
+  return env.doc.createElement(tagName)
+}
 
-  createElementNS(namespaceURI, qualifiedName) {
-    return env.doc.createElementNS(namespaceURI, qualifiedName)
-  },
+export function createTextNode(text) {
+  return env.doc.createTextNode(text)
+}
 
-  createTextNode(text) {
-    return env.doc.createTextNode(text)
-  },
+export function insertBefore(parentNode, newNode, referenceNode) {
+  parentNode.insertBefore(newNode, referenceNode)
+}
 
-  insertBefore(parentNode, newNode, referenceNode) {
-    parentNode.insertBefore(newNode, referenceNode)
-  },
+export function removeChild(parentNode, child) {
+  parentNode.removeChild(child)
+}
 
-  removeChild(node, child) {
-    node.removeChild(child)
-  },
+export function appendChild(parentNode, child) {
+  parentNode.appendChild(child)
+}
 
-  appendChild(node, child) {
-    node.appendChild(child)
-  },
+export function parentNode(node) {
+  return node.parentElement
+}
 
-  parentNode(node) {
-    return node.parentElement
-  },
+export function nextSibling(node) {
+  return node.nextSibling
+}
 
-  nextSibling(node) {
-    return node.nextSibling
-  },
+export function tagName(node) {
+  return node.tagName
+}
 
-  tagName(node) {
-    return node.tagName
-  },
-
-  setTextContent(node, text) {
-    node.textContent = text
-  }
+export function setTextContent(node, text) {
+  node.textContent = text
 }

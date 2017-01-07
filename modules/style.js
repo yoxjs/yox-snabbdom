@@ -1,4 +1,5 @@
 
+import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
 
@@ -14,7 +15,7 @@ function updateStyle(oldVnode, vnode) {
   oldStyle = oldStyle || { }
   newStyle = newStyle || { }
 
-  let { style } = vnode.elm
+  let { style } = vnode.el
 
   object.each(
     newStyle,
@@ -29,7 +30,7 @@ function updateStyle(oldVnode, vnode) {
     oldStyle,
     function (value, name) {
       if (!(object.has(newStyle, name))) {
-        style[name] = ''
+        style[name] = char.CHAR_BLANK
       }
     }
   )

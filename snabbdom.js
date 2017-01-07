@@ -16,6 +16,7 @@ const HOOK_UPDATE = 'update'
 const HOOK_INSERT = 'insert'
 const HOOK_REMOVE = 'remove'
 const HOOK_DESTROY = 'destroy'
+
 const HOOK_PRE = 'pre'
 const HOOK_POST = 'post'
 
@@ -81,23 +82,25 @@ function parseSel(sel) {
 
 }
 
-function createKeyToOldIdx(children, start, end) {
-  var i, map = {}, key;
-  for (i = start; i <= end; ++i) {
-    key = children[i].key;
-    if (isDef(key)) map[key] = i;
-  }
-  return map;
-}
-
-function emptyNodeAt(elm) {
-  return new VNode(
-    stringifySel(elm),
+function createVnode(el) {
+  new VNode(
+    stringifySel(el),
     { },
     [ ],
     env.UNDEFINED,
-    elm
+    el
   )
+}
+
+function replaceVnode(parentEl, oldVnode, vnode) {
+  if (parentEl) {
+    api.insertBefore(
+      parentEl,
+      vnode.elm,
+      oldVnode.elm
+    )
+    removeVnode(parentEl, oldVnode)
+  }
 }
 
 export function init(modules, api = domApi) {
@@ -117,7 +120,7 @@ export function init(modules, api = domApi) {
     }
   )
 
-  function createElm(vnode, insertedVnodeQueue) {
+  function createElement(vnode, insertedQueue) {
 
     let hook = object.get(vnode, 'data.hook')
     hook = hook ? hook.value : { }
@@ -146,7 +149,7 @@ export function init(modules, api = domApi) {
           function (child) {
             api.appendChild(
               elm,
-              createElm(child, insertedVnodeQueue)
+              createElement(child, insertedQueue)
             )
           }
         )
@@ -164,7 +167,7 @@ export function init(modules, api = domApi) {
         hook.create(emptyNode, vnode)
       }
       if (hook[HOOK_INSERT]) {
-        insertedVnodeQueue.push(vnode)
+        insertedQueue.push(vnode)
       }
     }
     else {
@@ -174,17 +177,17 @@ export function init(modules, api = domApi) {
     return elm
   }
 
-  function addVnodes(parentElm, before, vnodes, start, end, insertedVnodeQueue) {
+  function addVnodes(parentEl, before, vnodes, start, end, insertedQueue) {
     for (; start <= end; ++start) {
-      api.insertBefore(parentElm, createElm(vnodes[start], insertedVnodeQueue), before);
+      api.insertBefore(parentEl, createElement(vnodes[start], insertedQueue), before);
     }
   }
 
-  function removeVnode(parentElm, vnode) {
+  function removeVnode(parentEl, vnode) {
     let { sel, elm } = vnode
     if (sel) {
       destroyVnode(vnode)
-      api.removeChild(parentElm, elm)
+      api.removeChild(parentEl, elm)
       hookEmitter.fire(HOOK_REMOVE, vnode)
 
       result = object.get(vnode, `data.hook.${HOOK_REMOVE}`)
@@ -193,7 +196,7 @@ export function init(modules, api = domApi) {
       }
     }
     else {
-      api.removeChild(parentElm, elm)
+      api.removeChild(parentEl, elm)
     }
   }
 
@@ -220,73 +223,115 @@ export function init(modules, api = domApi) {
     }
   }
 
-  function updateChildren(parentElm, oldChildren, newChildren, insertedVnodeQueue) {
-    var oldStartIdx = 0, newStartIdx = 0;
-    var oldEndIdx = oldChildren.length - 1;
+  function updateChildren(parentEl, oldChildren, newChildren, insertedQueue) {
+    var oldStartIndex = 0, newStartIndex = 0;
+    var oldEndIndex = oldChildren.length - 1;
     var oldStartVnode = oldChildren[0];
-    var oldEndVnode = oldChildren[oldEndIdx];
-    var newEndIdx = newChildren.length - 1;
+    var oldEndVnode = oldChildren[oldEndIndex];
+    var newEndIndex = newChildren.length - 1;
     var newStartVnode = newChildren[0];
-    var newEndVnode = newChildren[newEndIdx];
-    var oldKeyToIdx, idxInOld, elmToMove, before;
+    var newEndVnode = newChildren[newEndIndex];
+    var oldKeyToIndex, oldIndex, activeVnode, before;
 
-    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
-      if (isUndef(oldStartVnode)) {
-        oldStartVnode = oldChildren[++oldStartIdx]; // Vnode has been moved left
+    while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+
+      if (!oldStartVnode) {
+        oldStartVnode = oldChildren[++oldStartIndex]; // Vnode has been moved left
       }
-      else if (isUndef(oldEndVnode)) {
-        oldEndVnode = oldChildren[--oldEndIdx];
+      else if (!oldEndVnode) {
+        oldEndVnode = oldChildren[--oldEndIndex];
       }
+
+      // 优先从头到尾比较，位置相同且值得 patch
       else if (isSameVnode(oldStartVnode, newStartVnode)) {
-        patchVnode(oldStartVnode, newStartVnode, insertedVnodeQueue);
-        oldStartVnode = oldChildren[++oldStartIdx];
-        newStartVnode = newChildren[++newStartIdx];
+        patchVnode(oldStartVnode, newStartVnode, insertedQueue)
+        oldStartVnode = oldChildren[ ++oldStartIndex ]
+        newStartVnode = newChildren[ ++newStartIndex ]
       }
+
+      // 再从尾到头比较，位置相同且值得 patch
       else if (isSameVnode(oldEndVnode, newEndVnode)) {
-        patchVnode(oldEndVnode, newEndVnode, insertedVnodeQueue);
-        oldEndVnode = oldChildren[--oldEndIdx];
-        newEndVnode = newChildren[--newEndIdx];
+        patchVnode(oldEndVnode, newEndVnode, insertedQueue)
+        oldEndVnode = oldChildren[ --oldEndIndex ]
+        newEndVnode = newChildren[ --newEndIndex ]
       }
-      else if (isSameVnode(oldStartVnode, newEndVnode)) { // Vnode moved right
-        patchVnode(oldStartVnode, newEndVnode, insertedVnodeQueue);
-        api.insertBefore(parentElm, oldStartVnode.elm, api.nextSibling(oldEndVnode.elm));
-        oldStartVnode = oldChildren[++oldStartIdx];
-        newEndVnode = newChildren[--newEndIdx];
+
+      // 比较完两侧的节点，剩下就是 位置发生改变的节点 和 全新的节点
+
+      // 当 oldStartVnode 和 newEndVnode 值得 patch
+      // 说明元素被移到右边了
+      else if (isSameVnode(oldStartVnode, newEndVnode)) {
+        patchVnode(oldStartVnode, newEndVnode, insertedQueue)
+        api.insertBefore(
+          parentEl,
+          oldStartVnode.el,
+          api.nextSibling(oldEndVnode.el)
+        )
+        oldStartVnode = oldChildren[++oldStartIndex]
+        newEndVnode = newChildren[--newEndIndex]
       }
-      else if (isSameVnode(oldEndVnode, newStartVnode)) { // Vnode moved left
-        patchVnode(oldEndVnode, newStartVnode, insertedVnodeQueue);
-        api.insertBefore(parentElm, oldEndVnode.elm, oldStartVnode.elm);
-        oldEndVnode = oldChildren[--oldEndIdx];
-        newStartVnode = newChildren[++newStartIdx];
+
+      // 当 oldEndVnode 和 newStartVnode 值得 patch
+      // 说明元素被移到左边了
+      else if (isSameVnode(oldEndVnode, newStartVnode)) {
+        patchVnode(oldEndVnode, newStartVnode, insertedQueue)
+        api.insertBefore(
+          parentEl,
+          oldEndVnode.el,
+          oldStartVnode.el
+        )
+        oldEndVnode = oldChildren[ --oldEndIndex ]
+        newStartVnode = newChildren[ ++newStartIndex ]
       }
+
+      // 尝试同级元素的 key
       else {
-        if (isUndef(oldKeyToIdx)) oldKeyToIdx = createKeyToOldIdx(oldChildren, oldStartIdx, oldEndIdx);
-        idxInOld = oldKeyToIdx[newStartVnode.key];
-        if (isUndef(idxInOld)) { // New element
-          api.insertBefore(parentElm, createElm(newStartVnode, insertedVnodeQueue), oldStartVnode.elm);
-          newStartVnode = newChildren[++newStartIdx];
+
+        if (!oldKeyToIndex) {
+          oldKeyToIndex = { }
+          for (let i = oldStartIndex, key; i <= oldEndIndex; i++) {
+            key = oldChildren[i].key
+            if (key != env.NULL) {
+              oldKeyToIndex[key] = i
+            }
+          }
         }
+
+        oldIndex = oldKeyToIndex[newStartVnode.key]
+
+        // 移动元素
+        if (is.number(oldIndex)) {
+          activeVnode = oldChildren[oldIndex]
+          patchVnode(activeVnode, newStartVnode, insertedQueue)
+          oldChildren[oldIndex] = env.NULL
+        }
+        // 新元素
         else {
-          elmToMove = oldChildren[idxInOld];
-          patchVnode(elmToMove, newStartVnode, insertedVnodeQueue);
-          oldChildren[idxInOld] = undefined;
-          api.insertBefore(parentElm, elmToMove.elm, oldStartVnode.elm);
-          newStartVnode = newChildren[++newStartIdx];
+          createElement(newStartVnode, insertedQueue)
+          activeVnode = newStartVnode
         }
+
+        api.insertBefore(
+          parentEl,
+          activeVnode.el,
+          oldStartVnode.el
+        )
+        newStartVnode = newChildren[ ++newStartIndex ]
+
       }
     }
 
-    if (oldStartIdx > oldEndIdx) {
-      before = isUndef(newChildren[newEndIdx+1]) ? null : newChildren[newEndIdx+1].elm;
-      addVnodes(parentElm, before, newChildren, newStartIdx, newEndIdx, insertedVnodeQueue);
-    } else if (newStartIdx > newEndIdx) {
-      removeVnodes(parentElm, oldChildren, oldStartIdx, oldEndIdx);
+    if (oldStartIndex > oldEndIndex) {
+      before = isUndef(newChildren[newEndIndex+1]) ? null : newChildren[newEndIndex+1].el
+      addVnodes(parentEl, before, newChildren, newStartIndex, newEndIndex, insertedQueue)
+    } else if (newStartIndex > newEndIndex) {
+      removeVnodes(parentEl, oldChildren, oldStartIndex, oldEndIndex)
     }
   }
 
-  function patchVnode(oldVnode, vnode, insertedVnodeQueue) {
+  function patchVnode(oldVnode, vnode, insertedQueue) {
 
-    // 不可变数据，引用一样不用比了
+    // 不可变数据，引用相同不用比了
     if (oldVnode === vnode) {
       return
     }
@@ -298,15 +343,14 @@ export function init(modules, api = domApi) {
       hook[HOOK_PREPATCH](oldVnode, vnode)
     }
 
-    let elm = vnode.elm = oldVnode.elm
+    let el = vnode.el = oldVnode.el
     if (!isSameVnode(oldVnode, vnode)) {
-      let parentElm = api.parentNode(elm)
-      api.insertBefore(
-        parentElm,
-        createElm(vnode, insertedVnodeQueue),
-        elm
+      createElement(vnode, insertedQueue)
+      replaceVnode(
+        api.parentNode(el),
+        oldVnode,
+        vnode,
       )
-      removeVnode(parentElm, oldVnode)
       return
     }
 
@@ -316,34 +360,51 @@ export function init(modules, api = domApi) {
       hook[HOOK_UPDATE](oldVnode, vnode)
     }
 
-    let { text, children } = vnode
-    if (is.string(text)) {
-      if (text !== oldVnode.text) {
-        api.setTextContent(elm, text)
+    let newText = vnode.text
+    let newChildren = vnode.children
+
+    let oldText = oldVnode.text
+    let oldChildren = oldVnode.children
+
+    if (is.string(newText)) {
+      if (newText !== oldText) {
+        api.setTextContent(el, newText)
       }
     }
     else {
-      if (children && oldVnode.children) {
-        if (children !== oldVnode.children) {
-          updateChildren(elm, oldVnode.children, children, insertedVnodeQueue)
+      // 两个都有需要 diff
+      if (newChildren && oldChildren) {
+        if (newChildren !== oldChildren) {
+          updateChildren(el, oldChildren, newChildren, insertedQueue)
         }
       }
-      else if (children) {
-        if (is.string(oldVnode.text)) {
-          api.setTextContent(elm, '')
+      // 有新的没旧的 - 新增节点
+      else if (newChildren) {
+        if (is.string(oldText)) {
+          api.setTextContent(el, char.CHAR_BLANK)
         }
-        addVnodes(elm, env.NULL, children, 0, children.length - 1, insertedVnodeQueue)
-      }
-      else if (oldVnode.children) {
         array.each(
-          oldVnode.children,
+          newChildren,
           function (child) {
-            removeVnode(elm, child)
+            api.appendChild(
+              el,
+              createElement(child, insertedQueue)
+            )
           }
         )
       }
-      else if (is.string(oldVnode.text)) {
-        api.setTextContent(elm, '')
+      // 有旧的没新的 - 删除节点
+      else if (oldChildren) {
+        array.each(
+          oldChildren,
+          function (child) {
+            removeVnode(el, child)
+          }
+        )
+      }
+      // 有旧的 text 没有新的 text
+      else if (is.string(oldText)) {
+        api.setTextContent(el, char.CHAR_BLANK)
       }
     }
 
@@ -357,33 +418,26 @@ export function init(modules, api = domApi) {
 
     hookEmitter.fire(HOOK_PRE)
 
-    if (!oldVnode.sel) {
-      oldVnode = emptyNodeAt(oldVnode)
+    if (!oldVnode.sel && oldVnode.tagName) {
+      oldVnode = createVnode(oldVnode)
     }
 
-    let insertedVnodeQueue = [ ]
+    let insertedQueue = [ ]
 
     if (isSameVnode(oldVnode, vnode)) {
-      patchVnode(oldVnode, vnode, insertedVnodeQueue)
+      patchVnode(oldVnode, vnode, insertedQueue)
     }
     else {
-      let { elm } = oldVnode
-      let parentNode = api.parentNode(elm)
-
-      createElm(vnode, insertedVnodeQueue);
-
-      if (parentNode) {
-        api.insertBefore(
-          parentNode,
-          vnode.elm,
-          api.nextSibling(elm)
-        )
-        removeVnode(parentNode, oldVnode)
-      }
+      createElement(vnode, insertedQueue)
+      replaceVnode(
+        api.parentNode(oldVnode.el),
+        oldVnode,
+        vnode
+      )
     }
 
     array.each(
-      insertedVnodeQueue,
+      insertedQueue,
       function (vnode) {
         let hook = object.get(vnode, `data.hook.${HOOK_INSERT}`)
         if (hook) {
