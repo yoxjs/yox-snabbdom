@@ -1,28 +1,32 @@
 
 import execute from 'yox-common/function/execute'
+
 import is from 'yox-common/util/is'
 import env from 'yox-common/util/env'
+import char from 'yox-common/util/char'
 import array from 'yox-common/util/array'
 import Emitter from 'yox-common/util/Emitter'
 
 import VNode from './vnode'
 import domApi from './htmldomapi'
 
-const CREATE = 'create'
-const UPDATE = 'update'
+const HOOK_INIT = 'init'
+const HOOK_CREATE = 'create'
+const HOOK_UPDATE = 'update'
+const HOOK_INSERT = 'insert'
 const HOOK_REMOVE = 'remove'
 const HOOK_DESTROY = 'destroy'
-const PRE = 'pre'
-const POST = 'post'
+const HOOK_PRE = 'pre'
+const HOOK_POST = 'post'
 
-const hooks = [ CREATE, UPDATE, HOOK_REMOVE, HOOK_DESTROY, PRE, POST ]
+const HOOK_PREPATCH = 'prepatch'
+const HOOK_POSTPATCH = 'postpatch'
+
+const hooks = [ HOOK_CREATE, HOOK_UPDATE, HOOK_REMOVE, HOOK_DESTROY, HOOK_PRE, HOOK_POST ]
 
 const whitespacePattern = /\s+/
 
-const HASH = '#'
-const DOT = '.'
-
-let emptyNode = VNode(env.EMPTY, { }, [ ])
+let emptyNode = new VNode(env.EMPTY, { }, [ ])
 
 function isSameVnode(vnode1, vnode2) {
   return vnode1.key === vnode2.key
@@ -35,10 +39,10 @@ function stringifySel(elm) {
   ]
   let { id, className } = elm
   if (id) {
-    array.push(terms, `${HASH}${id}`)
+    array.push(terms, `${char.CHAR_HASH}${id}`)
   }
   if (className) {
-    array.push(terms, `${DOT}${className.split(whitespacePattern).join(DOT)}`)
+    array.push(terms, `${char.CHAR_DOT}${className.split(whitespacePattern).join(char.CHAR_DOT)}`)
   }
   return terms.join(env.EMPTY)
 }
@@ -47,13 +51,13 @@ function parseSel(sel) {
 
   let tagName, id, className
 
-  let hashIndex = sel.indexOf(HASH)
+  let hashIndex = sel.indexOf(char.CHAR_HASH)
   if (hashIndex > 0) {
     tagName = sel.slice(0, hashIndex)
     sel = sel.slice(hashIndex + 1)
   }
 
-  let dotIndex = sel.indexOf(DOT)
+  let dotIndex = sel.indexOf(char.CHAR_DOT)
   if (dotIndex > 0) {
     let temp = sel.slice(0, dotIndex)
     if (tagName) {
@@ -62,7 +66,7 @@ function parseSel(sel) {
     else {
       tagName = temp
     }
-    className = sel.slice(dotIndex + 1).split(DOT).join(' ')
+    className = sel.slice(dotIndex + 1).split(char.CHAR_DOT).join(' ')
   }
   else {
     if (tagName) {
@@ -77,16 +81,26 @@ function parseSel(sel) {
 
 }
 
-function createKeyToOldIdx(children, beginIdx, endIdx) {
+function createKeyToOldIdx(children, start, end) {
   var i, map = {}, key;
-  for (i = beginIdx; i <= endIdx; ++i) {
+  for (i = start; i <= end; ++i) {
     key = children[i].key;
     if (isDef(key)) map[key] = i;
   }
   return map;
 }
 
-function init(modules, api = domApi) {
+function emptyNodeAt(elm) {
+  return new VNode(
+    stringifySel(elm),
+    { },
+    [ ],
+    env.UNDEFINED,
+    elm
+  )
+}
+
+export function init(modules, api = domApi) {
 
   let hookEmitter = new Emitter(), result
 
@@ -103,26 +117,13 @@ function init(modules, api = domApi) {
     }
   )
 
-  function emptyNodeAt(elm) {
-    return new VNode(
-      stringifySel(elm),
-      { },
-      [ ],
-      env.UNDEFINED,
-      elm
-    )
-  }
-
-
-
   function createElm(vnode, insertedVnodeQueue) {
 
     let hook = object.get(vnode, 'data.hook')
     hook = hook ? hook.value : { }
 
-    // 调用生命周期 - init
-    if (hook.init) {
-      hook.init(vnode)
+    if (hook[HOOK_INIT]) {
+      hook[HOOK_INIT](vnode)
     }
 
     let elm
@@ -137,34 +138,32 @@ function init(modules, api = domApi) {
         elm.className = className
       }
 
+      vnode.elm = elm
+
       if (is.array(children)) {
         array.each(
           children,
           function (child) {
-            api.appendChild(elm, createElm(child, insertedVnodeQueue))
+            api.appendChild(
+              elm,
+              createElm(child, insertedVnodeQueue)
+            )
           }
         )
       }
       else if (is.string(text)) {
-        api.appendChild(elm, api.createTextNode(text))
-      }
-
-      vnode.elm = elm
-
-      // 调用生命周期 - create
-      if (globalHook.create) {
-        array.each(
-          globalHook.create,
-          function (hook) {
-            hook(emptyNode, vnode)
-          }
+        api.appendChild(
+          elm,
+          api.createTextNode(text)
         )
       }
 
-      if (hook.create) {
+      hookEmitter.fire(HOOK_CREATE, [ emptyNode, vnode ])
+
+      if (hook[HOOK_CREATE]) {
         hook.create(emptyNode, vnode)
       }
-      if (hook.insert) {
+      if (hook[HOOK_INSERT]) {
         insertedVnodeQueue.push(vnode)
       }
     }
@@ -185,9 +184,7 @@ function init(modules, api = domApi) {
     let { sel, elm } = vnode
     if (sel) {
       destroyVnode(vnode)
-
       api.removeChild(parentElm, elm)
-
       hookEmitter.fire(HOOK_REMOVE, vnode)
 
       result = object.get(vnode, `data.hook.${HOOK_REMOVE}`)
@@ -289,42 +286,34 @@ function init(modules, api = domApi) {
 
   function patchVnode(oldVnode, vnode, insertedVnodeQueue) {
 
-    const hook = object.get(vnode, 'data.hook')
-    hook = hook ? hook.value : { }
-
-    if (hook.prepatch) {
-      hook.prepatch(oldVnode, vnode)
-    }
-
     // 不可变数据，引用一样不用比了
     if (oldVnode === vnode) {
       return
     }
 
-    // 引用不一样，对比下 key 和 sel
+    const hook = object.get(vnode, 'data.hook')
+    hook = hook ? hook.value : { }
+
+    if (hook[HOOK_PREPATCH]) {
+      hook[HOOK_PREPATCH](oldVnode, vnode)
+    }
+
+    let elm = vnode.elm = oldVnode.elm
     if (!isSameVnode(oldVnode, vnode)) {
-      let parentElm = api.parentNode(oldVnode.elm)
-      let elm = createElm(vnode, insertedVnodeQueue)
-      api.insertBefore(parentElm, elm, oldVnode.elm)
+      let parentElm = api.parentNode(elm)
+      api.insertBefore(
+        parentElm,
+        createElm(vnode, insertedVnodeQueue),
+        elm
+      )
       removeVnode(parentElm, oldVnode)
       return
     }
 
-    let { elm, children } = oldVnode
-    vnode.elm = elm
+    hookEmitter.fire(HOOK_UPDATE, [ oldVnode, vnode ])
 
-    // 调用生命周期 - update
-    if (globalHook.update) {
-      array.each(
-        globalHook.update,
-        function (hook) {
-          hook(oldVnode, vnode)
-        }
-      )
-    }
-
-    if (hook.update) {
-      hook.update(oldVnode, vnode)
+    if (hook[HOOK_UPDATE]) {
+      hook[HOOK_UPDATE](oldVnode, vnode)
     }
 
     let { text, children } = vnode
@@ -358,23 +347,15 @@ function init(modules, api = domApi) {
       }
     }
 
-    if (hook.postpatch) {
-      hook.postpatch(oldVnode, vnode)
+    if (hook[HOOK_POSTPATCH]) {
+      hook[HOOK_POSTPATCH](oldVnode, vnode)
     }
 
   }
 
   return function(oldVnode, vnode) {
 
-    // 调用生命周期 - pre
-    if (globalHook.pre) {
-      array.each(
-        globalHook.pre,
-        function (hook) {
-          hook()
-        }
-      )
-    }
+    hookEmitter.fire(HOOK_PRE)
 
     if (!oldVnode.sel) {
       oldVnode = emptyNodeAt(oldVnode)
@@ -392,7 +373,11 @@ function init(modules, api = domApi) {
       createElm(vnode, insertedVnodeQueue);
 
       if (parentNode) {
-        api.insertBefore(parentNode, vnode.elm, api.nextSibling(elm))
+        api.insertBefore(
+          parentNode,
+          vnode.elm,
+          api.nextSibling(elm)
+        )
         removeVnode(parentNode, oldVnode)
       }
     }
@@ -400,28 +385,16 @@ function init(modules, api = domApi) {
     array.each(
       insertedVnodeQueue,
       function (vnode) {
-        let hook = object.get(vnode, 'data.hook.insert')
+        let hook = object.get(vnode, `data.hook.${HOOK_INSERT}`)
         if (hook) {
           hook.value(vnode)
         }
       }
     )
 
-    // 调用生命周期 - post
-    if (globalHook.post) {
-      array.each(
-        globalHook.post,
-        function (hook) {
-          hook()
-        }
-      )
-    }
+    hookEmitter.fire(HOOK_POST)
 
     return vnode
 
   }
-}
-
-export default {
-  init
 }

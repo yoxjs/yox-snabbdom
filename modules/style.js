@@ -14,13 +14,13 @@ function updateStyle(oldVnode, vnode) {
   oldStyle = oldStyle || { }
   newStyle = newStyle || { }
 
-  let { elm } = vnode
+  let { style } = vnode.elm
 
   object.each(
     newStyle,
     function (value, name) {
       if (value !== oldStyle[name]) {
-        elm.style[name] = value
+        style[name] = value
       }
     }
   )
@@ -29,7 +29,7 @@ function updateStyle(oldVnode, vnode) {
     oldStyle,
     function (value, name) {
       if (!(object.has(newStyle, name))) {
-        elm.style[name] = ''
+        style[name] = ''
       }
     }
   )
