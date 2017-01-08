@@ -1,6 +1,4 @@
 
-import execute from 'yox-common/function/execute'
-
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as char from 'yox-common/util/char'

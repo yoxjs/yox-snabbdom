@@ -8,14 +8,7 @@ export function createElement(tagName) {
 
 export function createFragment(html) {
   let fragment = env.doc.createDocumentFragment()
-  let element = createElement('div')
-  element.innerHTML = html
-  array.each(
-    element.childNodes,
-    function (child) {
-      fragment.appendChild(child)
-    }
-  )
+  setHtmlContent(fragment, html)
   return fragment
 }
 
@@ -56,5 +49,23 @@ export function setTextContent(node, text) {
 }
 
 export function setHtmlContent(node, html) {
-  node.innerHTML = html
+  if (tagName(node)) {
+    node.innerHTML = html
+  }
+  else {
+    array.each(
+      node.childNodes,
+      function (child) {
+        node.removeChild(child)
+      }
+    )
+    let element = createElement('div')
+    element.innerHTML = html
+    array.each(
+      element.childNodes,
+      function (child) {
+        node.appendChild(child)
+      }
+    )
+  }
 }
