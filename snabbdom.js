@@ -31,7 +31,7 @@ const moduleHooks = [ HOOK_CREATE, HOOK_UPDATE, HOOK_REMOVE, HOOK_DESTROY, HOOK_
 
 const whitespacePattern = /\s+/
 
-let emptyNode = new Vnode({
+const emptyNode = new Vnode({
   sel: char.CHAR_BLANK,
   data: { },
   children: [ ],
@@ -181,7 +181,9 @@ export function init(modules, api = domApi) {
       return el
     }
     else {
-      return vnode.el = api.createTextNode(text)
+      return vnode.el = vnode.raw
+        ? api.createFragment(text)
+        : api.createTextNode(text)
     }
   }
 
@@ -259,9 +261,6 @@ export function init(modules, api = domApi) {
 
     let oldKeyToIndex, oldIndex, activeVnode
 
-    // 循环只比较最小集，如下面的前三项
-    // A B C D E F G
-    // A B C
     while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
 
       // 下面有设为 NULL 的逻辑
@@ -368,7 +367,6 @@ export function init(modules, api = domApi) {
 
   let patchVnode = function (oldVnode, vnode, insertedQueue) {
 
-    // 不可变数据，引用相同不用比了
     if (oldVnode === vnode) {
       return
     }
@@ -399,15 +397,26 @@ export function init(modules, api = domApi) {
       hook[HOOK_UPDATE](oldVnode, vnode)
     }
 
+    let newRaw = vnode.raw
     let newText = vnode.text
     let newChildren = vnode.children
 
+    let oldRaw = oldVnode.raw
     let oldText = oldVnode.text
     let oldChildren = oldVnode.children
 
     if (is.string(newText)) {
       if (newText !== oldText) {
-        api.setTextContent(el, newText)
+        if (newRaw) {
+          api.replaceChild(
+            api.parentNode(el),
+            api.createFragment(newText),
+            el
+          )
+        }
+        else {
+          api.setTextContent(el, newText)
+        }
       }
     }
     else {
@@ -420,7 +429,7 @@ export function init(modules, api = domApi) {
       // 有新的没旧的 - 新增节点
       else if (newChildren) {
         if (is.string(oldText)) {
-          api.setTextContent(el, char.CHAR_BLANK)
+          api[ oldRaw ? 'setHtmlContent' : 'setTextContent' ](el, char.CHAR_BLANK)
         }
         addVnodes(el, newChildren, 0, newChildren.length - 1, insertedQueue)
       }
@@ -430,7 +439,7 @@ export function init(modules, api = domApi) {
       }
       // 有旧的 text 没有新的 text
       else if (is.string(oldText)) {
-        api.setTextContent(el, char.CHAR_BLANK)
+        api[ oldRaw ? 'setHtmlContent' : 'setTextContent' ](el, char.CHAR_BLANK)
       }
     }
 

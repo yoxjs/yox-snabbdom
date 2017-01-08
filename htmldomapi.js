@@ -1,8 +1,22 @@
 
 import * as env from 'yox-common/util/env'
+import * as array from 'yox-common/util/array'
 
 export function createElement(tagName) {
   return env.doc.createElement(tagName)
+}
+
+export function createFragment(html) {
+  let fragment = env.doc.createDocumentFragment()
+  let element = createElement('div')
+  element.innerHTML = html
+  array.each(
+    element.childNodes,
+    function (child) {
+      fragment.appendChild(child)
+    }
+  )
+  return fragment
 }
 
 export function createTextNode(text) {
@@ -11,6 +25,10 @@ export function createTextNode(text) {
 
 export function insertBefore(parentNode, newNode, referenceNode) {
   parentNode.insertBefore(newNode, referenceNode)
+}
+
+export function replaceChild(parentNode, newNode, oldNode) {
+  parentNode.replaceChild(newNode, oldNode)
 }
 
 export function removeChild(parentNode, child) {
@@ -35,4 +53,8 @@ export function tagName(node) {
 
 export function setTextContent(node, text) {
   node.textContent = text
+}
+
+export function setHtmlContent(node, html) {
+  node.innerHTML = html
 }
