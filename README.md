@@ -5,6 +5,8 @@
 1. 精简代码
 2. snabbdom 写的太丑了
 
-希望能跟 snabbdom 兼容，不排除为了 yox 的需要，做出一点点不兼容。
+## 改动
 
 1. `elm` 改成 `el`
+2. `vnode` 改成 `Vnode`，并且实现为类
+3. `htmldomapi` 改成 jQuery 版本，减少字符

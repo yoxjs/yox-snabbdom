@@ -1,6 +1,5 @@
 
 import * as is from 'yox-common/util/is'
-import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
 
 import Vnode from './Vnode'
@@ -16,8 +15,8 @@ export default function (sel, data) {
       children,
       function (child, i) {
         if (!(child instanceof Vnode)) {
-          children[i] = new Vnode({
-            text: child
+          children[ i ] = new Vnode({
+            text: child,
           })
         }
       }
