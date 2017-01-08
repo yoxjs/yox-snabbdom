@@ -2,11 +2,16 @@
 import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
 
-export default class VNode(sel, data, children, text, el) {
-  this.sel = sel
-  this.data = data
-  this.children = children
-  this.text = text
-  this.el = el
-  this.key = data && object.has(data, 'key') ? data.key : env.UNDEFINED
+/**
+ * @param {?string} options.el
+ * @param {?string} options.sel
+ * @param {?string} options.data
+ * @param {?string} options.text
+ * @param {?string} options.html
+ * @param {?string|Array} options.children
+ */
+export default class Vnode {
+  constructor(options) {
+    object.extend(this, options)
+  }
 }

@@ -10,7 +10,7 @@ const booleanLiteral = 'allowfullscreen,async,autofocus,autoplay,checked,compact
   + 'required,reversed,scoped,seamless,selected,sortable,spellcheck,translate'
   + 'truespeed,typemustmatch,visible'
 
-const booleanMap = array.toObject(booleanAttrs.split(char.CHAR_COMMA))
+const booleanMap = array.toObject(booleanLiteral.split(char.CHAR_COMMA))
 
 function updateAttrs(oldVnode, vnode) {
 

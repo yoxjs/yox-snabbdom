@@ -1,14 +1,17 @@
 
 import execute from 'yox-common/function/execute'
 
-import is from 'yox-common/util/is'
-import env from 'yox-common/util/env'
-import char from 'yox-common/util/char'
-import array from 'yox-common/util/array'
+import * as is from 'yox-common/util/is'
+import * as env from 'yox-common/util/env'
+import * as char from 'yox-common/util/char'
+import * as array from 'yox-common/util/array'
+import * as object from 'yox-common/util/object'
+
 import Emitter from 'yox-common/util/Emitter'
 
-import VNode from './vnode'
-import domApi from './htmldomapi'
+import Vnode from './Vnode'
+
+import * as domApi from './htmldomapi'
 
 const HOOK_INIT = 'init'
 const HOOK_CREATE = 'create'
@@ -28,7 +31,11 @@ const moduleHooks = [ HOOK_CREATE, HOOK_UPDATE, HOOK_REMOVE, HOOK_DESTROY, HOOK_
 
 const whitespacePattern = /\s+/
 
-let emptyNode = new VNode(char.CHAR_BLANK, { }, [ ])
+let emptyNode = new Vnode({
+  sel: char.CHAR_BLANK,
+  data: { },
+  children: [ ],
+})
 
 function isSameVnode(vnode1, vnode2) {
   return vnode1.key === vnode2.key
@@ -111,13 +118,12 @@ export function init(modules, api = domApi) {
   }
 
   let createVnode = function (el) {
-    return new VNode(
-      stringifySel(el),
-      { },
-      [ ],
-      env.UNDEFINED,
-      el
-    )
+    return new Vnode({
+      sel: stringifySel(el),
+      data: { },
+      children: [ ],
+      el,
+    })
   }
 
   let replaceVnode = function (parentEl, oldVnode, vnode) {
@@ -180,7 +186,7 @@ export function init(modules, api = domApi) {
   }
 
   let addVnodes = function (parentEl, vnodes, startIndex, endIndex, insertedQueue, before) {
-    for (let i = startIndex; i < endIndex; i++) {
+    for (let i = startIndex; i <= endIndex; i++) {
       addVnode(parentEl, vnodes[i], insertedQueue, before)
     }
   }
@@ -194,7 +200,7 @@ export function init(modules, api = domApi) {
   }
 
   let removeVnodes = function (parentEl, vnodes, startIndex, endIndex) {
-    for (let i = startIndex; i < endIndex; i++) {
+    for (let i = startIndex; i <= endIndex; i++) {
       removeVnode(parentEl, vnodes[i])
     }
   }
@@ -367,7 +373,7 @@ export function init(modules, api = domApi) {
       return
     }
 
-    const hook = object.get(vnode, 'data.hook')
+    let hook = object.get(vnode, 'data.hook')
     hook = hook ? hook.value : { }
 
     if (hook[HOOK_PREPATCH]) {
@@ -385,7 +391,9 @@ export function init(modules, api = domApi) {
       return
     }
 
-    hookEmitter.fire(HOOK_UPDATE, [ oldVnode, vnode ])
+    if (vnode.data) {
+      hookEmitter.fire(HOOK_UPDATE, [ oldVnode, vnode ])
+    }
 
     if (hook[HOOK_UPDATE]) {
       hook[HOOK_UPDATE](oldVnode, vnode)
