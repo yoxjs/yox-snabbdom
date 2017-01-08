@@ -1,0 +1,20 @@
+{
+  "name": "yox-snabbdom",
+  "version": "0.0.1",
+  "description": "Snabbdom for Yox.js",
+  "directories": {
+    "example": "example",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yoxjs/yox-snabbdom.git"
+  },
+  "keywords": [],
+  "author": "musicode",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yoxjs/yox-snabbdom/issues"
+  },
+  "homepage": "https://github.com/yoxjs/yox-snabbdom#readme"
+}

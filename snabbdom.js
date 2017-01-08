@@ -251,7 +251,7 @@ export function init(modules, api = domApi) {
     let newStartVnode = newChildren[newStartIndex]
     let newEndVnode = newChildren[newEndIndex]
 
-    let oldKeyToIndex, oldIndex, activeVnode, i, key
+    let oldKeyToIndex, oldIndex, activeVnode
 
     // 循环只比较最小集，如下面的前三项
     // A B C D E F G
