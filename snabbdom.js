@@ -206,11 +206,9 @@ export function init(modules, api = domApi) {
 
       if (data) {
         moduleEmitter.fire(HOOK_REMOVE, vnode)
-
-        data = object.get(data, `hook.${HOOK_REMOVE}`)
-        if (data) {
+        if (data.hook) {
           execute(
-            data.value,
+            data.hook[ HOOK_REMOVE ],
             env.NULL,
             vnode
           )
@@ -239,10 +237,9 @@ export function init(modules, api = domApi) {
 
       moduleEmitter.fire(HOOK_DESTROY, vnode)
 
-      data = object.get(data, `hook.${HOOK_DESTROY}`)
-      if (data) {
+      if (data.hook) {
         execute(
-          data.value,
+          data.hook[ HOOK_DESTROY ],
           env.NULL,
           vnode
         )
@@ -474,7 +471,7 @@ export function init(modules, api = domApi) {
 
     moduleEmitter.fire(HOOK_PRE)
 
-    if (!oldVnode.sel && api.tag(oldVnode)) {
+    if (!oldVnode.sel && api.isElement(oldVnode)) {
       oldVnode = createVnode(oldVnode)
     }
 

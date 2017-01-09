@@ -22,6 +22,14 @@ export function createEvent(event) {
   return event
 }
 
+export function isElement(node) {
+  return node.nodeType === 1
+}
+
+export function isFragment(node) {
+  return node.nodeType === 11
+}
+
 export function before(parentNode, newNode, referenceNode) {
   parentNode.insertBefore(newNode, referenceNode)
 }
@@ -58,11 +66,10 @@ export function text(node, content) {
 }
 
 export function html(node, content) {
-  if (tag(node)) {
+  if (isElement(node)) {
     node.innerHTML = content
   }
-  // DocumentFragment
-  else if (node.nodeType === 11) {
+  else if (isFragment(node)) {
     array.each(
       node.childNodes,
       function (child) {
