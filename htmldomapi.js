@@ -61,6 +61,10 @@ export function tag(node) {
     : tagName.toLowerCase()
 }
 
+export function children(node) {
+  return node.childNodes
+}
+
 export function text(node, content) {
   node.textContent = content
 }
@@ -71,7 +75,7 @@ export function html(node, content) {
   }
   else if (isFragment(node)) {
     array.each(
-      node.childNodes,
+      children(node),
       function (child) {
         remove(node, child)
       }
@@ -79,7 +83,7 @@ export function html(node, content) {
     let element = createElement('div')
     element.innerHTML = content
     array.each(
-      element.childNodes,
+      children(element),
       function (child) {
         append(node, child)
       }

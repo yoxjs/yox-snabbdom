@@ -4,6 +4,7 @@ import * as env from 'yox-common/util/env'
 import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
+import * as string from 'yox-common/util/string'
 
 import Emitter from 'yox-common/util/Emitter'
 import execute from 'yox-common/function/execute'
@@ -84,13 +85,13 @@ export function init(modules, api = domApi) {
 
     let tagName, id, className
 
-    let hashIndex = sel.indexOf(char.CHAR_HASH)
+    let hashIndex = string.indexOf(sel, char.CHAR_HASH)
     if (hashIndex > 0) {
       tagName = sel.slice(0, hashIndex)
       sel = sel.slice(hashIndex + 1)
     }
 
-    let dotIndex = sel.indexOf(char.CHAR_DOT)
+    let dotIndex = string.indexOf(sel, char.CHAR_DOT)
     if (dotIndex > 0) {
       let temp = sel.slice(0, dotIndex)
       if (tagName) {

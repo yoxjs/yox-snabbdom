@@ -21,7 +21,7 @@ function updateStyle(oldVnode, vnode) {
     newStyle,
     function (value, name) {
       if (value !== oldStyle[name]) {
-        style[name] = value
+        style[ name ] = value
       }
     }
   )
@@ -30,7 +30,7 @@ function updateStyle(oldVnode, vnode) {
     oldStyle,
     function (value, name) {
       if (!(object.has(newStyle, name))) {
-        style[name] = char.CHAR_BLANK
+        style[ name ] = char.CHAR_BLANK
       }
     }
   )
