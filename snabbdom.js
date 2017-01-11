@@ -87,20 +87,20 @@ export function init(modules, api = domApi) {
 
     let hashIndex = string.indexOf(sel, char.CHAR_HASH)
     if (hashIndex > 0) {
-      tagName = sel.slice(0, hashIndex)
-      sel = sel.slice(hashIndex + 1)
+      tagName = string.slice(sel, 0, hashIndex)
+      sel = string.slice(sel, hashIndex + 1)
     }
 
     let dotIndex = string.indexOf(sel, char.CHAR_DOT)
     if (dotIndex > 0) {
-      let temp = sel.slice(0, dotIndex)
+      let temp = string.slice(sel, 0, dotIndex)
       if (tagName) {
         id = temp
       }
       else {
         tagName = temp
       }
-      className = sel.slice(dotIndex + 1).split(char.CHAR_DOT).join(char.CHAR_WHITESPACE)
+      className = string.slice(sel, dotIndex + 1).split(char.CHAR_DOT).join(char.CHAR_WHITESPACE)
     }
     else {
       if (tagName) {
