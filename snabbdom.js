@@ -395,6 +395,8 @@ export function init(modules, api = domApi) {
     )
 
     let el = vnode.el = oldVnode.el
+    vnode.payload = oldVnode.payload
+
     if (!isSameVnode(oldVnode, vnode)) {
       createElement(vnode, insertedQueue)
       replaceVnode(
@@ -472,7 +474,7 @@ export function init(modules, api = domApi) {
 
     moduleEmitter.fire(HOOK_PRE)
 
-    if (!oldVnode.sel && api.isElement(oldVnode)) {
+    if (api.isElement(oldVnode)) {
       oldVnode = createVnode(oldVnode)
     }
 
