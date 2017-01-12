@@ -2,6 +2,7 @@
 import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
+import * as string from 'yox-common/util/string'
 
 const booleanLiteral = 'allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare'
   + 'default,defaultchecked,defaultmuted,defaultselected,defer,disabled,draggable'
@@ -10,7 +11,7 @@ const booleanLiteral = 'allowfullscreen,async,autofocus,autoplay,checked,compact
   + 'required,reversed,scoped,seamless,selected,sortable,spellcheck,translate'
   + 'truespeed,typemustmatch,visible'
 
-const booleanMap = array.toObject(booleanLiteral.split(char.CHAR_COMMA))
+const booleanMap = array.toObject(string.split(booleanLiteral, char.CHAR_COMMA))
 
 function updateAttrs(oldVnode, vnode) {
 

@@ -10,12 +10,14 @@ export function createElement(tagName) {
 
 export function createFragment(content) {
   let fragment = env.doc.createDocumentFragment()
-  html(fragment, content)
+  if (content) {
+    html(fragment, content)
+  }
   return fragment
 }
 
 export function createText(text) {
-  return env.doc.createTextNode(text)
+  return env.doc.createTextNode(text || char.CHAR_BLANK)
 }
 
 export function createComment(text) {

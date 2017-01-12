@@ -31,8 +31,6 @@ const HOOK_POSTPATCH = 'postpatch'
 
 const moduleHooks = [ HOOK_CREATE, HOOK_UPDATE, HOOK_REMOVE, HOOK_DESTROY, HOOK_PRE, HOOK_POST ]
 
-const whitespacePattern = /\s+/
-
 const emptyNode = new Vnode({
   sel: char.CHAR_BLANK,
   data: { },
@@ -78,7 +76,7 @@ export function init(modules, api = domApi) {
       array.push(list, `${char.CHAR_HASH}${id}`)
     }
     if (className) {
-      array.push(list, `${char.CHAR_DOT}${className.split(whitespacePattern).join(char.CHAR_DOT)}`)
+      array.push(list, `${char.CHAR_DOT}${string.split(className, char.CHAR_BLANK).join(char.CHAR_DOT)}`)
     }
     return list.join(char.CHAR_BLANK)
   }
@@ -102,7 +100,7 @@ export function init(modules, api = domApi) {
       else {
         tagName = temp
       }
-      className = string.slice(sel, dotIndex + 1).split(char.CHAR_DOT).join(char.CHAR_WHITESPACE)
+      className = string.split(string.slice(sel, dotIndex + 1), char.CHAR_DOT).join(char.CHAR_WHITESPACE)
     }
     else {
       if (tagName) {
