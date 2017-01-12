@@ -13,6 +13,8 @@ import Vnode from './Vnode'
 
 import * as domApi from './htmldomapi'
 
+const SEL_COMMENT = '!'
+
 const HOOK_INIT = 'init'
 const HOOK_CREATE = 'create'
 const HOOK_INSERT = 'insert'
@@ -135,48 +137,50 @@ export function init(modules, api = domApi) {
       vnode
     )
 
-    if (is.string(sel)) {
-      let { tagName, id, className } = parseSel(sel)
-      let el = api.createElement(tagName)
-      if (id) {
-        el.id = id
-      }
-      if (className) {
-        el.className = className
-      }
-
-      vnode.el = el
-
-      if (is.array(children)) {
-        addVnodes(el, children, 0, children.length - 1, insertedQueue)
-      }
-      else if (is.string(text)) {
-        api.append(
-          el,
-          api[ raw ? 'createFragment' : 'createText' ](text)
-        )
-      }
-
-      if (data) {
-        data = [ emptyNode, vnode ]
-        moduleEmitter.fire(HOOK_CREATE, data)
-
-        execute(
-          hook[ HOOK_CREATE ],
-          env.NULL,
-          data
-        )
-
-        if (hook[ HOOK_INSERT ]) {
-          insertedQueue.push(vnode)
-        }
-      }
-
-      return el
-    }
-    else {
+    if (string.falsy(sel)) {
       return vnode.el = api[ raw ? 'createFragment' : 'createText' ](text)
     }
+
+    if (sel === SEL_COMMENT) {
+      return vnode.el = api.createComment(text)
+    }
+
+    let { tagName, id, className } = parseSel(sel)
+    let el = api.createElement(tagName)
+    if (id) {
+      el.id = id
+    }
+    if (className) {
+      el.className = className
+    }
+
+    vnode.el = el
+
+    if (is.array(children)) {
+      addVnodes(el, children, 0, children.length - 1, insertedQueue)
+    }
+    else if (is.string(text)) {
+      api.append(
+        el,
+        api[ raw ? 'createFragment' : 'createText' ](text)
+      )
+    }
+
+    if (data) {
+      data = [ emptyNode, vnode ]
+      moduleEmitter.fire(HOOK_CREATE, data)
+
+      execute(
+        hook[ HOOK_CREATE ],
+        env.NULL,
+        data
+      )
+
+      if (hook[ HOOK_INSERT ]) {
+        insertedQueue.push(vnode)
+      }
+    }
+    return el
   }
 
   let addVnodes = function (parentNode, vnodes, startIndex, endIndex, insertedQueue, before) {

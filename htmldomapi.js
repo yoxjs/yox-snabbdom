@@ -18,6 +18,10 @@ export function createText(text) {
   return env.doc.createTextNode(text)
 }
 
+export function createComment(text) {
+  return env.doc.createComment(text || char.CHAR_BLANK)
+}
+
 export function createEvent(event) {
   return event
 }
