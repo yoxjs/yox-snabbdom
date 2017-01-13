@@ -13,8 +13,6 @@ import Vnode from './Vnode'
 
 import * as domApi from './htmldomapi'
 
-const SEL_COMMENT = '!'
-
 const HOOK_INIT = 'init'
 const HOOK_CREATE = 'create'
 const HOOK_INSERT = 'insert'
@@ -124,7 +122,7 @@ export function init(modules, api = domApi) {
     })
   }
 
-  let createElement = function (vnode, insertedQueue) {
+  let createElement = function (parentNode, vnode, insertedQueue) {
 
     let { sel, data, children, raw, text } = vnode
 
@@ -139,12 +137,12 @@ export function init(modules, api = domApi) {
       return vnode.el = api[ raw ? 'createFragment' : 'createText' ](text)
     }
 
-    if (sel === SEL_COMMENT) {
+    if (sel === Vnode.SEL_COMMENT) {
       return vnode.el = api.createComment(text)
     }
 
     let { tagName, id, className } = parseSel(sel)
-    let el = api.createElement(tagName)
+    let el = api.createElement(tagName, parentNode)
     if (id) {
       el.id = id
     }
@@ -190,7 +188,7 @@ export function init(modules, api = domApi) {
   let addVnode = function (parentNode, vnode, insertedQueue, before) {
     api.before(
       parentNode,
-      createElement(vnode, insertedQueue),
+      createElement(parentNode, vnode, insertedQueue),
       before
     )
   }
@@ -345,7 +343,7 @@ export function init(modules, api = domApi) {
         }
         // 新元素
         else {
-          createElement(newStartVnode, insertedQueue)
+          createElement(parentNode, newStartVnode, insertedQueue)
           activeVnode = newStartVnode
         }
 
@@ -399,13 +397,10 @@ export function init(modules, api = domApi) {
     let el = vnode.el = oldVnode.el
     vnode.payload = oldVnode.payload
 
+    let parentNode = api.parent(el)
     if (!isSameVnode(oldVnode, vnode)) {
-      createElement(vnode, insertedQueue)
-      replaceVnode(
-        api.parent(el),
-        oldVnode,
-        vnode
-      )
+      createElement(parentNode, vnode, insertedQueue)
+      replaceVnode(parentNode, oldVnode, vnode)
       return
     }
 
@@ -430,7 +425,7 @@ export function init(modules, api = domApi) {
       if (newText !== oldText) {
         if (newRaw) {
           api.replace(
-            api.parent(el),
+            parentNode,
             api.createFragment(newText),
             el
           )
@@ -485,12 +480,9 @@ export function init(modules, api = domApi) {
       patchVnode(oldVnode, vnode, insertedQueue)
     }
     else {
-      createElement(vnode, insertedQueue)
-      replaceVnode(
-        api.parent(oldVnode.el),
-        oldVnode,
-        vnode
-      )
+      let parentNode = api.parent(oldVnode.el)
+      createElement(parentNode, vnode, insertedQueue)
+      replaceVnode(parentNode, oldVnode, vnode)
     }
 
     array.each(

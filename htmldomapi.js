@@ -4,8 +4,13 @@ import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as string from 'yox-common/util/string'
 
-export function createElement(tagName) {
-  return env.doc.createElement(tagName)
+const { SVGElement } = env.win
+
+export function createElement(tagName, parentNode) {
+  return tagName === 'svg'
+    || (parentNode && parentNode instanceof SVGElement)
+    ? env.doc.createElementNS('http://www.w3.org/2000/svg', tagName)
+    : env.doc.createElement(tagName)
 }
 
 export function createFragment(content) {

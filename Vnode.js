@@ -9,8 +9,12 @@ import * as object from 'yox-common/util/object'
  * @param {?string} options.html
  * @param {?string|Array} options.children
  */
-export default class Vnode {
+class Vnode {
   constructor(options) {
     object.extend(this, options)
   }
 }
+
+Vnode.SEL_COMMENT = '!'
+
+export default Vnode
