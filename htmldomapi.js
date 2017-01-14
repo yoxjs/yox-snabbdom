@@ -8,7 +8,7 @@ const { SVGElement } = env.win
 
 export function createElement(tagName, parentNode) {
   return tagName === 'svg'
-    || (parentNode && parentNode instanceof SVGElement)
+    || (parentNode && SVGElement && parentNode instanceof SVGElement)
     ? env.doc.createElementNS('http://www.w3.org/2000/svg', tagName)
     : env.doc.createElement(tagName)
 }
@@ -42,7 +42,12 @@ export function isFragment(node) {
 }
 
 export function before(parentNode, newNode, referenceNode) {
-  parentNode.insertBefore(newNode, referenceNode)
+  if (referenceNode) {
+    parentNode.insertBefore(newNode, referenceNode)
+  }
+  else {
+    append(parentNode, newNode)
+  }
 }
 
 export function replace(parentNode, newNode, oldNode) {
