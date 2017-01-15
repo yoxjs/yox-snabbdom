@@ -63,7 +63,7 @@ export function append(parentNode, child) {
 }
 
 export function parent(node) {
-  return node.parentElement
+  return node.parentNode
 }
 
 export function next(node) {
@@ -82,7 +82,7 @@ export function children(node) {
 }
 
 export function text(node, content) {
-  node.textContent = content
+  node.nodeValue = content
 }
 
 export function html(node, content) {
