@@ -8,7 +8,8 @@ export default function (sel, data) {
 
   let children, text
 
-  let lastArg = array.last(arguments)
+  let args = arguments
+  let lastArg = array.last(args)
   if (is.array(lastArg)) {
     children = lastArg
     array.each(
@@ -22,7 +23,7 @@ export default function (sel, data) {
       }
     )
   }
-  else if (is.string(lastArg)) {
+  else if (is.string(lastArg) && args.length > 1) {
     text = lastArg
   }
 

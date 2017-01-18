@@ -35,8 +35,9 @@ const emptyNode = new Vnode({
   children: [ ],
 })
 
-function isSameVnode(vnode1, vnode2) {
-  return vnode1.key === vnode2.key
+function needPatch(vnode1, vnode2) {
+  return vnode1.sel
+    && vnode1.key === vnode2.key
     && vnode1.sel === vnode2.sel
 }
 
@@ -153,7 +154,13 @@ export function init(modules, api = domApi) {
     vnode.el = el
 
     if (is.array(children)) {
-      addVnodes(el, children, 0, children.length - 1, insertedQueue)
+      let firstChild = children[ 0 ]
+      if (children.length === 1 && firstChild.raw) {
+        api.html(el, firstChild.text)
+      }
+      else {
+        addVnodes(el, children, 0, children.length - 1, insertedQueue)
+      }
     }
     else if (is.string(text)) {
       api.append(
@@ -217,7 +224,7 @@ export function init(modules, api = domApi) {
       }
 
     }
-    else {
+    else if (el) {
       api.remove(parentNode, el)
     }
   }
@@ -285,14 +292,14 @@ export function init(modules, api = domApi) {
       }
 
       // 优先从头到尾比较，位置相同且值得 patch
-      else if (isSameVnode(oldStartVnode, newStartVnode)) {
+      else if (needPatch(oldStartVnode, newStartVnode)) {
         patchVnode(oldStartVnode, newStartVnode, insertedQueue)
         oldStartVnode = oldChildren[ ++oldStartIndex ]
         newStartVnode = newChildren[ ++newStartIndex ]
       }
 
       // 再从尾到头比较，位置相同且值得 patch
-      else if (isSameVnode(oldEndVnode, newEndVnode)) {
+      else if (needPatch(oldEndVnode, newEndVnode)) {
         patchVnode(oldEndVnode, newEndVnode, insertedQueue)
         oldEndVnode = oldChildren[ --oldEndIndex ]
         newEndVnode = newChildren[ --newEndIndex ]
@@ -302,7 +309,7 @@ export function init(modules, api = domApi) {
 
       // 当 oldStartVnode 和 newEndVnode 值得 patch
       // 说明元素被移到右边了
-      else if (isSameVnode(oldStartVnode, newEndVnode)) {
+      else if (needPatch(oldStartVnode, newEndVnode)) {
         patchVnode(oldStartVnode, newEndVnode, insertedQueue)
         api.before(
           parentNode,
@@ -315,7 +322,7 @@ export function init(modules, api = domApi) {
 
       // 当 oldEndVnode 和 newStartVnode 值得 patch
       // 说明元素被移到左边了
-      else if (isSameVnode(oldEndVnode, newStartVnode)) {
+      else if (needPatch(oldEndVnode, newStartVnode)) {
         patchVnode(oldEndVnode, newStartVnode, insertedQueue)
         api.before(
           parentNode,
@@ -343,15 +350,24 @@ export function init(modules, api = domApi) {
         }
         // 新元素
         else {
-          createElement(parentNode, newStartVnode, insertedQueue)
-          activeVnode = newStartVnode
+          if (newStartVnode.raw) {
+            api.html(parentNode, newStartVnode.text)
+            activeVnode = env.NULL
+          }
+          else {
+            createElement(parentNode, newStartVnode, insertedQueue)
+            activeVnode = newStartVnode
+          }
         }
 
-        api.before(
-          parentNode,
-          activeVnode.el,
-          oldStartVnode.el
-        )
+        if (activeVnode) {
+          api.before(
+            parentNode,
+            activeVnode.el,
+            oldStartVnode.el
+          )
+        }
+
         newStartVnode = newChildren[ ++newStartIndex ]
 
       }
@@ -398,7 +414,7 @@ export function init(modules, api = domApi) {
     vnode.payload = oldVnode.payload
 
     let parentNode = api.parent(el)
-    if (!isSameVnode(oldVnode, vnode)) {
+    if (!needPatch(oldVnode, vnode)) {
       createElement(parentNode, vnode, insertedQueue)
       replaceVnode(parentNode, oldVnode, vnode)
       return
@@ -465,7 +481,7 @@ export function init(modules, api = domApi) {
     }
 
     let insertedQueue = [ ]
-    if (isSameVnode(oldVnode, vnode)) {
+    if (needPatch(oldVnode, vnode)) {
       patchVnode(oldVnode, vnode, insertedQueue)
     }
     else {
