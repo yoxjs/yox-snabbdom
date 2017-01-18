@@ -124,7 +124,7 @@ export function init(modules, api = domApi) {
 
   let createElement = function (parentNode, vnode, insertedQueue) {
 
-    let { sel, data, children, raw, text } = vnode
+    let { sel, data, children, text } = vnode
 
     let hook = (data && data.hook) || { }
     execute(
@@ -134,7 +134,7 @@ export function init(modules, api = domApi) {
     )
 
     if (string.falsy(sel)) {
-      return vnode.el = api[ raw ? 'createFragment' : 'createText' ](text)
+      return vnode.el = api.createText(text)
     }
 
     if (sel === Vnode.SEL_COMMENT) {
@@ -158,7 +158,7 @@ export function init(modules, api = domApi) {
     else if (is.string(text)) {
       api.append(
         el,
-        api[ raw ? 'createFragment' : 'createText' ](text)
+        api.createText(text)
       )
     }
 
@@ -413,26 +413,15 @@ export function init(modules, api = domApi) {
       )
     }
 
-    let newRaw = vnode.raw
     let newText = vnode.text
     let newChildren = vnode.children
 
-    let oldRaw = oldVnode.raw
     let oldText = oldVnode.text
     let oldChildren = oldVnode.children
 
     if (is.string(newText)) {
       if (newText !== oldText) {
-        if (newRaw) {
-          api.replace(
-            parentNode,
-            api.createFragment(newText),
-            el
-          )
-        }
-        else {
-          api.text(el, newText)
-        }
+        api.text(el, newText)
       }
     }
     else {
@@ -445,7 +434,7 @@ export function init(modules, api = domApi) {
       // 有新的没旧的 - 新增节点
       else if (newChildren) {
         if (is.string(oldText)) {
-          api[ oldRaw ? 'html' : 'text' ](el, char.CHAR_BLANK)
+          api.text(el, char.CHAR_BLANK)
         }
         addVnodes(el, newChildren, 0, newChildren.length - 1, insertedQueue)
       }
@@ -455,7 +444,7 @@ export function init(modules, api = domApi) {
       }
       // 有旧的 text 没有新的 text
       else if (is.string(oldText)) {
-        api[ oldRaw ? 'html' : 'text' ](el, char.CHAR_BLANK)
+        api.text(el, char.CHAR_BLANK)
       }
     }
 

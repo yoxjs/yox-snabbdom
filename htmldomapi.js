@@ -13,14 +13,6 @@ export function createElement(tagName, parentNode) {
     : env.doc.createElement(tagName)
 }
 
-export function createFragment(content) {
-  let fragment = env.doc.createDocumentFragment()
-  if (content) {
-    html(fragment, content)
-  }
-  return fragment
-}
-
 export function createText(text) {
   return env.doc.createTextNode(text || char.CHAR_BLANK)
 }
@@ -35,10 +27,6 @@ export function createEvent(event) {
 
 export function isElement(node) {
   return node.nodeType === 1
-}
-
-export function isFragment(node) {
-  return node.nodeType === 11
 }
 
 export function before(parentNode, newNode, referenceNode) {
@@ -82,29 +70,15 @@ export function children(node) {
 }
 
 export function text(node, content) {
-  node.nodeValue = content
+  return content == null
+    ? node.nodeValue
+    : node.nodeValue = content
 }
 
 export function html(node, content) {
-  if (isElement(node)) {
-    node.innerHTML = content
-  }
-  else if (isFragment(node)) {
-    array.each(
-      children(node),
-      function (child) {
-        remove(node, child)
-      }
-    )
-    let element = createElement('div')
-    element.innerHTML = content
-    array.each(
-      children(element),
-      function (child) {
-        append(node, child)
-      }
-    )
-  }
+  return content == null
+    ? node.innerHTML
+    : node.innerHTML = content
 }
 
 export function find(selector, context) {
