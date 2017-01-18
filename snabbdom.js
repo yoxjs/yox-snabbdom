@@ -36,8 +36,7 @@ const emptyNode = new Vnode({
 })
 
 function needPatch(vnode1, vnode2) {
-  return vnode1.sel
-    && vnode1.key === vnode2.key
+  return vnode1.key === vnode2.key
     && vnode1.sel === vnode2.sel
 }
 
@@ -125,7 +124,12 @@ export function init(modules, api = domApi) {
 
   let createElement = function (parentNode, vnode, insertedQueue) {
 
-    let { sel, data, children, text } = vnode
+    let { sel, data, children, text, html } = vnode
+
+    if (html) {
+      api.html(parentNode, html)
+      return
+    }
 
     let hook = (data && data.hook) || { }
     execute(
@@ -154,13 +158,7 @@ export function init(modules, api = domApi) {
     vnode.el = el
 
     if (is.array(children)) {
-      let firstChild = children[ 0 ]
-      if (children.length === 1 && firstChild.raw) {
-        api.html(el, firstChild.text)
-      }
-      else {
-        addVnodes(el, children, 0, children.length - 1, insertedQueue)
-      }
+      addVnodes(el, children, 0, children.length - 1, insertedQueue)
     }
     else if (is.string(text)) {
       api.append(
@@ -193,11 +191,10 @@ export function init(modules, api = domApi) {
   }
 
   let addVnode = function (parentNode, vnode, insertedQueue, before) {
-    api.before(
-      parentNode,
-      createElement(parentNode, vnode, insertedQueue),
-      before
-    )
+    let el = createElement(parentNode, vnode, insertedQueue)
+    if (el) {
+      api.before(parentNode, el, before)
+    }
   }
 
   let removeVnodes = function (parentNode, vnodes, startIndex, endIndex) {
@@ -293,7 +290,13 @@ export function init(modules, api = domApi) {
 
       // 优先从头到尾比较，位置相同且值得 patch
       else if (needPatch(oldStartVnode, newStartVnode)) {
-        patchVnode(oldStartVnode, newStartVnode, insertedQueue)
+        if (oldStartVnode.el) {
+          patchVnode(oldStartVnode, newStartVnode, insertedQueue)
+        }
+        else if (oldStartVnode.html !== newStartVnode.html) {
+          api.html(parentNode, newStartVnode.html)
+          return
+        }
         oldStartVnode = oldChildren[ ++oldStartIndex ]
         newStartVnode = newChildren[ ++newStartIndex ]
       }
@@ -350,12 +353,8 @@ export function init(modules, api = domApi) {
         }
         // 新元素
         else {
-          if (newStartVnode.raw) {
-            api.html(parentNode, newStartVnode.text)
-            activeVnode = env.NULL
-          }
-          else {
-            createElement(parentNode, newStartVnode, insertedQueue)
+          activeVnode = createElement(parentNode, newStartVnode, insertedQueue)
+          if (activeVnode) {
             activeVnode = newStartVnode
           }
         }
@@ -415,8 +414,9 @@ export function init(modules, api = domApi) {
 
     let parentNode = api.parent(el)
     if (!needPatch(oldVnode, vnode)) {
-      createElement(parentNode, vnode, insertedQueue)
-      replaceVnode(parentNode, oldVnode, vnode)
+      if (createElement(parentNode, vnode, insertedQueue)) {
+        replaceVnode(parentNode, oldVnode, vnode)
+      }
       return
     }
 
@@ -486,8 +486,9 @@ export function init(modules, api = domApi) {
     }
     else {
       let parentNode = api.parent(oldVnode.el)
-      createElement(parentNode, vnode, insertedQueue)
-      replaceVnode(parentNode, oldVnode, vnode)
+      if (createElement(parentNode, vnode, insertedQueue)) {
+        replaceVnode(parentNode, oldVnode, vnode)
+      }
     }
 
     array.each(

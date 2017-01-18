@@ -4,9 +4,8 @@ import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as string from 'yox-common/util/string'
 
-const { SVGElement } = env.win
-
 export function createElement(tagName, parentNode) {
+  const { SVGElement } = env.win
   return tagName === 'svg'
     || (parentNode && SVGElement && parentNode instanceof SVGElement)
     ? env.doc.createElementNS('http://www.w3.org/2000/svg', tagName)
