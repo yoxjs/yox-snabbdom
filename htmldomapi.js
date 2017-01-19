@@ -69,13 +69,13 @@ export function children(node) {
 }
 
 export function text(node, content) {
-  return content == null
+  return content == env.NULL
     ? node.nodeValue
     : node.nodeValue = content
 }
 
 export function html(node, content) {
-  return content == null
+  return content == env.NULL
     ? node.innerHTML
     : node.innerHTML = content
 }

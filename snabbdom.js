@@ -290,12 +290,14 @@ export function init(modules, api = domApi) {
 
       // 优先从头到尾比较，位置相同且值得 patch
       else if (needPatch(oldStartVnode, newStartVnode)) {
-        if (oldStartVnode.el) {
-          patchVnode(oldStartVnode, newStartVnode, insertedQueue)
-        }
-        else if (oldStartVnode.html !== newStartVnode.html) {
-          api.html(parentNode, newStartVnode.html)
+        if (is.string(newStartVnode.html)) {
+          if (oldStartVnode.html !== newStartVnode.html) {
+            api.html(parentNode, newStartVnode.html)
+          }
           return
+        }
+        else {
+          patchVnode(oldStartVnode, newStartVnode, insertedQueue)
         }
         oldStartVnode = oldChildren[ ++oldStartIndex ]
         newStartVnode = newChildren[ ++newStartIndex ]
