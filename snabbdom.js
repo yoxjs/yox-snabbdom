@@ -290,15 +290,7 @@ export function init(modules, api = domApi) {
 
       // 优先从头到尾比较，位置相同且值得 patch
       else if (needPatch(oldStartVnode, newStartVnode)) {
-        if (is.string(newStartVnode.html)) {
-          if (oldStartVnode.html !== newStartVnode.html) {
-            api.html(parentNode, newStartVnode.html)
-          }
-          return
-        }
-        else {
-          patchVnode(oldStartVnode, newStartVnode, insertedQueue)
-        }
+        patchVnode(oldStartVnode, newStartVnode, insertedQueue)
         oldStartVnode = oldChildren[ ++oldStartIndex ]
         newStartVnode = newChildren[ ++newStartIndex ]
       }
@@ -446,7 +438,16 @@ export function init(modules, api = domApi) {
       // 两个都有需要 diff
       if (newChildren && oldChildren) {
         if (newChildren !== oldChildren) {
-          updateChildren(el, oldChildren, newChildren, insertedQueue)
+          let newFirstChild = newChildren[ 0 ]
+          let oldFirstChild = oldChildren[ 0 ]
+          if (newFirstChild && oldFirstChild && is.string(newFirstChild.html)) {
+            if (newFirstChild.html !== oldFirstChild.html) {
+              api.html(el, newFirstChild.html)
+            }
+          }
+          else {
+            updateChildren(el, oldChildren, newChildren, insertedQueue)
+          }
         }
       }
       // 有新的没旧的 - 新增节点
