@@ -30,8 +30,8 @@ function updateAttrs(oldVnode, vnode) {
   object.each(
     newAttrs,
     function (value, name) {
-      if (value !== oldAttrs[name]) {
-        if (!value && booleanMap[name]) {
+      if (value !== oldAttrs[ name ]) {
+        if (!value && booleanMap[ name ]) {
           el.removeAttribute(name)
         }
         else {

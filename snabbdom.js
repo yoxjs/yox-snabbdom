@@ -124,12 +124,7 @@ export function init(modules, api = domApi) {
 
   let createElement = function (parentNode, vnode, insertedQueue) {
 
-    let { sel, data, children, text, html } = vnode
-
-    if (html) {
-      api.html(parentNode, html)
-      return
-    }
+    let { sel, data, children, text } = vnode
 
     let hook = (data && data.hook) || { }
     execute(
@@ -438,16 +433,7 @@ export function init(modules, api = domApi) {
       // 两个都有需要 diff
       if (newChildren && oldChildren) {
         if (newChildren !== oldChildren) {
-          let newFirstChild = newChildren[ 0 ]
-          let oldFirstChild = oldChildren[ 0 ]
-          if (newFirstChild && oldFirstChild && is.string(newFirstChild.html)) {
-            if (newFirstChild.html !== oldFirstChild.html) {
-              api.html(el, newFirstChild.html)
-            }
-          }
-          else {
-            updateChildren(el, oldChildren, newChildren, insertedQueue)
-          }
+          updateChildren(el, oldChildren, newChildren, insertedQueue)
         }
       }
       // 有新的没旧的 - 新增节点
