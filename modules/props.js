@@ -1,7 +1,7 @@
 
 import * as object from 'yox-common/util/object'
 
-function updateStyle(oldVnode, vnode) {
+function updateProps(oldVnode, vnode) {
 
   let oldProps = oldVnode.data.props
   let newProps = vnode.data.props
@@ -36,6 +36,6 @@ function updateStyle(oldVnode, vnode) {
 }
 
 export default {
-  create: updateStyle,
-  update: updateStyle,
+  create: updateProps,
+  update: updateProps,
 }
