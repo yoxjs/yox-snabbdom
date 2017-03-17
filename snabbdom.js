@@ -74,7 +74,7 @@ export function init(modules, api = domApi) {
       array.push(list, `${char.CHAR_HASH}${id}`)
     }
     if (className) {
-      array.push(list, `${char.CHAR_DOT}${string.split(className, char.CHAR_BLANK).join(char.CHAR_DOT)}`)
+      array.push(list, `${char.CHAR_DOT}${string.split(className, char.CHAR_WHITESPACE).join(char.CHAR_DOT)}`)
     }
     return list.join(char.CHAR_BLANK)
   }
