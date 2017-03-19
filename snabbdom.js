@@ -38,7 +38,6 @@ const emptyNode = new Vnode({
 function needPatch(vnode1, vnode2) {
   return vnode1.key === vnode2.key
     && vnode1.sel === vnode2.sel
-    && vnode1.type === vnode2.type
 }
 
 function createKeyToIndex(vnodes, startIndex, endIndex) {
