@@ -1,4 +1,5 @@
 
+import * as env from 'yox-common/util/env'
 import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
@@ -27,11 +28,26 @@ function updateAttrs(oldVnode, vnode) {
 
   let { el } = vnode
 
+  let getValue = function (attrs, name) {
+    // 类似 <input disabled>
+    // 没写 value 默认是 disabled="disabled"
+    // 考虑到有些人喜欢写 disabled="true"
+    // 这里一并兼容了，如果有 value，不管是啥都当做 name 处理
+    if (object.has(attrs, name)) {
+      let value = attrs[ name ]
+      if (booleanMap[ name ]) {
+        return (value === env.UNDEFINED || value) ? name : env.FALSE
+      }
+      return value
+    }
+  }
+
   object.each(
     newAttrs,
     function (value, name) {
-      if (value !== oldAttrs[ name ]) {
-        if (!value && booleanMap[ name ]) {
+      value = getValue(newAttrs, name)
+      if (value !== getValue(oldAttrs, name)) {
+        if (value === env.FALSE) {
           el.removeAttribute(name)
         }
         else {
