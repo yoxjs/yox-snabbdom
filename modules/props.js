@@ -1,6 +1,8 @@
 
 import * as object from 'yox-common/util/object'
 
+import * as domApi from '../htmldomapi'
+
 function updateProps(oldVnode, vnode) {
 
   let oldProps = oldVnode.data.props
@@ -19,7 +21,7 @@ function updateProps(oldVnode, vnode) {
     newProps,
     function (value, name) {
       if (value !== oldProps[ name ]) {
-        el[ name ] = value
+        domApi.setProp(el, name, value)
       }
     }
   )
@@ -28,7 +30,7 @@ function updateProps(oldVnode, vnode) {
     oldProps,
     function (value, name) {
       if (!object.has(newProps, name)) {
-        delete el[ name ]
+        domApi.removeProp(el, name)
       }
     }
   )

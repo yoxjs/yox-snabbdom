@@ -28,6 +28,14 @@ export function isElement(node) {
   return node.nodeType === 1
 }
 
+export function setProp(node, name, value) {
+  node[ name ] = value
+}
+
+export function removeProp(node, name) {
+  delete node[ name ]
+}
+
 export function before(parentNode, newNode, referenceNode) {
   if (referenceNode) {
     parentNode.insertBefore(newNode, referenceNode)

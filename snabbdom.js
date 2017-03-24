@@ -51,7 +51,7 @@ function createKeyToIndex(vnodes, startIndex, endIndex) {
   return result
 }
 
-export function init(modules, api = domApi) {
+export function init(modules) {
 
   let moduleEmitter = new Emitter()
 
@@ -68,7 +68,7 @@ export function init(modules, api = domApi) {
   )
 
   let stringifySel = function (el) {
-    let list = [ api.tag(el) ]
+    let list = [ domApi.tag(el) ]
     let { id, className } = el
     if (id) {
       array.push(list, `${char.CHAR_HASH}${id}`)
@@ -134,15 +134,15 @@ export function init(modules, api = domApi) {
     )
 
     if (string.falsy(sel)) {
-      return vnode.el = api.createText(text)
+      return vnode.el = domApi.createText(text)
     }
 
     if (sel === Vnode.SEL_COMMENT) {
-      return vnode.el = api.createComment(text)
+      return vnode.el = domApi.createComment(text)
     }
 
     let { tagName, id, className } = parseSel(sel)
-    let el = api.createElement(tagName, parentNode)
+    let el = domApi.createElement(tagName, parentNode)
     if (id) {
       el.id = id
     }
@@ -156,9 +156,9 @@ export function init(modules, api = domApi) {
       addVnodes(el, children, 0, children.length - 1, insertedQueue)
     }
     else if (is.string(text)) {
-      api.append(
+      domApi.append(
         el,
-        api.createText(text)
+        domApi.createText(text)
       )
     }
 
@@ -188,7 +188,7 @@ export function init(modules, api = domApi) {
   let addVnode = function (parentNode, vnode, insertedQueue, before) {
     let el = createElement(parentNode, vnode, insertedQueue)
     if (el) {
-      api.before(parentNode, el, before)
+      domApi.before(parentNode, el, before)
     }
   }
 
@@ -202,7 +202,7 @@ export function init(modules, api = domApi) {
     let { sel, el, data } = vnode
     if (sel) {
       destroyVnode(vnode)
-      api.remove(parentNode, el)
+      domApi.remove(parentNode, el)
 
       if (data) {
         moduleEmitter.fire(HOOK_REMOVE, vnode)
@@ -217,7 +217,7 @@ export function init(modules, api = domApi) {
 
     }
     else if (el) {
-      api.remove(parentNode, el)
+      domApi.remove(parentNode, el)
     }
   }
 
@@ -250,7 +250,7 @@ export function init(modules, api = domApi) {
 
   let replaceVnode = function (parentNode, oldVnode, vnode) {
     if (parentNode) {
-      api.before(
+      domApi.before(
         parentNode,
         vnode.el,
         oldVnode.el
@@ -303,10 +303,10 @@ export function init(modules, api = domApi) {
       // 说明元素被移到右边了
       else if (needPatch(oldStartVnode, newEndVnode)) {
         patchVnode(oldStartVnode, newEndVnode, insertedQueue)
-        api.before(
+        domApi.before(
           parentNode,
           oldStartVnode.el,
-          api.next(oldEndVnode.el)
+          domApi.next(oldEndVnode.el)
         )
         oldStartVnode = oldChildren[ ++oldStartIndex ]
         newEndVnode = newChildren[--newEndIndex ]
@@ -316,7 +316,7 @@ export function init(modules, api = domApi) {
       // 说明元素被移到左边了
       else if (needPatch(oldEndVnode, newStartVnode)) {
         patchVnode(oldEndVnode, newStartVnode, insertedQueue)
-        api.before(
+        domApi.before(
           parentNode,
           oldEndVnode.el,
           oldStartVnode.el
@@ -349,7 +349,7 @@ export function init(modules, api = domApi) {
         }
 
         if (activeVnode) {
-          api.before(
+          domApi.before(
             parentNode,
             activeVnode.el,
             oldStartVnode.el
@@ -401,7 +401,7 @@ export function init(modules, api = domApi) {
     let el = vnode.el = oldVnode.el
     vnode.payload = oldVnode.payload
 
-    let parentNode = api.parent(el)
+    let parentNode = domApi.parent(el)
     if (!needPatch(oldVnode, vnode)) {
       if (createElement(parentNode, vnode, insertedQueue)) {
         replaceVnode(parentNode, oldVnode, vnode)
@@ -426,7 +426,7 @@ export function init(modules, api = domApi) {
 
     if (is.string(newText)) {
       if (newText !== oldText) {
-        api.text(el, newText)
+        domApi.text(el, newText)
       }
     }
     else {
@@ -439,7 +439,7 @@ export function init(modules, api = domApi) {
       // 有新的没旧的 - 新增节点
       else if (newChildren) {
         if (is.string(oldText)) {
-          api.text(el, char.CHAR_BLANK)
+          domApi.text(el, char.CHAR_BLANK)
         }
         addVnodes(el, newChildren, 0, newChildren.length - 1, insertedQueue)
       }
@@ -449,7 +449,7 @@ export function init(modules, api = domApi) {
       }
       // 有旧的 text 没有新的 text
       else if (is.string(oldText)) {
-        api.text(el, char.CHAR_BLANK)
+        domApi.text(el, char.CHAR_BLANK)
       }
     }
 
@@ -465,7 +465,7 @@ export function init(modules, api = domApi) {
 
     moduleEmitter.fire(HOOK_PRE)
 
-    if (api.isElement(oldVnode)) {
+    if (domApi.isElement(oldVnode)) {
       oldVnode = createVnode(oldVnode)
     }
 
@@ -474,7 +474,7 @@ export function init(modules, api = domApi) {
       patchVnode(oldVnode, vnode, insertedQueue)
     }
     else {
-      let parentNode = api.parent(oldVnode.el)
+      let parentNode = domApi.parent(oldVnode.el)
       if (createElement(parentNode, vnode, insertedQueue)) {
         replaceVnode(parentNode, oldVnode, vnode)
       }
