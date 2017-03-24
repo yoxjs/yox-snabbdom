@@ -1,8 +1,6 @@
 
 import * as object from 'yox-common/util/object'
 
-import * as domApi from '../htmldomapi'
-
 function updateProps(oldVnode, vnode) {
 
   let oldProps = oldVnode.data.props
@@ -16,6 +14,7 @@ function updateProps(oldVnode, vnode) {
   newProps = newProps || { }
 
   let { el } = vnode
+  let domApi = this
 
   object.each(
     newProps,
