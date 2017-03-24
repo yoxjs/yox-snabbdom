@@ -27,6 +27,7 @@ function updateAttrs(oldVnode, vnode) {
   newAttrs = newAttrs || { }
 
   let { el } = vnode
+  let domApi = this
 
   let getValue = function (attrs, name) {
     // 类似 <input disabled>
@@ -48,10 +49,10 @@ function updateAttrs(oldVnode, vnode) {
       value = getValue(newAttrs, name)
       if (value !== getValue(oldAttrs, name)) {
         if (value === env.FALSE) {
-          el.removeAttribute(name)
+          domApi.removeAttr(el, name)
         }
         else {
-          el.setAttribute(name, value)
+          domApi.setAttr(el, name, value)
         }
       }
     }
@@ -61,7 +62,7 @@ function updateAttrs(oldVnode, vnode) {
     oldAttrs,
     function (value, name) {
       if (!object.has(newAttrs, name)) {
-        el.removeAttribute(name)
+        domApi.removeAttr(el, name)
       }
     }
   )

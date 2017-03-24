@@ -36,6 +36,14 @@ export function removeProp(node, name) {
   delete node[ name ]
 }
 
+export function setAttr(node, name, value) {
+  node.setAttribute(name, value)
+}
+
+export function removeAttr(node, name) {
+  node.removeAttribute(name)
+}
+
 export function before(parentNode, newNode, referenceNode) {
   if (referenceNode) {
     parentNode.insertBefore(newNode, referenceNode)

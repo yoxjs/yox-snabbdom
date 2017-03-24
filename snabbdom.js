@@ -61,7 +61,7 @@ export function init(modules, api = domApi) {
       array.each(
         modules,
         function (item) {
-          moduleEmitter.on(hook, item[ hook ], api)
+          moduleEmitter.on(hook, item[ hook ])
         }
       )
     }
@@ -164,7 +164,7 @@ export function init(modules, api = domApi) {
 
     if (data) {
       data = [ emptyNode, vnode ]
-      moduleEmitter.fire(HOOK_CREATE, data)
+      moduleEmitter.fire(HOOK_CREATE, data, api)
 
       execute(
         hook[ HOOK_CREATE ],
@@ -205,7 +205,7 @@ export function init(modules, api = domApi) {
       api.remove(parentNode, el)
 
       if (data) {
-        moduleEmitter.fire(HOOK_REMOVE, vnode)
+        moduleEmitter.fire(HOOK_REMOVE, vnode, api)
         if (data.hook) {
           execute(
             data.hook[ HOOK_REMOVE ],
@@ -235,7 +235,7 @@ export function init(modules, api = domApi) {
         )
       }
 
-      moduleEmitter.fire(HOOK_DESTROY, vnode)
+      moduleEmitter.fire(HOOK_DESTROY, vnode, api)
 
       if (data.hook) {
         execute(
@@ -410,7 +410,7 @@ export function init(modules, api = domApi) {
     }
 
     if (data) {
-      moduleEmitter.fire(HOOK_UPDATE, args)
+      moduleEmitter.fire(HOOK_UPDATE, args, api)
       execute(
         hook[ HOOK_UPDATE ],
         env.NULL,
@@ -463,7 +463,7 @@ export function init(modules, api = domApi) {
 
   return function (oldVnode, vnode) {
 
-    moduleEmitter.fire(HOOK_PRE)
+    moduleEmitter.fire(HOOK_PRE, env.NULL, api)
 
     if (api.isElement(oldVnode)) {
       oldVnode = createVnode(oldVnode)
@@ -491,7 +491,7 @@ export function init(modules, api = domApi) {
       }
     )
 
-    moduleEmitter.fire(HOOK_POST)
+    moduleEmitter.fire(HOOK_POST, env.NULL, api)
 
     return vnode
 
