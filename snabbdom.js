@@ -113,15 +113,6 @@ export function init(modules, api = domApi) {
 
   }
 
-  let createVnode = function (el) {
-    return new Vnode({
-      sel: stringifySel(el),
-      data: { },
-      children: [ ],
-      el,
-    })
-  }
-
   let createElement = function (parentNode, vnode, insertedQueue) {
 
     let { sel, data, children, text } = vnode
@@ -249,14 +240,12 @@ export function init(modules, api = domApi) {
   }
 
   let replaceVnode = function (parentNode, oldVnode, vnode) {
-    if (parentNode) {
-      api.before(
-        parentNode,
-        vnode.el,
-        oldVnode.el
-      )
-      removeVnode(parentNode, oldVnode)
-    }
+    api.before(
+      parentNode,
+      vnode.el,
+      oldVnode.el
+    )
+    removeVnode(parentNode, oldVnode)
   }
 
   let updateChildren = function (parentNode, oldChildren, newChildren, insertedQueue) {
@@ -399,12 +388,11 @@ export function init(modules, api = domApi) {
     )
 
     let el = vnode.el = oldVnode.el
-    vnode.payload = oldVnode.payload
 
-    let parentNode = api.parent(el)
     if (!needPatch(oldVnode, vnode)) {
+      let parentNode = api.parent(el)
       if (createElement(parentNode, vnode, insertedQueue)) {
-        replaceVnode(parentNode, oldVnode, vnode)
+        parentNode && replaceVnode(parentNode, oldVnode, vnode)
       }
       return
     }
@@ -466,7 +454,12 @@ export function init(modules, api = domApi) {
     moduleEmitter.fire(HOOK_PRE, env.NULL, api)
 
     if (api.isElement(oldVnode)) {
-      oldVnode = createVnode(oldVnode)
+      oldVnode = new Vnode({
+        el: oldVnode,
+        sel: stringifySel(oldVnode),
+        data: { },
+        children: [ ],
+      })
     }
 
     let insertedQueue = [ ]
@@ -476,7 +469,7 @@ export function init(modules, api = domApi) {
     else {
       let parentNode = api.parent(oldVnode.el)
       if (createElement(parentNode, vnode, insertedQueue)) {
-        replaceVnode(parentNode, oldVnode, vnode)
+        parentNode && replaceVnode(parentNode, oldVnode, vnode)
       }
     }
 

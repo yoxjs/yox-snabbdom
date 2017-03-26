@@ -5,14 +5,11 @@ import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
 import * as string from 'yox-common/util/string'
 
-const booleanLiteral = 'allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare'
-  + 'default,defaultchecked,defaultmuted,defaultselected,defer,disabled,draggable'
-  + 'enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple'
-  + 'muted,nohref,noresize,noshade,novalidate,nowrap,open,pauseonexit,readonly'
-  + 'required,reversed,scoped,seamless,selected,sortable,spellcheck,translate'
-  + 'truespeed,typemustmatch,visible'
+const booleanLiteral = 'allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare,default,defaultchecked,defaultmuted,defaultselected,defer,disabled,draggable,enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,muted,nohref,noresize,noshade,novalidate,nowrap,open,pauseonexit,readonly,required,reversed,scoped,seamless,selected,sortable,spellcheck,translate,truespeed,typemustmatch,visible'
 
-const booleanMap = array.toObject(string.split(booleanLiteral, char.CHAR_COMMA))
+const booleanMap = array.toObject(
+  string.split(booleanLiteral, char.CHAR_COMMA)
+)
 
 function updateAttrs(oldVnode, vnode) {
 
@@ -27,7 +24,7 @@ function updateAttrs(oldVnode, vnode) {
   newAttrs = newAttrs || { }
 
   let { el } = vnode
-  let domApi = this
+  let api = this
 
   let getValue = function (attrs, name) {
     // 类似 <input disabled>
@@ -49,10 +46,10 @@ function updateAttrs(oldVnode, vnode) {
       value = getValue(newAttrs, name)
       if (value !== getValue(oldAttrs, name)) {
         if (value === env.FALSE) {
-          domApi.removeAttr(el, name)
+          api.removeAttr(el, name)
         }
         else {
-          domApi.setAttr(el, name, value)
+          api.setAttr(el, name, value)
         }
       }
     }
@@ -62,7 +59,7 @@ function updateAttrs(oldVnode, vnode) {
     oldAttrs,
     function (value, name) {
       if (!object.has(newAttrs, name)) {
-        domApi.removeAttr(el, name)
+        api.removeAttr(el, name)
       }
     }
   )

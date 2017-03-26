@@ -14,13 +14,13 @@ function updateProps(oldVnode, vnode) {
   newProps = newProps || { }
 
   let { el } = vnode
-  let domApi = this
+  let api = this
 
   object.each(
     newProps,
     function (value, name) {
       if (value !== oldProps[ name ]) {
-        domApi.setProp(el, name, value)
+        api.setProp(el, name, value)
       }
     }
   )
@@ -29,7 +29,7 @@ function updateProps(oldVnode, vnode) {
     oldProps,
     function (value, name) {
       if (!object.has(newProps, name)) {
-        domApi.removeProp(el, name)
+        api.removeProp(el, name)
       }
     }
   )

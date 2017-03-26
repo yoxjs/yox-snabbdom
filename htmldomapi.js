@@ -53,16 +53,16 @@ export function before(parentNode, newNode, referenceNode) {
   }
 }
 
+export function append(parentNode, child) {
+  parentNode.appendChild(child)
+}
+
 export function replace(parentNode, newNode, oldNode) {
   parentNode.replaceChild(newNode, oldNode)
 }
 
 export function remove(parentNode, child) {
   parentNode.removeChild(child)
-}
-
-export function append(parentNode, child) {
-  parentNode.appendChild(child)
 }
 
 export function parent(node) {
@@ -85,13 +85,13 @@ export function children(node) {
 }
 
 export function text(node, content) {
-  return content == env.NULL
+  return arguments.length === 1
     ? node.nodeValue
     : node.nodeValue = content
 }
 
 export function html(node, content) {
-  return content == env.NULL
+  return arguments.length === 1
     ? node.innerHTML
     : node.innerHTML = content
 }
