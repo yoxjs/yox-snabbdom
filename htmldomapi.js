@@ -4,10 +4,6 @@ import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as string from 'yox-common/util/string'
 
-let converter = { }
-converter[ 'for' ] = 'htmlFor'
-converter[ 'class' ] = 'className'
-
 export function createElement(tagName, parentNode) {
   const { SVGElement } = env.win
   return tagName === 'svg'
@@ -33,29 +29,19 @@ export function isElement(node) {
 }
 
 export function setProp(node, name, value) {
-  node[ converter[ name ] || name ] = value
+  node[ name ] = value
 }
 
 export function removeProp(node, name) {
-  delete node[ converter[ name ] || name ]
+  delete node[ name ]
 }
 
 export function setAttr(node, name, value) {
-  if (converter[ name ]) {
-    node[ converter[ name ]] = value
-  }
-  else {
-    node.setAttribute(name, value)
-  }
+  node.setAttribute(name, value)
 }
 
 export function removeAttr(node, name) {
-  if (converter[ name ]) {
-    delete node[ converter[ name ]]
-  }
-  else {
-    node.removeAttribute(name)
-  }
+  node.removeAttribute(name)
 }
 
 export function before(parentNode, newNode, referenceNode) {
