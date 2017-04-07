@@ -117,9 +117,9 @@ export function init(modules, api = domApi) {
 
     let { sel, data, children, text } = vnode
 
-    let hook = (data && data.hook) || { }
+    let hooks = (data && data.hooks) || { }
     execute(
-      hook[ HOOK_INIT ],
+      hooks[ HOOK_INIT ],
       env.NULL,
       vnode
     )
@@ -158,12 +158,12 @@ export function init(modules, api = domApi) {
       moduleEmitter.fire(HOOK_CREATE, data, api)
 
       execute(
-        hook[ HOOK_CREATE ],
+        hooks[ HOOK_CREATE ],
         env.NULL,
         data
       )
 
-      if (hook[ HOOK_INSERT ]) {
+      if (hooks[ HOOK_INSERT ]) {
         insertedQueue.push(vnode)
       }
     }
@@ -197,9 +197,9 @@ export function init(modules, api = domApi) {
 
       if (data) {
         moduleEmitter.fire(HOOK_REMOVE, vnode, api)
-        if (data.hook) {
+        if (data.hooks) {
           execute(
-            data.hook[ HOOK_REMOVE ],
+            data.hooks[ HOOK_REMOVE ],
             env.NULL,
             vnode
           )
@@ -228,9 +228,9 @@ export function init(modules, api = domApi) {
 
       moduleEmitter.fire(HOOK_DESTROY, vnode, api)
 
-      if (data.hook) {
+      if (data.hooks) {
         execute(
-          data.hook[ HOOK_DESTROY ],
+          data.hooks[ HOOK_DESTROY ],
           env.NULL,
           vnode
         )
@@ -378,11 +378,11 @@ export function init(modules, api = domApi) {
     }
 
     let { data } = vnode
-    let hook = (data && data.hook) || { }
+    let hooks = (data && data.hooks) || { }
 
     let args = [ oldVnode, vnode ]
     execute(
-      hook[ HOOK_PREPATCH ],
+      hooks[ HOOK_PREPATCH ],
       env.NULL,
       args
     )
@@ -400,7 +400,7 @@ export function init(modules, api = domApi) {
     if (data) {
       moduleEmitter.fire(HOOK_UPDATE, args, api)
       execute(
-        hook[ HOOK_UPDATE ],
+        hooks[ HOOK_UPDATE ],
         env.NULL,
         args
       )
@@ -442,7 +442,7 @@ export function init(modules, api = domApi) {
     }
 
     execute(
-      hook[ HOOK_POSTPATCH ],
+      hooks[ HOOK_POSTPATCH ],
       env.NULL,
       args
     )
@@ -477,7 +477,7 @@ export function init(modules, api = domApi) {
       insertedQueue,
       function (vnode) {
         execute(
-          vnode.data.hook[ HOOK_INSERT ],
+          vnode.data.hooks[ HOOK_INSERT ],
           env.NULL,
           vnode
         )

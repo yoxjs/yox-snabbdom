@@ -58,11 +58,15 @@ export function append(parentNode, child) {
 }
 
 export function replace(parentNode, newNode, oldNode) {
-  parentNode.replaceChild(newNode, oldNode)
+  if (parent(oldNode) === parentNode) {
+    parentNode.replaceChild(newNode, oldNode)
+  }
 }
 
 export function remove(parentNode, child) {
-  parentNode.removeChild(child)
+  if (parent(child) === parentNode) {
+    parentNode.removeChild(child)
+  }
 }
 
 export function parent(node) {
