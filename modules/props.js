@@ -1,4 +1,6 @@
 
+import * as is from 'yox-common/util/is'
+import * as char from 'yox-common/util/char'
 import * as object from 'yox-common/util/object'
 
 function updateProps(oldVnode, vnode) {
@@ -29,6 +31,9 @@ function updateProps(oldVnode, vnode) {
     oldProps,
     function (value, name) {
       if (!object.has(newProps, name)) {
+        if (is.string(value)) {
+          el[ name ] = char.CHAR_BLANK
+        }
         api.removeProp(el, name)
       }
     }

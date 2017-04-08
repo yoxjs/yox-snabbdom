@@ -412,10 +412,6 @@ export function init(modules, api = domApi) {
     let oldText = oldVnode.text
     let oldChildren = oldVnode.children
 
-    if (object.get(oldVnode, 'data.props.innerHTML')) {
-      api.html(el, char.CHAR_BLANK)
-    }
-
     if (is.string(newText)) {
       if (newText !== oldText) {
         api.text(el, newText)
