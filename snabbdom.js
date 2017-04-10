@@ -184,8 +184,11 @@ export function init(modules, api = domApi) {
   }
 
   let removeVnodes = function (parentNode, vnodes, startIndex, endIndex) {
-    for (let i = startIndex; i <= endIndex; i++) {
-      removeVnode(parentNode, vnodes[ i ])
+    for (let i = startIndex, vnode; i <= endIndex; i++) {
+      vnode = vnodes[ i ]
+      if (vnode) {
+        removeVnode(parentNode, vnode)
+      }
     }
   }
 
