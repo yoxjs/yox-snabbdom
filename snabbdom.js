@@ -376,7 +376,9 @@ export function init(modules, api = domApi) {
 
   let patchVnode = function (oldVnode, vnode, insertedQueue) {
 
-    if (oldVnode === vnode) {
+    if (oldVnode === vnode
+      || oldVnode.static && vnode.static && oldVnode.key === vnode.key
+    ) {
       return
     }
 
