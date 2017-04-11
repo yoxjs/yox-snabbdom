@@ -35,9 +35,17 @@ const emptyNode = new Vnode({
   children: [ ],
 })
 
-function needPatch(vnode1, vnode2) {
+function isPatchable(vnode1, vnode2) {
   return vnode1.key === vnode2.key
     && vnode1.sel === vnode2.sel
+}
+
+function isSame(vnode1, vnode2) {
+  return vnode1 === vnode2
+    // 静态子树
+    || vnode1.static && vnode2.static && vnode1.key === vnode2.key
+    // 注释节点
+    || vnode1.sel === Vnode.SEL_COMMENT && vnode2.sel === Vnode.SEL_COMMENT && vnode1.text === vnode2.text
 }
 
 function createKeyToIndex(vnodes, startIndex, endIndex) {
@@ -276,14 +284,14 @@ export function init(modules, api = domApi) {
       }
 
       // 优先从头到尾比较，位置相同且值得 patch
-      else if (needPatch(oldStartVnode, newStartVnode)) {
+      else if (isPatchable(oldStartVnode, newStartVnode)) {
         patchVnode(oldStartVnode, newStartVnode, insertedQueue)
         oldStartVnode = oldChildren[ ++oldStartIndex ]
         newStartVnode = newChildren[ ++newStartIndex ]
       }
 
       // 再从尾到头比较，位置相同且值得 patch
-      else if (needPatch(oldEndVnode, newEndVnode)) {
+      else if (isPatchable(oldEndVnode, newEndVnode)) {
         patchVnode(oldEndVnode, newEndVnode, insertedQueue)
         oldEndVnode = oldChildren[ --oldEndIndex ]
         newEndVnode = newChildren[ --newEndIndex ]
@@ -293,7 +301,7 @@ export function init(modules, api = domApi) {
 
       // 当 oldStartVnode 和 newEndVnode 值得 patch
       // 说明元素被移到右边了
-      else if (needPatch(oldStartVnode, newEndVnode)) {
+      else if (isPatchable(oldStartVnode, newEndVnode)) {
         patchVnode(oldStartVnode, newEndVnode, insertedQueue)
         api.before(
           parentNode,
@@ -306,7 +314,7 @@ export function init(modules, api = domApi) {
 
       // 当 oldEndVnode 和 newStartVnode 值得 patch
       // 说明元素被移到左边了
-      else if (needPatch(oldEndVnode, newStartVnode)) {
+      else if (isPatchable(oldEndVnode, newStartVnode)) {
         patchVnode(oldEndVnode, newStartVnode, insertedQueue)
         api.before(
           parentNode,
@@ -376,9 +384,7 @@ export function init(modules, api = domApi) {
 
   let patchVnode = function (oldVnode, vnode, insertedQueue) {
 
-    if (oldVnode === vnode
-      || oldVnode.static && vnode.static && oldVnode.key === vnode.key
-    ) {
+    if (isSame(oldVnode, vnode)) {
       return
     }
 
@@ -394,7 +400,7 @@ export function init(modules, api = domApi) {
 
     let el = vnode.el = oldVnode.el
 
-    if (!needPatch(oldVnode, vnode)) {
+    if (!isPatchable(oldVnode, vnode)) {
       let parentNode = api.parent(el)
       if (createElement(parentNode, vnode, insertedQueue)) {
         parentNode && replaceVnode(parentNode, oldVnode, vnode)
@@ -468,7 +474,7 @@ export function init(modules, api = domApi) {
     }
 
     let insertedQueue = [ ]
-    if (needPatch(oldVnode, vnode)) {
+    if (isPatchable(oldVnode, vnode)) {
       patchVnode(oldVnode, vnode, insertedQueue)
     }
     else {
