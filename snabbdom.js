@@ -384,7 +384,9 @@ export function init(modules, api = domApi) {
 
   let patchVnode = function (oldVnode, vnode, insertedQueue) {
 
+    let { el } = oldVnode
     if (isSame(oldVnode, vnode)) {
+      vnode.el = el
       return
     }
 
@@ -398,7 +400,7 @@ export function init(modules, api = domApi) {
       args
     )
 
-    let el = vnode.el = oldVnode.el
+    vnode.el = el
 
     if (!isPatchable(oldVnode, vnode)) {
       let parentNode = api.parent(el)
