@@ -15,3 +15,7 @@ export default class Vnode {
 }
 
 Vnode.SEL_COMMENT = '!'
+
+Vnode.is = function (target) {
+  return target instanceof Vnode
+}
