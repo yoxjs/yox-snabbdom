@@ -42,8 +42,6 @@ function isPatchable(vnode1, vnode2) {
 
 function isSame(vnode1, vnode2) {
   return vnode1 === vnode2
-    // 静态子树
-    || vnode1.static && vnode2.static && vnode1.key === vnode2.key
     // 注释节点
     || vnode1.sel === Vnode.SEL_COMMENT && vnode2.sel === Vnode.SEL_COMMENT && vnode1.text === vnode2.text
 }
