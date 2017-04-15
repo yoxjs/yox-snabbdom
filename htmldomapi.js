@@ -1,9 +1,22 @@
 
+import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as string from 'yox-common/util/string'
 import * as object from 'yox-common/util/object'
+
+
+const booleanAttrLiteral = 'allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare,default,defaultchecked,defaultmuted,defaultselected,defer,disabled,draggable,enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,muted,nohref,noresize,noshade,novalidate,nowrap,open,pauseonexit,readonly,required,reversed,scoped,seamless,selected,sortable,spellcheck,translate,truespeed,typemustmatch,visible'
+const booleanAttrMap = array.toObject(
+  string.split(booleanAttrLiteral, char.CHAR_COMMA)
+)
+
+const attr2Prop = { }
+attr2Prop[ 'for' ] = 'htmlFor'
+attr2Prop[ 'value' ] = 'value'
+attr2Prop[ 'class' ] = 'className'
+attr2Prop[ 'style' ] = 'style.cssText'
 
 export function createElement(tagName, parentNode) {
   const { SVGElement } = env.win
@@ -38,11 +51,27 @@ export function removeProp(node, name) {
 }
 
 export function setAttr(node, name, value) {
-  node.setAttribute(name, value)
+  if (attr2Prop[ name ]) {
+    setProp(node, attr2Prop[ name ], value)
+  }
+  else if (booleanAttrMap[ name ]) {
+    setProp(node, name, (value === env.UNDEFINED || value) ? env.TRUE : env.FALSE)
+  }
+  else {
+    node.setAttribute(name, value)
+  }
 }
 
 export function removeAttr(node, name) {
-  node.removeAttribute(name)
+  if (attr2Prop[ name ]) {
+    removeProp(node, attr2Prop[ name ])
+  }
+  else if (booleanAttrMap[ name ]) {
+    removeProp(node, name)
+  }
+  else {
+    node.removeAttribute(name)
+  }
 }
 
 export function before(parentNode, newNode, referenceNode) {
