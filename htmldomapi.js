@@ -3,6 +3,7 @@ import * as env from 'yox-common/util/env'
 import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as string from 'yox-common/util/string'
+import * as object from 'yox-common/util/object'
 
 export function createElement(tagName, parentNode) {
   const { SVGElement } = env.win
@@ -29,11 +30,11 @@ export function isElement(node) {
 }
 
 export function setProp(node, name, value) {
-  node[ name ] = value
+  object.set(node, name, value, env.FALSE)
 }
 
 export function removeProp(node, name) {
-  delete node[ name ]
+  setProp(node, name, env.NULL)
 }
 
 export function setAttr(node, name, value) {
@@ -58,15 +59,11 @@ export function append(parentNode, child) {
 }
 
 export function replace(parentNode, newNode, oldNode) {
-  if (parent(oldNode) === parentNode) {
-    parentNode.replaceChild(newNode, oldNode)
-  }
+  parentNode.replaceChild(newNode, oldNode)
 }
 
 export function remove(parentNode, child) {
-  if (parent(child) === parentNode) {
-    parentNode.removeChild(child)
-  }
+  parentNode.removeChild(child)
 }
 
 export function parent(node) {

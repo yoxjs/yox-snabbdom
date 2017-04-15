@@ -31,9 +31,6 @@ function updateProps(oldVnode, vnode) {
     oldProps,
     function (value, name) {
       if (!object.has(newProps, name)) {
-        if (is.string(value)) {
-          el[ name ] = char.CHAR_BLANK
-        }
         api.removeProp(el, name)
       }
     }

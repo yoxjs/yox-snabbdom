@@ -11,6 +11,11 @@ const booleanMap = array.toObject(
   string.split(booleanLiteral, char.CHAR_COMMA)
 )
 
+const attr2Prop = { }
+attr2Prop[ 'for' ] = 'htmlFor'
+attr2Prop[ 'class' ] = 'className'
+attr2Prop[ 'style' ] = 'style.cssText'
+
 function updateAttrs(oldVnode, vnode) {
 
   let oldAttrs = oldVnode.data.attrs
@@ -49,7 +54,12 @@ function updateAttrs(oldVnode, vnode) {
           api.removeAttr(el, name)
         }
         else {
-          api.setAttr(el, name, value)
+          if (attr2Prop[ name ]) {
+            api.setProp(el, attr2Prop[ name ], value)
+          }
+          else {
+            api.setAttr(el, name, value)
+          }
         }
       }
     }
@@ -59,7 +69,12 @@ function updateAttrs(oldVnode, vnode) {
     oldAttrs,
     function (value, name) {
       if (!object.has(newAttrs, name)) {
-        api.removeAttr(el, name)
+        if (attr2Prop[ name ]) {
+          api.removeProp(el, attr2Prop[ name ])
+        }
+        else {
+          api.removeAttr(el, name)
+        }
       }
     }
   )
