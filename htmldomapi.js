@@ -16,8 +16,10 @@ const attr2Prop = { }
 attr2Prop[ 'for' ] = 'htmlFor'
 attr2Prop[ 'value' ] = 'value'
 attr2Prop[ 'class' ] = 'className'
-attr2Prop[ 'readonly' ] = 'readOnly'
 attr2Prop[ 'style' ] = 'style.cssText'
+attr2Prop[ 'readonly' ] = 'readOnly'
+attr2Prop[ 'defaultchecked' ] = 'defaultChecked'
+attr2Prop[ 'defaultselected' ] = 'defaultSelected'
 
 export function createElement(tagName, parentNode) {
   const { SVGElement } = env.win
