@@ -6,16 +6,17 @@ import * as array from 'yox-common/util/array'
 import * as string from 'yox-common/util/string'
 import * as object from 'yox-common/util/object'
 
-
 const booleanAttrLiteral = 'allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare,default,defaultchecked,defaultmuted,defaultselected,defer,disabled,draggable,enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,muted,nohref,noresize,noshade,novalidate,nowrap,open,pauseonexit,readonly,required,reversed,scoped,seamless,selected,sortable,spellcheck,translate,truespeed,typemustmatch,visible'
 const booleanAttrMap = array.toObject(
   string.split(booleanAttrLiteral, char.CHAR_COMMA)
 )
+booleanAttrLiteral = env.NULL
 
 const attr2Prop = { }
 attr2Prop[ 'for' ] = 'htmlFor'
 attr2Prop[ 'value' ] = 'value'
 attr2Prop[ 'class' ] = 'className'
+attr2Prop[ 'readonly' ] = 'readOnly'
 attr2Prop[ 'style' ] = 'style.cssText'
 
 export function createElement(tagName, parentNode) {
@@ -51,11 +52,14 @@ export function removeProp(node, name) {
 }
 
 export function setAttr(node, name, value) {
+  if (booleanAttrMap[ name ]) {
+    value = (value === env.UNDEFINED || value) ? env.TRUE : env.FALSE
+  }
   if (attr2Prop[ name ]) {
     setProp(node, attr2Prop[ name ], value)
   }
   else if (booleanAttrMap[ name ]) {
-    setProp(node, name, (value === env.UNDEFINED || value) ? env.TRUE : env.FALSE)
+    setProp(node, name, value)
   }
   else {
     node.setAttribute(name, value)
