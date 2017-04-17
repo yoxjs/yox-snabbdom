@@ -6,7 +6,7 @@ import * as array from 'yox-common/util/array'
 import * as string from 'yox-common/util/string'
 import * as object from 'yox-common/util/object'
 
-let booleanAttrLiteral = 'allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare,default,defaultchecked,defaultmuted,defaultselected,defer,disabled,draggable,enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,muted,nohref,noresize,noshade,novalidate,nowrap,open,pauseonexit,readonly,required,reversed,scoped,seamless,selected,sortable,spellcheck,translate,truespeed,typemustmatch,visible'
+let booleanAttrLiteral = 'allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare,default,defaultchecked,defaultmuted,defaultselected,defer,disabled,draggable,enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,muted,nohref,noshade,noresize,novalidate,nowrap,open,pauseonexit,readonly,required,reversed,scoped,seamless,selected,sortable,spellcheck,translate,truespeed,typemustmatch,visible'
 const booleanAttrMap = array.toObject(
   string.split(booleanAttrLiteral, char.CHAR_COMMA)
 )
@@ -17,9 +17,14 @@ attr2Prop[ 'for' ] = 'htmlFor'
 attr2Prop[ 'value' ] = 'value'
 attr2Prop[ 'class' ] = 'className'
 attr2Prop[ 'style' ] = 'style.cssText'
+attr2Prop[ 'nohref' ] = 'noHref'
+attr2Prop[ 'noshade' ] = 'noShade'
+attr2Prop[ 'noresize' ] = 'noResize'
 attr2Prop[ 'readonly' ] = 'readOnly'
 attr2Prop[ 'defaultchecked' ] = 'defaultChecked'
+attr2Prop[ 'defaultmuted' ] = 'defaultMuted'
 attr2Prop[ 'defaultselected' ] = 'defaultSelected'
+
 
 export function createElement(tagName, parentNode) {
   const { SVGElement } = env.win
