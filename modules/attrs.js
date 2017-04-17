@@ -38,7 +38,7 @@ function updateAttrs(oldVnode, vnode) {
     oldAttrs,
     function (value, name) {
       if (!object.has(newAttrs, name)) {
-        api.removeProp(el, name)
+        api.removeAttr(el, name)
       }
     }
   )
