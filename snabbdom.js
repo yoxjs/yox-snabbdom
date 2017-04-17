@@ -173,7 +173,8 @@ export function init(modules, api = domApi) {
         insertedQueue.push(vnode)
       }
     }
-    return el
+    // 钩子函数可能会替换元素
+    return vnode.el
   }
 
   let addVnodes = function (parentNode, vnodes, startIndex, endIndex, insertedQueue, before) {
