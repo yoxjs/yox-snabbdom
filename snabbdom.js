@@ -8,6 +8,7 @@ import * as string from 'yox-common/util/string'
 
 import Emitter from 'yox-common/util/Emitter'
 import execute from 'yox-common/function/execute'
+import toString from 'yox-common/function/toString'
 
 import Vnode from './Vnode'
 
@@ -55,6 +56,28 @@ function createKeyToIndex(vnodes, startIndex, endIndex) {
     }
   }
   return result
+}
+
+export function createTextVnode(text) {
+  return new Vnode({
+    text: toString(text),
+  })
+}
+
+export function createElementVnode(sel, data, children, key) {
+  return new Vnode({
+    sel,
+    key,
+    data,
+    children,
+  })
+}
+
+export function createCommentVnode(text) {
+  return new Vnode({
+    sel: Vnode.SEL_COMMENT,
+    text,
+  })
 }
 
 export function init(modules, api = domApi) {
