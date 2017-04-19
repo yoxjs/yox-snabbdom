@@ -6,7 +6,7 @@ function updateProps(oldVnode, vnode) {
   let oldProps = oldVnode.data.props
   let newProps = vnode.data.props
 
-  if (!oldProps && !newProps) {
+  if (vnode.component || !oldProps && !newProps) {
     return
   }
 

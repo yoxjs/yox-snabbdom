@@ -4,28 +4,14 @@ import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
 
-function toProps(attrs) {
-  let props = { }
-  if (attrs) {
-    object.each(
-      attrs,
-      function (item) {
-        props[ item.name ] = item.value
-      }
-    )
-  }
-  return props
-}
-
 function createComponent(oldVnode, vnode) {
 
-  let { component, instance, attrs } = vnode.data
+  let { el, component } = vnode
   if (!component) {
     return
   }
 
-  let { el } = vnode
-
+  let { instance, attrs } = vnode.data
   el.$component = {
     queue: [ ],
     attrs,
@@ -37,18 +23,17 @@ function createComponent(oldVnode, vnode) {
       let { $component } = el
       if ($component && is.array($component.queue)) {
 
-        let component = instance.create(
+        component = instance.create(
           options,
           {
             el,
-            props: toProps($component.attrs),
+            props: $component.attrs,
             replace: env.TRUE,
           }
         )
 
-        el = component.$el;
+        el = vnode.el = component.$el;
         el.$component = component
-        vnode.el = el
 
         array.each(
           $component.queue,
@@ -67,10 +52,7 @@ function updateComponent(oldVnode, vnode) {
   if (is.object($component)) {
     let { attrs } = vnode.data
     if ($component.set) {
-      $component.set(
-        toProps(attrs),
-        env.TRUE
-      )
+      $component.set(attrs, env.TRUE)
     }
     else {
       $component.attrs = attrs

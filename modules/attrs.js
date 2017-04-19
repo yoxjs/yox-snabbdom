@@ -7,7 +7,7 @@ function updateAttrs(oldVnode, vnode) {
   let oldAttrs = oldVnode.data.attrs
   let newAttrs = vnode.data.attrs
 
-  if (vnode.data.component || !oldAttrs && !newAttrs) {
+  if (vnode.component || !oldAttrs && !newAttrs) {
     return
   }
 
@@ -19,23 +19,23 @@ function updateAttrs(oldVnode, vnode) {
 
   let getValue = function (attrs, name) {
     if (object.has(attrs, name)) {
-      let { value } = attrs[ name ]
+      let value = attrs[ name ]
       return value !== env.UNDEFINED ? value : name
     }
   }
 
   object.each(
     newAttrs,
-    function (node, name) {
+    function (value, name) {
       if (getValue(newAttrs, name) !== getValue(oldAttrs, name)) {
-        api.setAttr(el, name, node.value)
+        api.setAttr(el, name, value)
       }
     }
   )
 
   object.each(
     oldAttrs,
-    function (node, name) {
+    function (value, name) {
       if (!object.has(newAttrs, name)) {
         api.removeAttr(el, name)
       }
