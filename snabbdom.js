@@ -32,11 +32,7 @@ const HOOK_POSTPATCH = 'postpatch'
 
 const moduleHooks = [ HOOK_CREATE, HOOK_UPDATE, HOOK_REMOVE, HOOK_DESTROY, HOOK_PRE, HOOK_POST ]
 
-const emptyNode = new Vnode({
-  sel: char.CHAR_BLANK,
-  data: { },
-  children: [ ],
-})
+const emptyNode = Vnode(char.CHAR_BLANK, env.UNDEFINED, { }, [ ])
 
 function isPatchable(vnode1, vnode2) {
   return vnode1.key === vnode2.key
@@ -55,25 +51,15 @@ function createKeyToIndex(vnodes, startIndex, endIndex) {
 }
 
 export function createTextVnode(text) {
-  return new Vnode({
-    text: toString(text),
-  })
+  return Vnode(env.UNDEFINED, toString(text))
 }
 
-export function createElementVnode(sel, data, children, key) {
-  return new Vnode({
-    sel,
-    key,
-    data,
-    children,
-  })
+export function createElementVnode(sel, data, children, key, component) {
+  return Vnode(sel, env.UNDEFINED, data, children, key, component)
 }
 
 export function createCommentVnode(text) {
-  return new Vnode({
-    sel: SEL_COMMENT,
-    text,
-  })
+  return Vnode(SEL_COMMENT, text)
 }
 
 export function init(modules, api = domApi) {
@@ -484,12 +470,8 @@ export function init(modules, api = domApi) {
     moduleEmitter.fire(HOOK_PRE, env.NULL, api)
 
     if (api.isElement(oldVnode)) {
-      oldVnode = new Vnode({
-        el: oldVnode,
-        sel: stringifySel(oldVnode),
-        data: { },
-        children: [ ],
-      })
+      oldVnode = Vnode(stringifySel(oldVnode), env.UNDEFINED, { }, [ ])
+      oldVnode.el = oldVnode
     }
 
     let insertedQueue = [ ]

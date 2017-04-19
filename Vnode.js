@@ -1,19 +1,18 @@
 
 import * as object from 'yox-common/util/object'
 
-/**
- * @param {?HTMLElement} options.el
- * @param {?string} options.sel
- * @param {?Object} options.data
- * @param {?string} options.text
- * @param {?Array} options.children
- */
-export default class Vnode {
-  constructor(options) {
-    object.extend(this, options)
+export default function Vnode(sel, text, data, children, key, component) {
+  return {
+    sel,
+    text,
+    data,
+    children,
+    key,
+    component
   }
 }
 
+
 Vnode.is = function (target) {
-  return target instanceof Vnode
+  return object.has(target, 'sel')
 }
