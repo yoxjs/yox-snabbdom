@@ -14,6 +14,8 @@ import Vnode from './Vnode'
 
 import * as domApi from './htmldomapi'
 
+const SEL_COMMENT = '!'
+
 const HOOK_INIT = 'init'
 const HOOK_CREATE = 'create'
 const HOOK_INSERT = 'insert'
@@ -39,12 +41,6 @@ const emptyNode = new Vnode({
 function isPatchable(vnode1, vnode2) {
   return vnode1.key === vnode2.key
     && vnode1.sel === vnode2.sel
-}
-
-function isSame(vnode1, vnode2) {
-  return vnode1 === vnode2
-    // 注释节点
-    || vnode1.sel === Vnode.SEL_COMMENT && vnode2.sel === Vnode.SEL_COMMENT && vnode1.text === vnode2.text
 }
 
 function createKeyToIndex(vnodes, startIndex, endIndex) {
@@ -75,7 +71,7 @@ export function createElementVnode(sel, data, children, key) {
 
 export function createCommentVnode(text) {
   return new Vnode({
-    sel: Vnode.SEL_COMMENT,
+    sel: SEL_COMMENT,
     text,
   })
 }
@@ -157,7 +153,7 @@ export function init(modules, api = domApi) {
       return vnode.el = api.createText(text)
     }
 
-    if (sel === Vnode.SEL_COMMENT) {
+    if (sel === SEL_COMMENT) {
       return vnode.el = api.createComment(text)
     }
 
@@ -406,9 +402,7 @@ export function init(modules, api = domApi) {
 
   let patchVnode = function (oldVnode, vnode, insertedQueue) {
 
-    let { el } = oldVnode
-    if (isSame(oldVnode, vnode)) {
-      vnode.el = el
+    if (vnode1 === vnode2) {
       return
     }
 
@@ -422,6 +416,7 @@ export function init(modules, api = domApi) {
       args
     )
 
+    let { el } = oldVnode
     vnode.el = el
 
     if (!isPatchable(oldVnode, vnode)) {
