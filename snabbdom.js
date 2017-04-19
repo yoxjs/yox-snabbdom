@@ -402,7 +402,7 @@ export function init(modules, api = domApi) {
 
   let patchVnode = function (oldVnode, vnode, insertedQueue) {
 
-    if (vnode1 === vnode2) {
+    if (oldVnode === vnode) {
       return
     }
 
