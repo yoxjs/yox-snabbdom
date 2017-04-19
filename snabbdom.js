@@ -470,8 +470,9 @@ export function init(modules, api = domApi) {
     moduleEmitter.fire(HOOK_PRE, env.NULL, api)
 
     if (api.isElement(oldVnode)) {
-      oldVnode = Vnode(stringifySel(oldVnode), env.UNDEFINED, { }, [ ])
-      oldVnode.el = oldVnode
+      let el = oldVnode
+      oldVnode = Vnode(stringifySel(el), env.UNDEFINED, { }, [ ])
+      oldVnode.el = el
     }
 
     let insertedQueue = [ ]
