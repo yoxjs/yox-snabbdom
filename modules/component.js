@@ -49,7 +49,7 @@ function createComponent(oldVnode, vnode) {
 
 function updateComponent(oldVnode, vnode) {
   let { $component } = vnode.el
-  if (is.object($component)) {
+  if (vnode.componnt && is.object($component)) {
     let { attrs } = vnode.data
     if ($component.set) {
       $component.set(attrs, env.TRUE)
@@ -61,9 +61,9 @@ function updateComponent(oldVnode, vnode) {
 }
 
 function destroyComponent(oldVnode, vnode) {
-  let { el } = oldVnode
+  let { component, el } = oldVnode
   let { $component } = el
-  if (is.object($component)) {
+  if (component && is.object($component)) {
     if ($component.destroy) {
       $component.destroy(env.TRUE)
     }
