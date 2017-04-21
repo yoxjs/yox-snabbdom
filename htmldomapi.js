@@ -8,7 +8,9 @@ import * as object from 'yox-common/util/object'
 
 let booleanAttrLiteral = 'allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare,default,defaultchecked,defaultmuted,defaultselected,defer,disabled,draggable,enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,muted,nohref,noshade,noresize,novalidate,nowrap,open,pauseonexit,readonly,required,reversed,scoped,seamless,selected,sortable,spellcheck,translate,truespeed,typemustmatch,visible'
 const booleanAttrMap = array.toObject(
-  string.split(booleanAttrLiteral, char.CHAR_COMMA)
+  string.split(booleanAttrLiteral, char.CHAR_COMMA),
+  env.FALSE,
+  env.TRUE
 )
 booleanAttrLiteral = env.NULL
 
@@ -126,13 +128,13 @@ export function children(node) {
 }
 
 export function text(node, content) {
-  return arguments.length === 1
+  return content == env.NULL
     ? node.nodeValue
     : node.nodeValue = content
 }
 
 export function html(node, content) {
-  return arguments.length === 1
+  return content == env.NULL
     ? node.innerHTML
     : node.innerHTML = content
 }
