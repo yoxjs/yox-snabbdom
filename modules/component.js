@@ -49,7 +49,7 @@ function createComponent(oldVnode, vnode) {
 
 function updateComponent(oldVnode, vnode) {
   let { $component } = vnode.el
-  if (vnode.componnt && is.object($component)) {
+  if (vnode.component && is.object($component)) {
     let { attrs } = vnode.data
     if ($component.set) {
       $component.set(attrs, env.TRUE)
