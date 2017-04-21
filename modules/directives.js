@@ -7,7 +7,7 @@ import * as object from 'yox-common/util/object'
 
 function bindDirective(vnode, key) {
 
-  let { el } = vnode
+  let { el, component } = vnode
   let { instance, attrs, directives, destroies } = vnode.data
 
   let node = directives[ key ]
@@ -21,7 +21,7 @@ function bindDirective(vnode, key) {
   }
 
   let { $component } = el
-  if (is.object($component)) {
+  if (component && is.object($component)) {
     if (object.has($component, 'queue')
       && !object.has($component, 'set')
     ) {
