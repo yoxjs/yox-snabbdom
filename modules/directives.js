@@ -70,9 +70,7 @@ function updateDirectives(oldVnode, vnode) {
     function (directive, key) {
       if (object.has(oldDirectives, key)) {
         let oldDirective = oldDirectives[ key ]
-        if (oldDirective.value !== directive.value
-          || oldDirective.context !== directive.context
-        ) {
+        if (oldDirective.value !== directive.value) {
           unbindDirective(oldVnode, key)
           bindDirective(vnode, key)
         }
