@@ -17,7 +17,7 @@ function bindDirective(vnode, key) {
     node,
     instance,
     directives,
-    attributes: attrs || { },
+    attrs: attrs || { },
   }
 
   let { $component } = el
