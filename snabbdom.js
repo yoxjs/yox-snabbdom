@@ -50,10 +50,6 @@ function createKeyToIndex(vnodes, startIndex, endIndex) {
   return result
 }
 
-export function createTextVnode(text) {
-  return Vnode(env.UNDEFINED, toString(text))
-}
-
 export function createElementVnode(sel, data, children, key, component) {
   return Vnode(sel, env.UNDEFINED, data, children, key, component)
 }
