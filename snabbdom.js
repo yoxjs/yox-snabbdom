@@ -58,6 +58,10 @@ export function createCommentVnode(text) {
   return Vnode(SEL_COMMENT, text)
 }
 
+export function createTextVnode(text) {
+  return Vnode(env.UNDEFINED, toString(text))
+}
+
 export function init(modules, api = domApi) {
 
   let moduleEmitter = new Emitter()
