@@ -62,7 +62,7 @@ export function removeProp(node, name) {
 
 export function setAttr(node, name, value) {
   if (booleanAttrMap[ name ]) {
-    value = (value === char.CHAR_BLANK || name === value) ? env.TRUE : env.FALSE
+    value = (value === env.TRUE || value === name || value === env.UNDEFINED) ? env.TRUE : env.FALSE
   }
   if (attr2Prop[ name ]) {
     setProp(node, attr2Prop[ name ], value)

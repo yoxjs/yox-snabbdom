@@ -18,18 +18,13 @@ function updateAttrs(oldVnode, vnode) {
   let { el } = vnode
   let api = this
 
-  let getValue = function (attrs, name) {
-    if (object.has(attrs, name)) {
-      return attrs[ name ] != env.NULL ? attrs[ name ] : char.CHAR_BLANK
-    }
-  }
-
   object.each(
     newAttrs,
     function (value, name) {
-      value = getValue(newAttrs, name)
-      if (value !== getValue(oldAttrs, name)) {
-        api.setAttr(el, name, value)
+      if (object.has(newAttrs, name)) {
+        if (!object.has(oldAttrs, name) || value !== oldAttrs[ name ]) {
+          api.setAttr(el, name, value)
+        }
       }
     }
   )
