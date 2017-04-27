@@ -18,7 +18,7 @@ function createComponent(oldVnode, vnode) {
   }
 
   instance.component(
-    vnode.sel,
+    vnode.tag,
     function (options) {
       let { $component } = el
       if ($component && is.array($component.queue)) {

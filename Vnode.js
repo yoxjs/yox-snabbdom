@@ -1,7 +1,7 @@
 
-export default function Vnode(sel, text, data, children, key, component) {
+export default function Vnode(tag, text, data, children, key, component) {
   return {
-    sel,
+    tag,
     text,
     data,
     children,

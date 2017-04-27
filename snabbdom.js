@@ -12,8 +12,6 @@ import toString from 'yox-common/function/toString'
 
 import Vnode from './Vnode'
 
-import * as domApi from './htmldomapi'
-
 const SEL_COMMENT = '!'
 
 const HOOK_INIT = 'init'
@@ -36,7 +34,7 @@ const emptyNode = Vnode(char.CHAR_BLANK, env.UNDEFINED, { }, [ ])
 
 function isPatchable(vnode1, vnode2) {
   return vnode1.key === vnode2.key
-    && vnode1.sel === vnode2.sel
+    && vnode1.tag === vnode2.tag
 }
 
 function createKeyToIndex(vnodes, startIndex, endIndex) {
@@ -50,8 +48,8 @@ function createKeyToIndex(vnodes, startIndex, endIndex) {
   return result
 }
 
-export function createElementVnode(sel, data, children, key, component) {
-  return Vnode(sel, env.UNDEFINED, data, children, key, component)
+export function createElementVnode(tag, data, children, key, component) {
+  return Vnode(tag, env.UNDEFINED, data, children, key, component)
 }
 
 export function createCommentVnode(text) {
@@ -62,7 +60,7 @@ export function createTextVnode(text) {
   return Vnode(env.UNDEFINED, toString(text))
 }
 
-export function init(modules, api = domApi) {
+export function init(modules, api) {
 
   let moduleEmitter = new Emitter()
 
@@ -78,55 +76,9 @@ export function init(modules, api = domApi) {
     }
   )
 
-  let stringifySel = function (el) {
-    let list = [ api.tag(el) ]
-    let { id, className } = el
-    if (id) {
-      array.push(list, `${char.CHAR_HASH}${id}`)
-    }
-    if (className) {
-      array.push(list, `${char.CHAR_DOT}${string.split(className, char.CHAR_WHITESPACE).join(char.CHAR_DOT)}`)
-    }
-    return list.join(char.CHAR_BLANK)
-  }
-
-  let parseSel = function (sel) {
-
-    let tagName, id, className
-
-    let hashIndex = string.indexOf(sel, char.CHAR_HASH)
-    if (hashIndex > 0) {
-      tagName = string.slice(sel, 0, hashIndex)
-      sel = string.slice(sel, hashIndex + 1)
-    }
-
-    let dotIndex = string.indexOf(sel, char.CHAR_DOT)
-    if (dotIndex > 0) {
-      let temp = string.slice(sel, 0, dotIndex)
-      if (tagName) {
-        id = temp
-      }
-      else {
-        tagName = temp
-      }
-      className = string.split(string.slice(sel, dotIndex + 1), char.CHAR_DOT).join(char.CHAR_WHITESPACE)
-    }
-    else {
-      if (tagName) {
-        id = sel
-      }
-      else {
-        tagName = sel
-      }
-    }
-
-    return { tagName, id, className }
-
-  }
-
   let createElement = function (parentNode, vnode, insertedQueue) {
 
-    let { sel, data, children, text } = vnode
+    let { tag, data, children, text } = vnode
 
     let hooks = (data && data.hooks) || { }
     execute(
@@ -135,24 +87,15 @@ export function init(modules, api = domApi) {
       vnode
     )
 
-    if (string.falsy(sel)) {
+    if (string.falsy(tag)) {
       return vnode.el = api.createText(text)
     }
 
-    if (sel === SEL_COMMENT) {
+    if (tag === SEL_COMMENT) {
       return vnode.el = api.createComment(text)
     }
 
-    let { tagName, id, className } = parseSel(sel)
-    let el = api.createElement(tagName, parentNode)
-    if (id) {
-      el.id = id
-    }
-    if (className) {
-      el.className = className
-    }
-
-    vnode.el = el
+    let el = vnode.el = api.createElement(tag, parentNode)
 
     if (is.array(children)) {
       addVnodes(el, children, 0, children.length - 1, insertedQueue)
@@ -205,8 +148,8 @@ export function init(modules, api = domApi) {
   }
 
   let removeVnode = function (parentNode, vnode) {
-    let { sel, el, data } = vnode
-    if (sel) {
+    let { tag, el, data } = vnode
+    if (tag) {
       destroyVnode(vnode)
       api.remove(parentNode, el)
 
@@ -220,7 +163,6 @@ export function init(modules, api = domApi) {
           )
         }
       }
-
     }
     else if (el) {
       api.remove(parentNode, el)
@@ -471,7 +413,7 @@ export function init(modules, api = domApi) {
 
     if (api.isElement(oldVnode)) {
       let el = oldVnode
-      oldVnode = Vnode(stringifySel(el), env.UNDEFINED, { }, [ ])
+      oldVnode = Vnode(api.tag(el), env.UNDEFINED, { }, [ ])
       oldVnode.el = el
     }
 
