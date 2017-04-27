@@ -20,7 +20,7 @@ function updateAttrs(oldVnode, vnode) {
 
   let getValue = function (attrs, name) {
     if (object.has(attrs, name)) {
-      return attrs[ name ] || char.CHAR_BLANK
+      return attrs[ name ] != env.NULL ? attrs[ name ] : char.CHAR_BLANK
     }
   }
 
