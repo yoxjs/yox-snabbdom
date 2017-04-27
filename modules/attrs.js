@@ -1,5 +1,6 @@
 
 import * as env from 'yox-common/util/env'
+import * as char from 'yox-common/util/char'
 import * as object from 'yox-common/util/object'
 
 function updateAttrs(oldVnode, vnode) {
@@ -19,15 +20,15 @@ function updateAttrs(oldVnode, vnode) {
 
   let getValue = function (attrs, name) {
     if (object.has(attrs, name)) {
-      let value = attrs[ name ]
-      return value !== env.UNDEFINED ? value : name
+      return attrs[ name ] || char.CHAR_BLANK
     }
   }
 
   object.each(
     newAttrs,
     function (value, name) {
-      if (getValue(newAttrs, name) !== getValue(oldAttrs, name)) {
+      value = getValue(newAttrs, name)
+      if (value !== getValue(oldAttrs, name)) {
         api.setAttr(el, name, value)
       }
     }
