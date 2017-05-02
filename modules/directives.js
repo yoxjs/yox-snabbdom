@@ -32,7 +32,7 @@ function bindDirective(vnode, key) {
 
   let destroy = execute(
     instance.directive(node.name),
-    env.NULL,
+    instance,
     args
   )
 
