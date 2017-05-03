@@ -5,6 +5,8 @@ import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
 
+import executeExpression from 'yox-expression-compiler/execute'
+
 function bindDirective(vnode, key) {
 
   let { el, component } = vnode
@@ -53,6 +55,18 @@ function unbindDirective(vnode, key) {
   }
 }
 
+function executeDirective(directive) {
+  let { expr, context } = directive
+  if (expr) {
+    return executeExpression(
+      expr,
+      function (key) {
+        return context.get(key).value
+      }
+    )
+  }
+}
+
 function updateDirectives(oldVnode, vnode) {
 
   let oldDirectives = oldVnode.data.directives
@@ -73,6 +87,7 @@ function updateDirectives(oldVnode, vnode) {
         if (oldDirective.value !== directive.value
           || oldDirective.keypath !== directive.keypath
           || oldDirective.context.get(env.THIS).value !== directive.context.get(env.THIS).value
+          || executeDirective(oldDirective) !== executeDirective(directive)
         ) {
           unbindDirective(oldVnode, key)
           bindDirective(vnode, key)
