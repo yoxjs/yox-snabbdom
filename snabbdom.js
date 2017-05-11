@@ -14,21 +14,15 @@ import Vnode from './Vnode'
 
 const SEL_COMMENT = '!'
 
-const HOOK_INIT = 'init'
 const HOOK_CREATE = 'create'
-const HOOK_INSERT = 'insert'
 
 const HOOK_REMOVE = 'remove'
 const HOOK_DESTROY = 'destroy'
 
-const HOOK_PRE = 'pre'
-const HOOK_POST = 'post'
-
-const HOOK_PREPATCH = 'prepatch'
 const HOOK_UPDATE = 'update'
 const HOOK_POSTPATCH = 'postpatch'
 
-const moduleHooks = [ HOOK_CREATE, HOOK_UPDATE, HOOK_REMOVE, HOOK_DESTROY, HOOK_PRE, HOOK_POST ]
+const moduleHooks = [ HOOK_CREATE, HOOK_UPDATE, HOOK_POSTPATCH, HOOK_REMOVE, HOOK_DESTROY ]
 
 const emptyNode = Vnode(char.CHAR_BLANK, env.UNDEFINED, { }, [ ])
 
@@ -76,16 +70,9 @@ export function init(modules, api) {
     }
   )
 
-  let createElement = function (parentNode, vnode, insertedQueue) {
+  let createElement = function (parentNode, vnode) {
 
     let { tag, data, children, text } = vnode
-
-    let hooks = (data && data.hooks) || { }
-    execute(
-      hooks[ HOOK_INIT ],
-      env.NULL,
-      vnode
-    )
 
     if (string.falsy(tag)) {
       return vnode.el = api.createText(text)
@@ -98,7 +85,7 @@ export function init(modules, api) {
     let el = vnode.el = api.createElement(tag, parentNode)
 
     if (is.array(children)) {
-      addVnodes(el, children, 0, children.length - 1, insertedQueue)
+      addVnodes(el, children, 0, children.length - 1)
     }
     else if (is.string(text)) {
       api.append(
@@ -108,31 +95,20 @@ export function init(modules, api) {
     }
 
     if (data) {
-      data = [ emptyNode, vnode ]
-      moduleEmitter.fire(HOOK_CREATE, data, api)
-
-      execute(
-        hooks[ HOOK_CREATE ],
-        env.NULL,
-        data
-      )
-
-      if (hooks[ HOOK_INSERT ]) {
-        insertedQueue.push(vnode)
-      }
+      moduleEmitter.fire(HOOK_CREATE, [ emptyNode, vnode ], api)
     }
     // 钩子函数可能会替换元素
     return vnode.el
   }
 
-  let addVnodes = function (parentNode, vnodes, startIndex, endIndex, insertedQueue, before) {
+  let addVnodes = function (parentNode, vnodes, startIndex, endIndex, before) {
     for (let i = startIndex; i <= endIndex; i++) {
-      addVnode(parentNode, vnodes[ i ], insertedQueue, before)
+      addVnode(parentNode, vnodes[ i ], before)
     }
   }
 
-  let addVnode = function (parentNode, vnode, insertedQueue, before) {
-    let el = createElement(parentNode, vnode, insertedQueue)
+  let addVnode = function (parentNode, vnode, before) {
+    let el = createElement(parentNode, vnode)
     if (el) {
       api.before(parentNode, el, before)
     }
@@ -155,13 +131,6 @@ export function init(modules, api) {
 
       if (data) {
         moduleEmitter.fire(HOOK_REMOVE, vnode, api)
-        if (data.hooks) {
-          execute(
-            data.hooks[ HOOK_REMOVE ],
-            env.NULL,
-            vnode
-          )
-        }
       }
     }
     else if (el) {
@@ -185,14 +154,6 @@ export function init(modules, api) {
 
       moduleEmitter.fire(HOOK_DESTROY, vnode, api)
 
-      if (data.hooks) {
-        execute(
-          data.hooks[ HOOK_DESTROY ],
-          env.NULL,
-          vnode
-        )
-      }
-
     }
   }
 
@@ -205,7 +166,7 @@ export function init(modules, api) {
     removeVnode(parentNode, oldVnode)
   }
 
-  let updateChildren = function (parentNode, oldChildren, newChildren, insertedQueue) {
+  let updateChildren = function (parentNode, oldChildren, newChildren) {
 
     let oldStartIndex = 0
     let oldEndIndex = oldChildren.length - 1
@@ -231,14 +192,14 @@ export function init(modules, api) {
 
       // 优先从头到尾比较，位置相同且值得 patch
       else if (isPatchable(oldStartVnode, newStartVnode)) {
-        patchVnode(oldStartVnode, newStartVnode, insertedQueue)
+        patchVnode(oldStartVnode, newStartVnode)
         oldStartVnode = oldChildren[ ++oldStartIndex ]
         newStartVnode = newChildren[ ++newStartIndex ]
       }
 
       // 再从尾到头比较，位置相同且值得 patch
       else if (isPatchable(oldEndVnode, newEndVnode)) {
-        patchVnode(oldEndVnode, newEndVnode, insertedQueue)
+        patchVnode(oldEndVnode, newEndVnode)
         oldEndVnode = oldChildren[ --oldEndIndex ]
         newEndVnode = newChildren[ --newEndIndex ]
       }
@@ -248,7 +209,7 @@ export function init(modules, api) {
       // 当 oldStartVnode 和 newEndVnode 值得 patch
       // 说明元素被移到右边了
       else if (isPatchable(oldStartVnode, newEndVnode)) {
-        patchVnode(oldStartVnode, newEndVnode, insertedQueue)
+        patchVnode(oldStartVnode, newEndVnode)
         api.before(
           parentNode,
           oldStartVnode.el,
@@ -261,7 +222,7 @@ export function init(modules, api) {
       // 当 oldEndVnode 和 newStartVnode 值得 patch
       // 说明元素被移到左边了
       else if (isPatchable(oldEndVnode, newStartVnode)) {
-        patchVnode(oldEndVnode, newStartVnode, insertedQueue)
+        patchVnode(oldEndVnode, newStartVnode)
         api.before(
           parentNode,
           oldEndVnode.el,
@@ -283,12 +244,12 @@ export function init(modules, api) {
         // 移动元素
         if (is.number(oldIndex)) {
           activeVnode = oldChildren[ oldIndex ]
-          patchVnode(activeVnode, newStartVnode, insertedQueue)
+          patchVnode(activeVnode, newStartVnode)
           oldChildren[ oldIndex ] = env.NULL
         }
         // 新元素
         else {
-          activeVnode = createElement(parentNode, newStartVnode, insertedQueue)
+          activeVnode = createElement(parentNode, newStartVnode)
           if (activeVnode) {
             activeVnode = newStartVnode
           }
@@ -314,7 +275,6 @@ export function init(modules, api) {
         newChildren,
         newStartIndex,
         newEndIndex,
-        insertedQueue,
         activeVnode ? activeVnode.el : env.NULL
       )
     }
@@ -328,40 +288,28 @@ export function init(modules, api) {
     }
   }
 
-  let patchVnode = function (oldVnode, vnode, insertedQueue) {
+  let patchVnode = function (oldVnode, vnode) {
 
     if (oldVnode === vnode) {
       return
     }
 
-    let { data } = vnode
-    let hooks = (data && data.hooks) || { }
-
     let args = [ oldVnode, vnode ]
-    execute(
-      hooks[ HOOK_PREPATCH ],
-      env.NULL,
-      args
-    )
 
     let { el } = oldVnode
     vnode.el = el
 
     if (!isPatchable(oldVnode, vnode)) {
       let parentNode = api.parent(el)
-      if (createElement(parentNode, vnode, insertedQueue)) {
+      if (createElement(parentNode, vnode)) {
         parentNode && replaceVnode(parentNode, oldVnode, vnode)
       }
       return
     }
 
+    let { data } = vnode
     if (data) {
       moduleEmitter.fire(HOOK_UPDATE, args, api)
-      execute(
-        hooks[ HOOK_UPDATE ],
-        env.NULL,
-        args
-      )
     }
 
     let newText = vnode.text
@@ -379,7 +327,7 @@ export function init(modules, api) {
       // 两个都有需要 diff
       if (newChildren && oldChildren) {
         if (newChildren !== oldChildren) {
-          updateChildren(el, oldChildren, newChildren, insertedQueue)
+          updateChildren(el, oldChildren, newChildren)
         }
       }
       // 有新的没旧的 - 新增节点
@@ -387,7 +335,7 @@ export function init(modules, api) {
         if (is.string(oldText)) {
           api.text(el, char.CHAR_BLANK)
         }
-        addVnodes(el, newChildren, 0, newChildren.length - 1, insertedQueue)
+        addVnodes(el, newChildren, 0, newChildren.length - 1)
       }
       // 有旧的没新的 - 删除节点
       else if (oldChildren) {
@@ -399,17 +347,12 @@ export function init(modules, api) {
       }
     }
 
-    execute(
-      hooks[ HOOK_POSTPATCH ],
-      env.NULL,
-      args
-    )
-
+    if (data) {
+      moduleEmitter.fire(HOOK_POSTPATCH, args, api)
+    }
   }
 
   return function (oldVnode, vnode) {
-
-    moduleEmitter.fire(HOOK_PRE, env.NULL, api)
 
     if (api.isElement(oldVnode)) {
       let el = oldVnode
@@ -417,29 +360,15 @@ export function init(modules, api) {
       oldVnode.el = el
     }
 
-    let insertedQueue = [ ]
     if (isPatchable(oldVnode, vnode)) {
-      patchVnode(oldVnode, vnode, insertedQueue)
+      patchVnode(oldVnode, vnode)
     }
     else {
       let parentNode = api.parent(oldVnode.el)
-      if (createElement(parentNode, vnode, insertedQueue)) {
+      if (createElement(parentNode, vnode)) {
         parentNode && replaceVnode(parentNode, oldVnode, vnode)
       }
     }
-
-    array.each(
-      insertedQueue,
-      function (vnode) {
-        execute(
-          vnode.data.hooks[ HOOK_INSERT ],
-          env.NULL,
-          vnode
-        )
-      }
-    )
-
-    moduleEmitter.fire(HOOK_POST, env.NULL, api)
 
     return vnode
 
