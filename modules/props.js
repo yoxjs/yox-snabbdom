@@ -11,9 +11,6 @@ function setProps(oldVnode, vnode) {
       function (value, name) {
         if (value !== oldProps[ name ]) {
           api.setProp(vnode.el, name, value)
-          if (oldVnode.children) {
-            delete oldVnode.children
-          }
         }
       }
     )
