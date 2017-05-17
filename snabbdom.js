@@ -64,7 +64,13 @@ export function init(modules, api) {
       array.each(
         modules,
         function (item) {
-          moduleEmitter.on(hook, item[ hook ])
+          moduleEmitter.on(
+            hook,
+            {
+              context: api,
+              func: item[ hook ],
+            }
+          )
         }
       )
     }
@@ -95,7 +101,7 @@ export function init(modules, api) {
     }
 
     if (data) {
-      moduleEmitter.fire(HOOK_CREATE, [ emptyNode, vnode ], api)
+      moduleEmitter.fire(HOOK_CREATE, [ emptyNode, vnode ])
     }
     // 钩子函数可能会替换元素
     return vnode.el
@@ -130,7 +136,7 @@ export function init(modules, api) {
       api.remove(parentNode, el)
 
       if (data) {
-        moduleEmitter.fire(HOOK_REMOVE, vnode, api)
+        moduleEmitter.fire(HOOK_REMOVE, vnode)
       }
     }
     else if (el) {
@@ -152,7 +158,7 @@ export function init(modules, api) {
         )
       }
 
-      moduleEmitter.fire(HOOK_DESTROY, vnode, api)
+      moduleEmitter.fire(HOOK_DESTROY, vnode)
 
     }
   }
@@ -309,7 +315,7 @@ export function init(modules, api) {
 
     let { data } = vnode
     if (data) {
-      moduleEmitter.fire(HOOK_UPDATE, args, api)
+      moduleEmitter.fire(HOOK_UPDATE, args)
     }
 
     let newText = vnode.text
@@ -348,7 +354,7 @@ export function init(modules, api) {
     }
 
     if (data) {
-      moduleEmitter.fire(HOOK_POSTPATCH, args, api)
+      moduleEmitter.fire(HOOK_POSTPATCH, args)
     }
   }
 
