@@ -47,11 +47,14 @@ function createComponent(oldVnode, vnode) {
 }
 
 function updateComponent(oldVnode, vnode) {
-  let { $component } = vnode.el
-  if (vnode.component && is.object($component)) {
-    let { attrs } = vnode.data
+  let { component, el, data } = vnode
+  let { $component } = el
+  if (component && is.object($component)) {
+    let { attrs, forceUpdate } = data
     if ($component.set) {
-      $component.set(attrs, env.TRUE)
+      if (!$component.set(attrs, env.TRUE) && forceUpdate) {
+        $component.forceUpdate()
+      }
     }
     else {
       $component.attrs = attrs
