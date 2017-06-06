@@ -2,6 +2,7 @@
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
+import * as logger from 'yox-common/util/logger'
 
 function createComponent(oldVnode, vnode) {
 
@@ -19,6 +20,9 @@ function createComponent(oldVnode, vnode) {
   instance.component(
     vnode.tag,
     function (options) {
+      if (!options) {
+        logger.fatal(`Component [${vnode.tag}] is not found.`)
+      }
       let { $component } = el
       if ($component && is.array($component.queue)) {
 
