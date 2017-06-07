@@ -7,20 +7,29 @@ import * as object from 'yox-common/util/object'
 import * as string from 'yox-common/util/string'
 
 import Emitter from 'yox-common/util/Emitter'
+
+import isDef from 'yox-common/function/isDef'
 import execute from 'yox-common/function/execute'
 import toString from 'yox-common/function/toString'
 
-import Vnode from './Vnode'
+function Vnode(tag, text, data, children, key, component) {
+  return {
+    tag,
+    text,
+    data,
+    children,
+    key,
+    component,
+  }
+}
 
-const SEL_COMMENT = '!'
+const TAG_COMMENT = '!'
 
 const HOOK_CREATE = 'create'
-
-const HOOK_REMOVE = 'remove'
-const HOOK_DESTROY = 'destroy'
-
 const HOOK_UPDATE = 'update'
 const HOOK_POSTPATCH = 'postpatch'
+const HOOK_REMOVE = 'remove'
+const HOOK_DESTROY = 'destroy'
 
 const moduleHooks = [ HOOK_CREATE, HOOK_UPDATE, HOOK_POSTPATCH, HOOK_REMOVE, HOOK_DESTROY ]
 
@@ -32,12 +41,13 @@ function isPatchable(vnode1, vnode2) {
 }
 
 function createKeyToIndex(vnodes, startIndex, endIndex) {
-  let result = { }
-  for (let i = startIndex, key; i <= endIndex; i++) {
-    key = vnodes[ i ].key
-    if (key != env.NULL) {
-      result[ key ] = i
+  let result = { }, key
+  while (startIndex <= endIndex) {
+    key = vnodes[ startIndex ].key
+    if (isDef(key)) {
+      result[ key ] = startIndex
     }
+    startIndex++
   }
   return result
 }
@@ -47,7 +57,7 @@ export function createElementVnode(tag, data, children, key, component) {
 }
 
 export function createCommentVnode(text) {
-  return Vnode(SEL_COMMENT, text)
+  return Vnode(TAG_COMMENT, text)
 }
 
 export function createTextVnode(text) {
@@ -84,7 +94,7 @@ export function init(modules, api) {
       return vnode.el = api.createText(text)
     }
 
-    if (tag === SEL_COMMENT) {
+    if (tag === TAG_COMMENT) {
       return vnode.el = api.createComment(text)
     }
 
@@ -108,8 +118,9 @@ export function init(modules, api) {
   }
 
   let addVnodes = function (parentNode, vnodes, startIndex, endIndex, before) {
-    for (let i = startIndex; i <= endIndex; i++) {
-      addVnode(parentNode, vnodes[ i ], before)
+    while (startIndex <= endIndex) {
+      addVnode(parentNode, vnodes[ startIndex ], before)
+      startIndex++
     }
   }
 
@@ -121,11 +132,13 @@ export function init(modules, api) {
   }
 
   let removeVnodes = function (parentNode, vnodes, startIndex, endIndex) {
-    for (let i = startIndex, vnode; i <= endIndex; i++) {
-      vnode = vnodes[ i ]
+    let vnode
+    while (startIndex <= endIndex) {
+      vnode = vnodes[ startIndex ]
       if (vnode) {
         removeVnode(parentNode, vnode)
       }
+      startIndex++
     }
   }
 
@@ -134,7 +147,6 @@ export function init(modules, api) {
     if (tag) {
       destroyVnode(vnode)
       api.remove(parentNode, el)
-
       if (data) {
         moduleEmitter.fire(HOOK_REMOVE, vnode)
       }
@@ -147,8 +159,6 @@ export function init(modules, api) {
   let destroyVnode = function (vnode) {
     let { data, children } = vnode
     if (data) {
-
-      // 先销毁 children
       if (children) {
         array.each(
           children,
@@ -157,9 +167,7 @@ export function init(modules, api) {
           }
         )
       }
-
       moduleEmitter.fire(HOOK_DESTROY, vnode)
-
     }
   }
 
