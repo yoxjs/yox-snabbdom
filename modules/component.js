@@ -6,7 +6,7 @@ import * as logger from 'yox-common/util/logger'
 
 function createComponent(oldVnode, vnode) {
 
-  let { el, component } = vnode
+  let { el, component, children } = vnode
   if (!component) {
     return
   }
@@ -15,6 +15,7 @@ function createComponent(oldVnode, vnode) {
   el.$component = {
     queue: [ ],
     attrs,
+    children,
   }
 
   instance.component(
@@ -31,6 +32,7 @@ function createComponent(oldVnode, vnode) {
           {
             el,
             props: $component.attrs,
+            slot: $component.children,
             replace: env.TRUE,
           }
         )
@@ -51,17 +53,19 @@ function createComponent(oldVnode, vnode) {
 }
 
 function updateComponent(oldVnode, vnode) {
-  let { component, el, data } = vnode
+  let { component, el, children, data } = vnode
   let { $component } = el
   if (component && is.object($component)) {
     let { attrs, forceUpdate } = data
     if ($component.set) {
+      $component.$slot = children
       if (!$component.set(attrs, env.TRUE) && forceUpdate) {
         $component.forceUpdate()
       }
     }
     else {
       $component.attrs = attrs
+      $component.children = children
     }
   }
 }
