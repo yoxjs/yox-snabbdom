@@ -18,7 +18,7 @@ function createAttrs(vnode) {
 function updateAttrs(vnode, oldVnode) {
 
   let { el, component, attrs } = vnode, oldAttrs = oldVnode.attrs, api = this
-  if (component || !attr && !oldAttrs) {
+  if (component || !attrs && !oldAttrs) {
     return
   }
 

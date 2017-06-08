@@ -6,7 +6,7 @@ import * as logger from 'yox-common/util/logger'
 
 function bindDirective(vnode, key) {
 
-  let { el, attrs, directives, component, instance, unbinds } = vnode
+  let { el, attrs, directives, component, instance } = vnode
 
   let node = directives[ key ],
   options = {
@@ -50,7 +50,7 @@ function unbindDirective(vnode, key) {
 function updateDirectives(vnode, oldVnode) {
 
   let newDirectives = vnode.directives
-  let oldDirectives = oldVnode.directives
+  let oldDirectives = oldVnode && oldVnode.directives
 
   if (!newDirectives && !oldDirectives) {
     return
@@ -78,7 +78,10 @@ function updateDirectives(vnode, oldVnode) {
         unbind = bindDirective(vnode, key)
       }
       if (unbind) {
-        (unbinds || unbinds = { })[ key ] = unbind
+        if (!unbinds) {
+          unbinds = { }
+        }
+        unbinds[ key ] = unbind
       }
     }
   )
@@ -92,7 +95,7 @@ function updateDirectives(vnode, oldVnode) {
     }
   )
 
-  let oldUnbinds = oldVnode.unbinds
+  let oldUnbinds = oldVnode && oldVnode.unbinds
   if (oldUnbinds && unbinds) {
     object.extend(unbinds, oldUnbinds)
   }

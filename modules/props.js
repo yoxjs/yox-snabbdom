@@ -1,13 +1,13 @@
 
 import * as object from 'yox-common/util/object'
 
-function setProps(vnode, oldVnode) {
+function createProps(vnode, oldVnode) {
 
-  let newProps = vnode.props
-  if (newProps) {
+  let { component, props } = vnode
+  if (!component && props) {
     let api = this, oldProps = oldVnode && oldVnode.props || { }
     object.each(
-      newProps,
+      props,
       function (value, name) {
         if (value !== oldProps[ name ]) {
           api.setProp(vnode.el, name, value)
@@ -20,13 +20,12 @@ function setProps(vnode, oldVnode) {
 
 function removeProps(vnode, oldVnode) {
 
-  let oldProps = oldVnode && oldVnode.props
-  if (oldProps) {
-    let api = this, newProps = vnode.props || { }
+  let { component, props } = vnode, oldProps = oldVnode.props, api = this
+  if (!component && oldProps) {
     object.each(
       oldProps,
       function (value, name) {
-        if (!object.has(newProps, name)) {
+        if (!object.has(props, name)) {
           api.removeProp(vnode.el, name)
         }
       }
@@ -47,7 +46,7 @@ function removeProps(vnode, oldVnode) {
 // 这种情况，先用 innerHTML 覆盖，再处理 child1 child2
 //
 export default {
-  create: setProps,
+  create: createProps,
   update: removeProps,
-  postpatch: setProps,
+  postpatch: createProps,
 }

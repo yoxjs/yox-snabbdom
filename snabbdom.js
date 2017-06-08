@@ -25,7 +25,7 @@ const HOOK_POSTPATCH = 'postpatch'
 const HOOK_REMOVE = 'remove'
 const HOOK_DESTROY = 'destroy'
 
-const modules = [
+let modules = [
   component, attrs, props, directives
 ]
 
@@ -84,6 +84,7 @@ export function createElementVnode(tag, attrs, props, directives, children, key,
     children,
     key,
     instance,
+    text: env.UNDEFINED,
   }
 }
 
