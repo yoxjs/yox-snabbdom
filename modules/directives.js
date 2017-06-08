@@ -2,7 +2,6 @@
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
-import * as logger from 'yox-common/util/logger'
 
 function bindDirective(vnode, key) {
 
@@ -27,12 +26,7 @@ function bindDirective(vnode, key) {
     options.component = $component
   }
 
-  let bind = instance.directive(node.name)
-  if (!is.func(bind)) {
-    logger.fatal(`Directive [${node.name}] is not found.`)
-  }
-
-  let unbind = bind(options)
+  let bind = instance.directive(node.name), unbind = bind && bind(options)
   if (is.func(unbind)) {
     return unbind
   }
@@ -59,7 +53,7 @@ function updateDirectives(vnode, oldVnode) {
   newDirectives = newDirectives || { }
   oldDirectives = oldDirectives || { }
 
-  let unbinds
+  let newUnbinds
 
   object.each(
     newDirectives,
@@ -67,8 +61,9 @@ function updateDirectives(vnode, oldVnode) {
       let unbind
       if (object.has(oldDirectives, key)) {
         let oldDirective = oldDirectives[ key ]
-        if (directive.context.get(directive.value).keypath
-          !== oldDirective.context.get(oldDirective.value).keypath
+        if (directive.value !== oldDirective.value
+          || directive.keypath !== oldDirective.keypath
+          || directive.context.get(env.RAW_THIS).value !== oldDirective.context.get(env.RAW_THIS).value
         ) {
           unbindDirective(oldVnode, key)
           unbind = bindDirective(vnode, key)
@@ -78,10 +73,7 @@ function updateDirectives(vnode, oldVnode) {
         unbind = bindDirective(vnode, key)
       }
       if (unbind) {
-        if (!unbinds) {
-          unbinds = { }
-        }
-        unbinds[ key ] = unbind
+        (newUnbinds || (newUnbinds = { }))[ key ] = unbind
       }
     }
   )
@@ -96,12 +88,12 @@ function updateDirectives(vnode, oldVnode) {
   )
 
   let oldUnbinds = oldVnode && oldVnode.unbinds
-  if (oldUnbinds && unbinds) {
-    object.extend(unbinds, oldUnbinds)
+  if (oldUnbinds && newUnbinds) {
+    object.extend(newUnbinds, oldUnbinds)
   }
 
-  if (unbinds) {
-    vnode.unbinds = unbinds
+  if (newUnbinds) {
+    vnode.unbinds = newUnbinds
   }
 
 }

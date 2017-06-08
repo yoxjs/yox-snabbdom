@@ -34,7 +34,8 @@ function createComponent(vnode) {
           }
         )
 
-        (vnode.el = component.$el).$component = component
+        el = vnode.el = component.$el
+        el.$component = component
 
         array.each(
           queue,
