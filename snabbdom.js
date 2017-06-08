@@ -12,16 +12,10 @@ import isDef from 'yox-common/function/isDef'
 import execute from 'yox-common/function/execute'
 import toString from 'yox-common/function/toString'
 
-function Vnode(tag, text, data, children, key, component) {
-  return {
-    tag,
-    text,
-    data,
-    children,
-    key,
-    component,
-  }
-}
+import attrs from './modules/attrs'
+import props from './modules/props'
+import directives from './modules/directives'
+import component from './modules/component'
 
 const TAG_COMMENT = '!'
 
@@ -31,9 +25,25 @@ const HOOK_POSTPATCH = 'postpatch'
 const HOOK_REMOVE = 'remove'
 const HOOK_DESTROY = 'destroy'
 
-const moduleHooks = [ HOOK_CREATE, HOOK_UPDATE, HOOK_POSTPATCH, HOOK_REMOVE, HOOK_DESTROY ]
+const modules = [
+  component, attrs, props, directives
+]
 
-const emptyNode = Vnode(char.CHAR_BLANK, env.UNDEFINED, { }, [ ])
+const moduleEmitter = new Emitter()
+
+array.each(
+  [ HOOK_CREATE, HOOK_UPDATE, HOOK_POSTPATCH, HOOK_REMOVE, HOOK_DESTROY ],
+  function (hook) {
+    array.each(
+      modules,
+      function (item) {
+        moduleEmitter.on(hook, item[ hook ])
+      }
+    )
+  }
+)
+
+modules = env.NULL
 
 function isPatchable(vnode1, vnode2) {
   return vnode1.key === vnode2.key
@@ -52,43 +62,42 @@ function createKeyToIndex(vnodes, startIndex, endIndex) {
   return result
 }
 
-export function createElementVnode(tag, data, children, key, component) {
-  return Vnode(tag, env.UNDEFINED, data, children, key, component)
-}
-
 export function createCommentVnode(text) {
-  return Vnode(TAG_COMMENT, text)
+  return {
+    tag: TAG_COMMENT,
+    text: toString(text),
+  }
 }
 
 export function createTextVnode(text) {
-  return Vnode(env.UNDEFINED, toString(text))
+  return {
+    text: toString(text),
+  }
 }
 
-export function init(modules, api) {
+export function createElementVnode(tag, attrs, props, directives, children, key, instance) {
+  return {
+    tag,
+    attrs,
+    props,
+    directives,
+    children,
+    key,
+    instance,
+  }
+}
 
-  let moduleEmitter = new Emitter()
+export function createComponentVnode(tag, attrs, props, directives, children, key, instance) {
+  let vnode = createElementVnode(tag, attrs, props, directives, children, key, instance)
+  vnode.component = env.TRUE
+  return vnode
+}
 
-  array.each(
-    moduleHooks,
-    function (hook) {
-      array.each(
-        modules,
-        function (item) {
-          moduleEmitter.on(
-            hook,
-            {
-              context: api,
-              func: item[ hook ],
-            }
-          )
-        }
-      )
-    }
-  )
+export function init(api) {
 
   let createElement = function (parentNode, vnode) {
 
-    let { tag, data, children, text } = vnode
+    let { tag, children, text } = vnode
 
     if (string.falsy(tag)) {
       return vnode.el = api.createText(text)
@@ -110,9 +119,8 @@ export function init(modules, api) {
       )
     }
 
-    if (data) {
-      moduleEmitter.fire(HOOK_CREATE, [ emptyNode, vnode ])
-    }
+    moduleEmitter.fire(HOOK_CREATE, vnode, api)
+
     // 钩子函数可能会替换元素
     return vnode.el
   }
@@ -143,13 +151,11 @@ export function init(modules, api) {
   }
 
   let removeVnode = function (parentNode, vnode) {
-    let { tag, el, data } = vnode
+    let { tag, el } = vnode
     if (tag) {
       destroyVnode(vnode)
       api.remove(parentNode, el)
-      if (data) {
-        moduleEmitter.fire(HOOK_REMOVE, vnode)
-      }
+      moduleEmitter.fire(HOOK_REMOVE, vnode, api)
     }
     else if (el) {
       api.remove(parentNode, el)
@@ -157,18 +163,16 @@ export function init(modules, api) {
   }
 
   let destroyVnode = function (vnode) {
-    let { data, children } = vnode
-    if (data) {
-      if (children) {
-        array.each(
-          children,
-          function (child) {
-            destroyVnode(child)
-          }
-        )
-      }
-      moduleEmitter.fire(HOOK_DESTROY, vnode)
+    let { children } = vnode
+    if (children) {
+      array.each(
+        children,
+        function (child) {
+          destroyVnode(child)
+        }
+      )
     }
+    moduleEmitter.fire(HOOK_DESTROY, vnode, api)
   }
 
   let replaceVnode = function (parentNode, oldVnode, vnode) {
@@ -308,8 +312,6 @@ export function init(modules, api) {
       return
     }
 
-    let args = [ oldVnode, vnode ]
-
     let { el } = oldVnode
     vnode.el = el
 
@@ -321,10 +323,8 @@ export function init(modules, api) {
       return
     }
 
-    let { data } = vnode
-    if (data) {
-      moduleEmitter.fire(HOOK_UPDATE, args)
-    }
+    let args = [ vnode, oldVnode ]
+    moduleEmitter.fire(HOOK_UPDATE, args, api)
 
     let newText = vnode.text
     let newChildren = vnode.children
@@ -361,17 +361,17 @@ export function init(modules, api) {
       }
     }
 
-    if (data) {
-      moduleEmitter.fire(HOOK_POSTPATCH, args)
-    }
+    moduleEmitter.fire(HOOK_POSTPATCH, args, api)
+
   }
 
   return function (oldVnode, vnode) {
 
     if (api.isElement(oldVnode)) {
-      let el = oldVnode
-      oldVnode = Vnode(api.tag(el), env.UNDEFINED, { }, [ ])
-      oldVnode.el = el
+      oldVnode = {
+        el: oldVnode,
+        tag: api.tag(oldVnode),
+      }
     }
 
     if (isPatchable(oldVnode, vnode)) {

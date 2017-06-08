@@ -1,6 +1,6 @@
 {
   "name": "yox-snabbdom",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Snabbdom for Yox.js",
   "main": "snabbdom.js",
   "directories": {
@@ -8,8 +8,8 @@
     "test": "test"
   },
   "devDependencies": {
-    "yox-common": "^0.11.9",
-    "yox-expression-compiler": "^0.12.2"
+    "yox-common": "^0.12.1",
+    "yox-expression-compiler": "^0.12.3"
   },
   "repository": {
     "type": "git",

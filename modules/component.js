@@ -4,44 +4,40 @@ import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
 import * as logger from 'yox-common/util/logger'
 
-function createComponent(oldVnode, vnode) {
+function createComponent(vnode) {
 
-  let { el, component, children } = vnode
+  let { el, tag, attrs, component, instance } = vnode
   if (!component) {
     return
   }
 
-  let { instance, attrs } = vnode.data
   el.$component = {
     queue: [ ],
     attrs,
-    children,
   }
 
   instance.component(
-    vnode.tag,
+    tag,
     function (options) {
       if (!options) {
-        logger.fatal(`Component [${vnode.tag}] is not found.`)
+        logger.fatal(`Component [${tag}] is not found.`)
       }
-      let { $component } = el
-      if ($component && is.array($component.queue)) {
+      let { $component } = el, { queue, attrs } = $component
+      if ($component && is.array(queue)) {
 
         component = instance.create(
           options,
           {
             el,
-            props: $component.attrs,
-            slot: $component.children,
+            props: attrs,
             replace: env.TRUE,
           }
         )
 
-        el = vnode.el = component.$el;
-        el.$component = component
+        (vnode.el = component.$el).$component = component
 
         array.each(
-          $component.queue,
+          queue,
           function (callback) {
             callback(component)
           }
@@ -52,28 +48,21 @@ function createComponent(oldVnode, vnode) {
   )
 }
 
-function updateComponent(oldVnode, vnode) {
-  let { component, el, children, data } = vnode
-  let { $component } = el
-  if (component && is.object($component)) {
-    let { attrs, forceUpdate } = data
+function updateComponent(vnode) {
+  let { el, attrs } = vnode, { $component } = el
+  if (is.object($component)) {
     if ($component.set) {
-      $component.$slot = children
-      if (!$component.set(attrs, env.TRUE) && forceUpdate) {
-        $component.forceUpdate()
-      }
+      $component.set(attrs, env.TRUE)
     }
     else {
       $component.attrs = attrs
-      $component.children = children
     }
   }
 }
 
-function destroyComponent(oldVnode, vnode) {
-  let { component, el } = oldVnode
-  let { $component } = el
-  if (component && is.object($component)) {
+function destroyComponent(vnode) {
+  let { el } = vnode, { $component } = el
+  if ($component) {
     if ($component.destroy) {
       $component.destroy(env.TRUE)
     }

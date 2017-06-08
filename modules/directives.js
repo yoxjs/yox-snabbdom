@@ -1,20 +1,15 @@
 
-import execute from 'yox-common/function/execute'
-
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
-
-import executeExpression from 'yox-expression-compiler/execute'
+import * as logger from 'yox-common/util/logger'
 
 function bindDirective(vnode, key) {
 
-  let { el, component } = vnode
-  let { instance, attrs, directives, destroies } = vnode.data
+  let { el, attrs, directives, component, instance, unbinds } = vnode
 
-  let node = directives[ key ]
-
-  let args = {
+  let node = directives[ key ],
+  options = {
     el,
     node,
     instance,
@@ -29,72 +24,61 @@ function bindDirective(vnode, key) {
     ) {
       $component = $component.queue
     }
-    args.component = $component
+    options.component = $component
   }
 
-  let destroy = execute(
-    instance.directive(node.name),
-    instance,
-    args
-  )
+  let bind = instance.directive(node.name)
+  if (!is.func(bind)) {
+    logger.fatal(`Directive [${node.name}] is not found.`)
+  }
 
-  if (is.func(destroy)) {
-    if (!destroies) {
-      destroies = vnode.data.destroies = { }
-    }
-    destroies[ key ] = destroy
+  let unbind = bind(options)
+  if (is.func(unbind)) {
+    return unbind
   }
 
 }
 
 function unbindDirective(vnode, key) {
-  let { destroies } = vnode.data
-  if (destroies && destroies[ key ]) {
-    destroies[ key ]()
-    delete destroies[ key ]
+  let { unbinds } = vnode
+  if (unbinds && unbinds[ key ]) {
+    unbinds[ key ]()
+    delete unbinds[ key ]
   }
 }
 
-function executeDirective(directive) {
-  let { expr, context } = directive
-  if (expr) {
-    return executeExpression(
-      expr,
-      function (key) {
-        return context.get(key).value
-      }
-    )
-  }
-}
+function updateDirectives(vnode, oldVnode) {
 
-function updateDirectives(oldVnode, vnode) {
+  let newDirectives = vnode.directives
+  let oldDirectives = oldVnode.directives
 
-  let oldDirectives = oldVnode.data.directives
-  let newDirectives = vnode.data.directives
-
-  if (!oldDirectives && !newDirectives) {
+  if (!newDirectives && !oldDirectives) {
     return
   }
 
-  oldDirectives = oldDirectives || { }
   newDirectives = newDirectives || { }
+  oldDirectives = oldDirectives || { }
+
+  let unbinds
 
   object.each(
     newDirectives,
     function (directive, key) {
+      let unbind
       if (object.has(oldDirectives, key)) {
         let oldDirective = oldDirectives[ key ]
-        if (oldDirective.value !== directive.value
-          || oldDirective.keypath !== directive.keypath
-          || oldDirective.context.get(env.RAW_THIS).value !== directive.context.get(env.RAW_THIS).value
-          || executeDirective(oldDirective) !== executeDirective(directive)
+        if (directive.context.get(directive.value).keypath
+          !== oldDirective.context.get(oldDirective.value).keypath
         ) {
           unbindDirective(oldVnode, key)
-          bindDirective(vnode, key)
+          unbind = bindDirective(vnode, key)
         }
       }
       else {
-        bindDirective(vnode, key)
+        unbind = bindDirective(vnode, key)
+      }
+      if (unbind) {
+        (unbinds || unbinds = { })[ key ] = unbind
       }
     }
   )
@@ -108,19 +92,22 @@ function updateDirectives(oldVnode, vnode) {
     }
   )
 
-  vnode.data.destroies = object.extend(
-    { },
-    oldVnode.data.destroies,
-    vnode.data.destroies
-  )
+  let oldUnbinds = oldVnode.unbinds
+  if (oldUnbinds && unbinds) {
+    object.extend(unbinds, oldUnbinds)
+  }
+
+  if (unbinds) {
+    vnode.unbinds = unbinds
+  }
 
 }
 
 function destroyDirectives(vnode) {
-  let { destroies } = vnode.data
-  if (destroies) {
+  let { unbinds } = vnode
+  if (unbinds) {
     object.each(
-      destroies,
+      unbinds,
       function (destroy) {
         destroy()
       }

@@ -1,28 +1,35 @@
 
 import * as object from 'yox-common/util/object'
 
-function updateAttrs(oldVnode, vnode) {
+function createAttrs(vnode) {
 
-  let oldAttrs = oldVnode.data.attrs
-  let newAttrs = vnode.data.attrs
+  let { el, component, attrs } = vnode, api = this
+  if (!component && attrs) {
+    object.each(
+      attrs,
+      function (value, name) {
+        api.setAttr(el, name, value)
+      }
+    )
+  }
 
-  if (vnode.component || !oldAttrs && !newAttrs) {
+}
+
+function updateAttrs(vnode, oldVnode) {
+
+  let { el, component, attrs } = vnode, oldAttrs = oldVnode.attrs, api = this
+  if (component || !attr && !oldAttrs) {
     return
   }
 
   oldAttrs = oldAttrs || { }
-  newAttrs = newAttrs || { }
-
-  let { el } = vnode
-  let api = this
+  attrs = attrs || { }
 
   object.each(
-    newAttrs,
+    attrs,
     function (value, name) {
-      if (object.has(newAttrs, name)) {
-        if (!object.has(oldAttrs, name) || value !== oldAttrs[ name ]) {
-          api.setAttr(el, name, value)
-        }
+      if (!object.has(oldAttrs, name) || value !== oldAttrs[ name ]) {
+        api.setAttr(el, name, value)
       }
     }
   )
@@ -30,7 +37,7 @@ function updateAttrs(oldVnode, vnode) {
   object.each(
     oldAttrs,
     function (value, name) {
-      if (!object.has(newAttrs, name)) {
+      if (!object.has(attrs, name)) {
         api.removeAttr(el, name)
       }
     }
@@ -39,6 +46,6 @@ function updateAttrs(oldVnode, vnode) {
 }
 
 export default {
-  create: updateAttrs,
+  create: createAttrs,
   update: updateAttrs,
 }

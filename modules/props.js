@@ -1,11 +1,11 @@
 
 import * as object from 'yox-common/util/object'
 
-function setProps(oldVnode, vnode) {
+function setProps(vnode, oldVnode) {
 
-  let newProps = vnode.data.props
+  let newProps = vnode.props
   if (newProps) {
-    let api = this, oldProps = oldVnode.data.props || { }
+    let api = this, oldProps = oldVnode && oldVnode.props || { }
     object.each(
       newProps,
       function (value, name) {
@@ -18,11 +18,11 @@ function setProps(oldVnode, vnode) {
 
 }
 
-function removeProps(oldVnode, vnode) {
+function removeProps(vnode, oldVnode) {
 
-  let oldProps = oldVnode.data.props
+  let oldProps = oldVnode && oldVnode.props
   if (oldProps) {
-    let api = this, newProps = vnode.data.props || { }
+    let api = this, newProps = vnode.props || { }
     object.each(
       oldProps,
       function (value, name) {
