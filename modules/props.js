@@ -22,6 +22,7 @@ function removeProps(vnode, oldVnode) {
 
   let { component, props } = vnode, oldProps = oldVnode.props, api = this
   if (!component && oldProps) {
+    props = props || { }
     object.each(
       oldProps,
       function (value, name) {
