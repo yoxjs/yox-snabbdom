@@ -20,7 +20,7 @@ function createComponent(vnode) {
     tag,
     function (options) {
       if (!options) {
-        logger.fatal(`Component "${tag}" is not found.`)
+        logger.fatal(`"${tag}" component is not found.`)
       }
       let { $component } = el, { queue, attrs } = $component
       if ($component && is.array(queue)) {

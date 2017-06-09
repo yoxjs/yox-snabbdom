@@ -18,9 +18,7 @@ function bindDirective(vnode, key) {
 
   let { $component } = el
   if (component && is.object($component)) {
-    if (object.has($component, 'queue')
-      && !object.has($component, 'set')
-    ) {
+    if ($component.queue && !$component.set) {
       $component = $component.queue
     }
     options.component = $component
@@ -103,8 +101,8 @@ function destroyDirectives(vnode) {
   if (unbinds) {
     object.each(
       unbinds,
-      function (destroy) {
-        destroy()
+      function (unbind) {
+        unbind()
       }
     )
   }

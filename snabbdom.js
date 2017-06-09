@@ -22,7 +22,6 @@ const TAG_COMMENT = '!'
 const HOOK_CREATE = 'create'
 const HOOK_UPDATE = 'update'
 const HOOK_POSTPATCH = 'postpatch'
-const HOOK_REMOVE = 'remove'
 const HOOK_DESTROY = 'destroy'
 
 let modules = [
@@ -32,7 +31,7 @@ let modules = [
 const moduleEmitter = new Emitter()
 
 array.each(
-  [ HOOK_CREATE, HOOK_UPDATE, HOOK_POSTPATCH, HOOK_REMOVE, HOOK_DESTROY ],
+  [ HOOK_CREATE, HOOK_UPDATE, HOOK_POSTPATCH, HOOK_DESTROY ],
   function (hook) {
     array.each(
       modules,
@@ -156,7 +155,6 @@ export function init(api) {
     if (tag) {
       destroyVnode(vnode)
       api.remove(parentNode, el)
-      moduleEmitter.fire(HOOK_REMOVE, vnode, api)
     }
     else if (el) {
       api.remove(parentNode, el)
