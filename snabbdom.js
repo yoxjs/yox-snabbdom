@@ -151,10 +151,12 @@ export function init(api) {
   }
 
   let removeVnode = function (parentNode, vnode) {
-    let { tag, el } = vnode
+    let { tag, el, component } = vnode
     if (tag) {
       destroyVnode(vnode)
-      api.remove(parentNode, el)
+      if (!component) {
+        api.remove(parentNode, el)
+      }
     }
     else if (el) {
       api.remove(parentNode, el)
