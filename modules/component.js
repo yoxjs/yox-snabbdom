@@ -50,8 +50,8 @@ function createComponent(vnode) {
 }
 
 function updateComponent(vnode) {
-  let { el, attrs } = vnode, { $component } = el
-  if (is.object($component)) {
+  let { el, attrs, component } = vnode, { $component } = el
+  if (component && $component) {
     if ($component.set) {
       $component.set(attrs, env.TRUE)
     }
@@ -62,10 +62,13 @@ function updateComponent(vnode) {
 }
 
 function destroyComponent(vnode) {
-  let { el } = vnode, { $component } = el
-  if ($component) {
+  let { el, component } = vnode, { $component } = el
+  // 不加 component 会产生递归
+  // 因为组件元素既是父组件中的一个子元素，也是组件自己的根元素
+  // 因此该元素会产生两个 vnode
+  if (component && $component) {
     if ($component.destroy) {
-      $component.destroy(env.TRUE)
+      $component.destroy()
     }
     el.$component = env.NULL
   }
