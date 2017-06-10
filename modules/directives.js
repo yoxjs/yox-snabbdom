@@ -1,6 +1,5 @@
 
 import * as is from 'yox-common/util/is'
-import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
 
 function bindDirective(vnode, key) {
@@ -61,7 +60,7 @@ function updateDirectives(vnode, oldVnode) {
         let oldDirective = oldDirectives[ key ]
         if (directive.value !== oldDirective.value
           || directive.keypath !== oldDirective.keypath
-          || directive.context.get(env.RAW_THIS).value !== oldDirective.context.get(env.RAW_THIS).value
+          || directive.context.data !== oldDirective.context.data
         ) {
           unbindDirective(oldVnode, key)
           unbind = bindDirective(vnode, key)
@@ -86,8 +85,13 @@ function updateDirectives(vnode, oldVnode) {
   )
 
   let oldUnbinds = oldVnode && oldVnode.unbinds
-  if (oldUnbinds && newUnbinds) {
-    object.extend(newUnbinds, oldUnbinds)
+  if (oldUnbinds) {
+    if (newUnbinds) {
+      object.extend(newUnbinds, oldUnbinds)
+    }
+    else {
+      newUnbinds = oldUnbinds
+    }
   }
 
   if (newUnbinds) {
