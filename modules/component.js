@@ -10,7 +10,7 @@ function getComponentByTag(tag) {
 
 function createComponent(vnode) {
 
-  let { el, tag, attrs, component, instance } = vnode
+  let { el, tag, component, instance } = vnode
   if (!component) {
     return
   }
@@ -18,7 +18,7 @@ function createComponent(vnode) {
   let key = getComponentByTag(tag)
   el[ key ] = {
     queue: [ ],
-    attrs,
+    vnode,
   }
 
   instance.component(
@@ -29,13 +29,13 @@ function createComponent(vnode) {
       }
       component = el[ key ]
       if (component) {
-        let { queue, attrs } = component
+        let { queue, vnode } = component
         if (is.array(queue)) {
           component = instance.create(
             options,
             {
               el,
-              props: attrs,
+              props: vnode.attrs,
               replace: env.TRUE,
             }
           )
@@ -56,27 +56,27 @@ function createComponent(vnode) {
 }
 
 function updateComponent(vnode) {
-  let { el, tag, attrs, component } = vnode
+  let { component } = vnode
   if (component) {
-    component = el[ getComponentByTag(tag) ]
+    component = vnode.el[ getComponentByTag(vnode.tag) ]
     if (component) {
       if (component.set) {
-        component.set(attrs, env.TRUE)
+        component.set(vnode.attrs, env.TRUE)
       }
       else {
-        component.attrs = attrs
+        component.vnode = vnode
       }
     }
   }
 }
 
 function destroyComponent(vnode) {
-  let { el, tag, component } = vnode
+  let { el, component } = vnode
   // 不加 component 会产生递归
   // 因为组件元素既是父组件中的一个子元素，也是组件自己的根元素
   // 因此该元素会产生两个 vnode
   if (component) {
-    let key = getComponentByTag(tag)
+    let key = getComponentByTag(vnode.tag)
     component = el[ key ]
     if (component) {
       if (component.destroy) {
