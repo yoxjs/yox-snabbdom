@@ -2,9 +2,11 @@
 import * as is from 'yox-common/util/is'
 import * as object from 'yox-common/util/object'
 
+import componentModule from './component'
+
 function bindDirective(vnode, key) {
 
-  let { el, attrs, directives, component, instance } = vnode
+  let { el, tag, attrs, directives, component, instance } = vnode
 
   let node = directives[ key ],
   options = {
@@ -15,15 +17,19 @@ function bindDirective(vnode, key) {
     attrs: attrs || { },
   }
 
-  let { $component } = el
-  if (component && is.object($component)) {
-    if ($component.queue && !$component.set) {
-      $component = $component.queue
+  if (component) {
+    component = el[ componentModule.getComponentByTag(tag) ]
+    if (component) {
+      if (component.queue && !component.set) {
+        component = component.queue
+      }
+      options.component = component
     }
-    options.component = $component
   }
 
-  let bind = instance.directive(node.name), unbind = bind && bind(options)
+  let bind = instance.directive(node.name),
+  unbind = bind && bind(options)
+
   if (is.func(unbind)) {
     return unbind
   }
