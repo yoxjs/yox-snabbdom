@@ -95,9 +95,20 @@ export function createComponentVnode(tag, attrs, props, directives, children, ke
 
 export function init(api) {
 
+  let fireHook = function (name, vnode, oldVnode) {
+    if (!vnode[ name ]) {
+      moduleEmitter.fire(name, [ vnode, oldVnode ], api)
+      vnode[ name ] = env.TRUE
+    }
+  }
+
   let createElement = function (parentNode, vnode) {
 
-    let { tag, children, text } = vnode
+    let { el, tag, children, text } = vnode
+
+    if (el) {
+      return el
+    }
 
     if (string.falsy(tag)) {
       return vnode.el = api.createText(text)
@@ -107,7 +118,7 @@ export function init(api) {
       return vnode.el = api.createComment(text)
     }
 
-    let el = vnode.el = api.createElement(tag, parentNode)
+    el = vnode.el = api.createElement(tag, parentNode)
 
     if (is.array(children)) {
       addVnodes(el, children, 0, children.length - 1)
@@ -119,7 +130,7 @@ export function init(api) {
       )
     }
 
-    moduleEmitter.fire(HOOK_CREATE, vnode, api)
+    fireHook(HOOK_CREATE, vnode)
 
     // 钩子函数可能会替换元素
     return vnode.el
@@ -173,7 +184,7 @@ export function init(api) {
         }
       )
     }
-    moduleEmitter.fire(HOOK_DESTROY, vnode, api)
+    fireHook(HOOK_DESTROY, vnode)
   }
 
   let replaceVnode = function (parentNode, oldVnode, vnode) {
@@ -324,8 +335,7 @@ export function init(api) {
       return
     }
 
-    let args = [ vnode, oldVnode ]
-    moduleEmitter.fire(HOOK_UPDATE, args, api)
+    fireHook(HOOK_UPDATE, vnode, oldVnode)
 
     let newText = vnode.text
     let newChildren = vnode.children
@@ -362,7 +372,7 @@ export function init(api) {
       }
     }
 
-    moduleEmitter.fire(HOOK_POSTPATCH, args, api)
+    fireHook(HOOK_POSTPATCH, vnode, oldVnode)
 
   }
 

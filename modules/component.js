@@ -31,11 +31,17 @@ function createComponent(vnode) {
       if (component) {
         let { queue, vnode } = component
         if (is.array(queue)) {
+          let { attrs, children } = vnode
+          if (children) {
+            attrs = attrs || { }
+            attrs.$children = children
+          }
+
           component = instance.create(
             options,
             {
               el,
-              props: vnode.attrs,
+              props: attrs,
               replace: env.TRUE,
             }
           )
@@ -56,12 +62,16 @@ function createComponent(vnode) {
 }
 
 function updateComponent(vnode) {
-  let { component } = vnode
+  let { component, attrs, children } = vnode
   if (component) {
     component = vnode.el[ getComponentByTag(vnode.tag) ]
     if (component) {
       if (component.set) {
-        component.set(vnode.attrs, env.TRUE)
+        if (children) {
+          attrs = attrs || { }
+          attrs.$children = children
+        }
+        component.set(attrs, env.TRUE)
       }
       else {
         component.vnode = vnode
@@ -89,7 +99,7 @@ function destroyComponent(vnode) {
 
 export default {
   create: createComponent,
-  update: updateComponent,
+  postpatch: updateComponent,
   destroy: destroyComponent,
   getComponentByTag,
 }
