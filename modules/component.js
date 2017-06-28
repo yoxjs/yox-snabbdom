@@ -4,6 +4,8 @@ import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
 import * as logger from 'yox-common/util/logger'
 
+import * as config from 'yox-config'
+
 function getComponentByTag(tag) {
   return `component${tag}`
 }
@@ -34,7 +36,7 @@ function createComponent(vnode) {
           let { attrs, children } = vnode
           if (children) {
             attrs = attrs || { }
-            attrs.$children = children
+            attrs[ config.SPECIAL_CHILDREN ] = children
           }
 
           component = instance.create(
@@ -69,7 +71,7 @@ function updateComponent(vnode) {
       if (component.set) {
         if (children) {
           attrs = attrs || { }
-          attrs.$children = children
+          attrs[ config.SPECIAL_CHILDREN ] = children
         }
         component.set(attrs, env.TRUE)
       }
