@@ -106,10 +106,6 @@ export function init(api) {
 
     let { el, tag, children, text } = vnode
 
-    if (el) {
-      return el
-    }
-
     if (string.falsy(tag)) {
       return vnode.el = api.createText(text)
     }
