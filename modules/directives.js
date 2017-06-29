@@ -2,7 +2,7 @@
 import * as is from 'yox-common/util/is'
 import * as object from 'yox-common/util/object'
 
-import componentModule from './component'
+import getComponentByTag from './getComponentByTag'
 
 function bindDirective(vnode, key) {
 
@@ -18,7 +18,7 @@ function bindDirective(vnode, key) {
   }
 
   if (component) {
-    component = el[ componentModule.getComponentByTag(tag) ]
+    component = el[ getComponentByTag(tag) ]
     if (component) {
       if (component.queue && !component.set) {
         component = component.queue

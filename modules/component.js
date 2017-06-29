@@ -4,9 +4,7 @@ import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
 import * as logger from 'yox-common/util/logger'
 
-function getComponentByTag(tag) {
-  return `component${tag}`
-}
+import getComponentByTag from './getComponentByTag'
 
 function createComponent(vnode) {
 
@@ -92,5 +90,4 @@ export default {
   create: createComponent,
   postpatch: updateComponent,
   destroy: destroyComponent,
-  getComponentByTag,
 }
