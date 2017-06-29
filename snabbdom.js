@@ -95,13 +95,6 @@ export function createComponentVnode(tag, attrs, props, directives, children, ke
 
 export function init(api) {
 
-  let fireHook = function (name, vnode, oldVnode) {
-    if (!vnode[ name ]) {
-      moduleEmitter.fire(name, [ vnode, oldVnode ], api)
-      vnode[ name ] = env.TRUE
-    }
-  }
-
   let createElement = function (parentNode, vnode) {
 
     let { el, tag, children, text } = vnode
@@ -126,7 +119,7 @@ export function init(api) {
       )
     }
 
-    fireHook(HOOK_CREATE, vnode)
+    moduleEmitter.fire(HOOK_CREATE, vnode, api)
 
     // 钩子函数可能会替换元素
     return vnode.el
@@ -180,7 +173,7 @@ export function init(api) {
         }
       )
     }
-    fireHook(HOOK_DESTROY, vnode)
+    moduleEmitter.fire(HOOK_DESTROY, vnode, api)
   }
 
   let replaceVnode = function (parentNode, oldVnode, vnode) {
@@ -331,7 +324,8 @@ export function init(api) {
       return
     }
 
-    fireHook(HOOK_UPDATE, vnode, oldVnode)
+    let args = [ vnode, oldVnode ]
+    moduleEmitter.fire(HOOK_UPDATE, args, api)
 
     let newText = vnode.text
     let newChildren = vnode.children
@@ -368,7 +362,7 @@ export function init(api) {
       }
     }
 
-    fireHook(HOOK_POSTPATCH, vnode, oldVnode)
+    moduleEmitter.fire(HOOK_POSTPATCH, args, api)
 
   }
 
