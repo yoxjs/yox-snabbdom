@@ -74,6 +74,12 @@ export function createTextVnode(text) {
   }
 }
 
+export function isTextVnode(vnode) {
+  return vnode
+    && object.has(vnode, 'text')
+    && !object.has(vnode, 'tag')
+}
+
 export function createElementVnode(tag, attrs, props, directives, children, key, instance) {
   return {
     tag,
