@@ -80,7 +80,7 @@ export function isTextVnode(vnode) {
     && !object.has(vnode, 'tag')
 }
 
-export function createElementVnode(tag, attrs, props, directives, children, key, instance) {
+export function createElementVnode(tag, attrs, props, directives, children, key, ref, instance) {
   return {
     tag,
     attrs,
@@ -88,13 +88,14 @@ export function createElementVnode(tag, attrs, props, directives, children, key,
     directives,
     children,
     key,
+    ref,
     instance,
     text: env.UNDEFINED,
   }
 }
 
-export function createComponentVnode(tag, attrs, props, directives, children, key, instance) {
-  let vnode = createElementVnode(tag, attrs, props, directives, children, key, instance)
+export function createComponentVnode(tag, attrs, props, directives, children, key, ref, instance) {
+  let vnode = createElementVnode(tag, attrs, props, directives, children, key, ref, instance)
   vnode.component = env.TRUE
   return vnode
 }
@@ -215,19 +216,18 @@ export function init(api) {
         oldEndVnode = oldChildren[ --oldEndIndex ]
       }
 
-      // 从尾到头比较，位置相同且值得 patch
-      // 从后开始的原因是，当删除了前面的元素，从前往后不合理
-      else if (isPatchable(oldEndVnode, newEndVnode)) {
-        patchVnode(oldEndVnode, newEndVnode)
-        oldEndVnode = oldChildren[ --oldEndIndex ]
-        newEndVnode = newChildren[ --newEndIndex ]
-      }
-
       // 从头到尾比较，位置相同且值得 patch
       else if (isPatchable(oldStartVnode, newStartVnode)) {
         patchVnode(oldStartVnode, newStartVnode)
         oldStartVnode = oldChildren[ ++oldStartIndex ]
         newStartVnode = newChildren[ ++newStartIndex ]
+      }
+
+      // 从尾到头比较，位置相同且值得 patch
+      else if (isPatchable(oldEndVnode, newEndVnode)) {
+        patchVnode(oldEndVnode, newEndVnode)
+        oldEndVnode = oldChildren[ --oldEndIndex ]
+        newEndVnode = newChildren[ --newEndIndex ]
       }
 
       // 比较完两侧的节点，剩下就是 位置发生改变的节点 和 全新的节点

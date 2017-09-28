@@ -6,10 +6,19 @@ import * as logger from 'yox-common/util/logger'
 
 import getComponentByTag from './getComponentByTag'
 
+function setRef(vnode, value) {
+  let { ref, instance } = vnode
+  if (ref) {
+    let refs = instance.$refs || (instance.$refs = { })
+    refs[ ref ] = value
+  }
+}
+
 function createComponent(vnode) {
 
-  let { el, tag, component, instance } = vnode
+  let { el, tag, ref, component, instance } = vnode
   if (!component) {
+    setRef(vnode, el)
     return
   }
 
@@ -42,6 +51,8 @@ function createComponent(vnode) {
           el = vnode.el = component.$el
           el[ key ] = component
 
+          setRef(vnode, component)
+
           array.each(
             queue,
             function (callback) {
@@ -55,17 +66,21 @@ function createComponent(vnode) {
 }
 
 function updateComponent(vnode) {
-  let { component, attrs } = vnode
+  let { component, el, attrs } = vnode
   if (component) {
     component = vnode.el[ getComponentByTag(vnode.tag) ]
     if (component) {
       if (component.set) {
+        setRef(vnode, component)
         component.set(attrs, env.TRUE)
       }
       else {
         component.vnode = vnode
       }
     }
+  }
+  else {
+    setRef(vnode, el)
   }
 }
 
