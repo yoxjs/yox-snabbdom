@@ -14,6 +14,13 @@ function setRef(vnode, value) {
   }
 }
 
+function removeRef(vnode) {
+  let { ref, instance } = vnode
+  if (ref) {
+    delete instance.$refs[ ref ]
+  }
+}
+
 function createComponent(vnode) {
 
   let { el, tag, ref, component, instance } = vnode
@@ -99,6 +106,7 @@ function destroyComponent(vnode) {
       el[ key ] = env.NULL
     }
   }
+  removeRef(vnode)
 }
 
 export default {
