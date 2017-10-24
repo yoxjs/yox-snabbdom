@@ -47,7 +47,7 @@ export function isElement(node) {
 }
 
 export function setProp(node, name, value) {
-  if (propFallback[ name ] && !object.exist(node, name)) {
+  if (propFallback[ name ] && !object.exists(node, name)) {
     name = propFallback[ name ]
   }
   object.set(node, name, value, env.FALSE)
