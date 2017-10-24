@@ -19,6 +19,9 @@ attr2Prop[ 'defaultchecked' ] = 'defaultChecked'
 attr2Prop[ 'defaultmuted' ] = 'defaultMuted'
 attr2Prop[ 'defaultselected' ] = 'defaultSelected'
 
+const propFallback = { }
+propFallback.textContent = 'innerText'
+
 export function createElement(tagName, parentNode) {
   const { SVGElement } = env.win
   return tagName === 'svg'
@@ -44,6 +47,9 @@ export function isElement(node) {
 }
 
 export function setProp(node, name, value) {
+  if (propFallback[ name ] && !object.exist(node, name)) {
+    name = propFallback[ name ]
+  }
   object.set(node, name, value, env.FALSE)
 }
 
