@@ -20,10 +20,19 @@ function bindDirective(vnode, key) {
   if (component) {
     component = el[ getComponentByTag(tag) ]
     if (component) {
-      if (component.queue && !component.set) {
-        component = component.queue
+      if (component.set) {
+        options.component = function (callback) {
+          callback(component)
+        }
       }
-      options.component = component
+      else if (component.queue) {
+        options.component = function (callback) {
+          array.push(
+            component.queue,
+            callback
+          )
+        }
+      }
     }
   }
 
