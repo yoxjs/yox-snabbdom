@@ -48,7 +48,7 @@ export function setProp(node, name, value) {
 }
 
 export function removeProp(node, name) {
-  setProp(node, name, env.NULL)
+  setProp(node, name, is.string(node[ name ]) ? char.CHAR_BLANK : env.NULL)
 }
 
 export function setAttr(node, name, value) {
