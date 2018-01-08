@@ -375,22 +375,15 @@ export function init(api) {
 
   return function (oldVnode, vnode) {
 
-    if (api.isElement(oldVnode)) {
-      oldVnode = {
+    patchVnode(
+      api.isElement(oldVnode)
+      ? {
         el: oldVnode,
         tag: api.tag(oldVnode),
       }
-    }
-
-    if (isPatchable(oldVnode, vnode)) {
-      patchVnode(oldVnode, vnode)
-    }
-    else {
-      let parentNode = api.parent(oldVnode.el)
-      if (createElement(parentNode, vnode)) {
-        parentNode && replaceVnode(parentNode, oldVnode, vnode)
-      }
-    }
+      : oldVnode,
+      vnode
+    )
 
     return vnode
 
