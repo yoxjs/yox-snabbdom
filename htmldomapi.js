@@ -142,3 +142,11 @@ export function on(element, type, listener) {
 export function off(element, type, listener) {
   element.removeEventListener(type, listener, env.FALSE)
 }
+
+export function getComponent(element) {
+  return element.component
+}
+
+export function setComponent(element, component) {
+  return element.component = component
+}

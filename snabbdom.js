@@ -5,6 +5,7 @@ import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
 import * as string from 'yox-common/util/string'
+import * as logger from 'yox-common/util/logger'
 
 import Emitter from 'yox-common/util/Emitter'
 
@@ -104,7 +105,7 @@ export function init(api) {
 
   let createElement = function (parentNode, vnode) {
 
-    let { el, tag, children, text } = vnode
+    let { el, tag, component, children, text, instance } = vnode
 
     if (string.falsy(tag)) {
       return vnode.el = api.createText(text)
@@ -114,22 +115,66 @@ export function init(api) {
       return vnode.el = api.createComment(text)
     }
 
-    el = vnode.el = api.createElement(tag, parentNode)
+    // 不管是组件还是元素，必须先有一个元素
+    el = vnode.el = api.createElement(component ? 'div' : tag, parentNode)
 
-    if (is.array(children)) {
-      addVnodes(el, children, 0, children.length - 1)
-    }
-    else if (is.string(text)) {
-      api.append(
-        el,
-        api.createText(text)
+    if (component) {
+
+      api.setComponent(el, vnode)
+
+      instance.component(
+        tag,
+        function (options) {
+
+          if (!options) {
+            logger.fatal(`"${tag}" component is not found.`)
+          }
+
+          vnode = api.getComponent(el)
+
+          if (vnode && tag === vnode.tag) {
+            component = (vnode.parent || vnode.instance).create(
+              options,
+              {
+                el,
+                props: vnode.attrs,
+                replace: env.TRUE,
+              }
+            )
+            el = component.$el
+            if (!el) {
+              logger.fatal(`"${tag}" component must have a root element.`)
+            }
+
+            vnode.el = el
+            api.setComponent(el, component)
+
+            moduleEmitter.fire(HOOK_CREATE, vnode, api)
+
+          }
+
+        }
       )
+
+    }
+    else {
+
+      if (is.array(children)) {
+        addVnodes(el, children, 0, children.length - 1)
+      }
+      else if (is.string(text)) {
+        api.append(
+          el,
+          api.createText(text)
+        )
+      }
+
+      moduleEmitter.fire(HOOK_CREATE, vnode, api)
+
     }
 
-    moduleEmitter.fire(HOOK_CREATE, vnode, api)
+    return el
 
-    // 钩子函数可能会替换元素
-    return vnode.el
   }
 
   let addVnodes = function (parentNode, vnodes, startIndex, endIndex, before) {
@@ -160,8 +205,18 @@ export function init(api) {
   let removeVnode = function (parentNode, vnode) {
     let { tag, el, component } = vnode
     if (tag) {
-      destroyVnode(vnode)
-      if (!component) {
+      if (component) {
+        component = api.getComponent(el)
+        if (component.set) {
+          destroyVnode(vnode)
+        }
+        else {
+          api.remove(parentNode, el)
+        }
+        api.setComponent(el, env.NULL)
+      }
+      else {
+        destroyVnode(vnode)
         api.remove(parentNode, el)
       }
     }
@@ -320,7 +375,7 @@ export function init(api) {
       return
     }
 
-    let { el } = oldVnode
+    let { el, component } = oldVnode
     vnode.el = el
 
     if (!isPatchable(oldVnode, vnode)) {
@@ -329,6 +384,14 @@ export function init(api) {
         parentNode && replaceVnode(parentNode, oldVnode, vnode)
       }
       return
+    }
+
+    if (component) {
+      component = api.getComponent(el)
+      if (!component.set) {
+        api.setComponent(el, vnode)
+        return;
+      }
     }
 
     let args = [ vnode, oldVnode ]

@@ -2,9 +2,7 @@
 import * as is from 'yox-common/util/is'
 import * as object from 'yox-common/util/object'
 
-import getComponentByTag from './getComponentByTag'
-
-function bindDirective(vnode, key) {
+function bindDirective(vnode, key, api) {
 
   let { el, tag, attrs, directives, component, instance } = vnode
 
@@ -18,13 +16,7 @@ function bindDirective(vnode, key) {
   }
 
   if (component) {
-    component = el[ getComponentByTag(tag) ]
-    if (component) {
-      if (component.queue && !component.set) {
-        component = component.queue
-      }
-      options.component = component
-    }
+    options.component = api.getComponent(el)
   }
 
   let bind = instance.directive(node.name),
@@ -56,7 +48,7 @@ function updateDirectives(vnode, oldVnode) {
   newDirectives = newDirectives || { }
   oldDirectives = oldDirectives || { }
 
-  let newUnbinds
+  let api = this, newUnbinds
 
   object.each(
     newDirectives,
@@ -69,11 +61,11 @@ function updateDirectives(vnode, oldVnode) {
           || directive.context.data !== oldDirective.context.data
         ) {
           unbindDirective(oldVnode, key)
-          unbind = bindDirective(vnode, key)
+          unbind = bindDirective(vnode, key, api)
         }
       }
       else {
-        unbind = bindDirective(vnode, key)
+        unbind = bindDirective(vnode, key, api)
       }
       if (unbind) {
         (newUnbinds || (newUnbinds = { }))[ key ] = unbind
