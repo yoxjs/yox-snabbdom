@@ -25,8 +25,8 @@ function updateComponent(vnode, oldVnode) {
   let { el, component, instance, ref } = vnode
 
   if (component) {
-    el = component
-    component.set(vnode.attrs)
+    el = this.getComponent(el)
+    el.set(vnode.attrs)
   }
 
   if (oldVnode && oldVnode.ref !== ref) {
