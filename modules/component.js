@@ -37,14 +37,7 @@ function updateComponent(vnode, oldVnode) {
 }
 
 function destroyComponent(vnode) {
-  let { el, component, instance, ref } = vnode
-  // 不加 component 会产生递归
-  // 因为组件元素既是父组件中的一个子元素，也是组件自己的根元素
-  // 因此该元素会产生两个 vnode
-  if (component) {
-    this.getComponent(el).destroy()
-  }
-  removeRef(instance, ref)
+  removeRef(vnode.instance, vnode.ref)
 }
 
 export default {

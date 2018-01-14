@@ -209,6 +209,7 @@ export function init(api) {
         component = api.getComponent(el)
         if (component.set) {
           destroyVnode(vnode)
+          component.destroy()
         }
         else {
           api.remove(parentNode, el)
