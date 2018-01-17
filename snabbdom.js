@@ -205,19 +205,7 @@ export function init(api) {
   let removeVnode = function (parentNode, vnode) {
     let { tag, el, component } = vnode
     if (tag) {
-      if (component) {
-        component = api.getComponent(el)
-        if (component.set) {
-          destroyVnode(vnode)
-          component.destroy()
-        }
-        else {
-          api.remove(parentNode, el)
-        }
-        api.setComponent(el, env.NULL)
-      }
-      else {
-        destroyVnode(vnode)
+      if (!destroyVnode(vnode)) {
         api.remove(parentNode, el)
       }
     }
@@ -227,8 +215,18 @@ export function init(api) {
   }
 
   let destroyVnode = function (vnode) {
-    let { children } = vnode
-    if (children) {
+    let { el, component, children } = vnode
+    if (component) {
+      component = api.getComponent(el)
+      if (component.set) {
+        moduleEmitter.fire(HOOK_DESTROY, vnode, api)
+        api.setComponent(el, env.NULL)
+        component.destroy()
+        return true
+      }
+      api.setComponent(el, env.NULL)
+    }
+    else if (children) {
       array.each(
         children,
         function (child) {
