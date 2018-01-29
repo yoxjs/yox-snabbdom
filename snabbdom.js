@@ -75,16 +75,6 @@ export function createTextVnode(text) {
   }
 }
 
-export function isVnode(vnode) {
-  return vnode
-    && object.has(vnode, 'text')
-}
-
-export function isTextVnode(vnode) {
-  return isVnode(vnode)
-    && !object.has(vnode, 'tag')
-}
-
 export function createElementVnode(tag, attrs, props, directives, children, key, ref, instance) {
   return {
     tag,
@@ -103,6 +93,16 @@ export function createComponentVnode(tag, attrs, props, directives, children, ke
   let vnode = createElementVnode(tag, attrs, props, directives, children, key, ref, instance)
   vnode.component = env.TRUE
   return vnode
+}
+
+export function isVnode(vnode) {
+  return vnode
+    && object.has(vnode, 'text')
+}
+
+export function isTextVnode(vnode) {
+  return isVnode(vnode)
+    && !object.has(vnode, 'tag')
 }
 
 export function init(api) {
