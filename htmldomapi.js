@@ -52,15 +52,14 @@ export function removeProp(node, name) {
 }
 
 export function setAttr(node, name, value) {
-  let isBoolean = is.boolean(node[ name ])
+  let propName = attr2Prop[ name ]
+  let isBoolean = is.boolean(node[ propName || name ])
   if (isBoolean) {
     value = value === env.TRUE || value === env.RAW_TRUE || value === name
   }
-  if (attr2Prop[ name ]) {
-    setProp(node, attr2Prop[ name ], value)
-  }
-  else if (isBoolean) {
-    setProp(node, name, value)
+  // 比如 readonly
+  if (propName || isBoolean) {
+    setProp(node, propName || name, value)
   }
   else {
     node.setAttribute(name, value)

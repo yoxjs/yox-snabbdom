@@ -75,22 +75,22 @@ export function createTextVnode(text) {
   }
 }
 
-export function createElementVnode(tag, attrs, props, directives, children, key, ref, instance) {
+export function createElementVnode(tag, attrs, props, directives, children, ref, key, instance) {
   return {
     tag,
     attrs,
     props,
     directives,
     children,
-    key,
     ref,
+    key,
     instance,
     text: env.UNDEFINED,
   }
 }
 
-export function createComponentVnode(tag, attrs, props, directives, children, key, ref, instance) {
-  let vnode = createElementVnode(tag, attrs, props, directives, children, key, ref, instance)
+export function createComponentVnode(tag, attrs, props, directives, children, ref, key, instance) {
+  let vnode = createElementVnode(tag, attrs, props, directives, children, ref, key, instance)
   vnode.component = env.TRUE
   return vnode
 }
