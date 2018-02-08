@@ -1,4 +1,6 @@
 
+import * as config from 'yox-config'
+
 function setRef(instance, ref, value) {
   if (ref) {
     let refs = instance.$refs || (instance.$refs = { })
@@ -22,11 +24,14 @@ function createComponent(vnode) {
 
 function updateComponent(vnode, oldVnode) {
 
-  let { el, component, instance, ref } = vnode
+  let { el, component, children, instance, ref } = vnode
 
   if (component) {
     el = this.getComponent(el)
     el.set(vnode.attrs)
+    if (children) {
+      el.set(config.SPECIAL_CHILDREN, children)
+    }
   }
 
   if (oldVnode && oldVnode.ref !== ref) {
