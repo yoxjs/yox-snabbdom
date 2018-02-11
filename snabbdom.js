@@ -166,7 +166,7 @@ export function init(api) {
     else {
 
       if (is.array(children)) {
-        addVnodes(el, children, 0, children.length - 1)
+        addVnodes(el, children, 0, children[ env.RAW_LENGTH ] - 1)
       }
       else if (is.string(text)) {
         api.append(
@@ -255,12 +255,12 @@ export function init(api) {
   let updateChildren = function (parentNode, oldChildren, newChildren) {
 
     let oldStartIndex = 0
-    let oldEndIndex = oldChildren.length - 1
+    let oldEndIndex = oldChildren[ env.RAW_LENGTH ] - 1
     let oldStartVnode = oldChildren[ oldStartIndex ]
     let oldEndVnode = oldChildren[ oldEndIndex ]
 
     let newStartIndex = 0
-    let newEndIndex = newChildren.length - 1
+    let newEndIndex = newChildren[ env.RAW_LENGTH ] - 1
     let newStartVnode = newChildren[ newStartIndex ]
     let newEndVnode = newChildren[ newEndIndex ]
 
@@ -425,11 +425,11 @@ export function init(api) {
         if (is.string(oldText)) {
           api.text(el, char.CHAR_BLANK)
         }
-        addVnodes(el, newChildren, 0, newChildren.length - 1)
+        addVnodes(el, newChildren, 0, newChildren[ env.RAW_LENGTH ] - 1)
       }
       // 有旧的没新的 - 删除节点
       else if (oldChildren) {
-        removeVnodes(el, oldChildren, 0, oldChildren.length - 1)
+        removeVnodes(el, oldChildren, 0, oldChildren[ env.RAW_LENGTH ] - 1)
       }
       // 有旧的 text 没有新的 text
       else if (is.string(oldText)) {
