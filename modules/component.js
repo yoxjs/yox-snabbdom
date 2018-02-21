@@ -29,7 +29,7 @@ function updateComponent(vnode, oldVnode) {
   if (component) {
     el = this.getComponent(el)
     el.set(vnode.attrs)
-    el.set(config.SPECIAL_CHILDREN, children)
+    el.set(vnode.slots)
   }
 
   if (oldVnode && oldVnode.ref !== ref) {

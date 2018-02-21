@@ -75,13 +75,14 @@ export function createTextVnode(text) {
   }
 }
 
-export function createElementVnode(tag, attrs, props, directives, children, ref, key, instance) {
+export function createElementVnode(tag, attrs, props, directives, children, slots, ref, key, instance) {
   return {
     tag,
     attrs,
     props,
     directives,
     children,
+    slots,
     ref,
     key,
     instance,
@@ -89,8 +90,8 @@ export function createElementVnode(tag, attrs, props, directives, children, ref,
   }
 }
 
-export function createComponentVnode(tag, attrs, props, directives, children, ref, key, instance) {
-  let vnode = createElementVnode(tag, attrs, props, directives, children, ref, key, instance)
+export function createComponentVnode(tag, attrs, props, directives, children, slots, ref, key, instance) {
+  let vnode = createElementVnode(tag, attrs, props, directives, children, slots, ref, key, instance)
   vnode.component = env.TRUE
   return vnode
 }
@@ -109,7 +110,7 @@ export function init(api) {
 
   let createElement = function (parentNode, vnode) {
 
-    let { el, tag, component, children, text, instance } = vnode
+    let { el, tag, component, slots, children, text, instance } = vnode
 
     if (string.falsy(tag)) {
       return vnode.el = api.createText(text)
@@ -142,7 +143,7 @@ export function init(api) {
               options,
               {
                 el,
-                children,
+                slots,
                 props: vnode.attrs,
                 replace: env.TRUE,
               }
