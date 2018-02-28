@@ -1,5 +1,5 @@
 
-import * as isDef from 'yox-common/function/isDef'
+import isDef from 'yox-common/function/isDef'
 
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
