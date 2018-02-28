@@ -16,7 +16,7 @@ function bindDirective(vnode, key, api) {
   }
 
   if (component) {
-    options.component = api.getComponent(el)
+    options.component = api.component(el)
   }
 
   let bind = instance.directive(node.name),

@@ -125,7 +125,7 @@ export function init(api) {
 
     if (component) {
 
-      api.setComponent(el, vnode)
+      api.component(el, vnode)
 
       instance.component(
         tag,
@@ -135,7 +135,7 @@ export function init(api) {
             logger.fatal(`"${tag}" component is not found.`)
           }
 
-          vnode = api.getComponent(el)
+          vnode = api.component(el)
 
           if (vnode && tag === vnode.tag) {
 
@@ -154,7 +154,7 @@ export function init(api) {
             }
 
             vnode.el = el
-            api.setComponent(el, component)
+            api.component(el, component)
 
             moduleEmitter.fire(HOOK_CREATE, vnode, api)
 
@@ -224,14 +224,14 @@ export function init(api) {
   let destroyVnode = function (vnode) {
     let { el, component, children } = vnode
     if (component) {
-      component = api.getComponent(el)
+      component = api.component(el)
       if (component.set) {
         moduleEmitter.fire(HOOK_DESTROY, vnode, api)
-        api.setComponent(el, env.NULL)
+        api.component(el, env.NULL)
         component.destroy()
         return true
       }
-      api.setComponent(el, env.NULL)
+      api.component(el, env.NULL)
     }
     else if (children) {
       array.each(
@@ -393,9 +393,9 @@ export function init(api) {
     }
 
     if (component) {
-      component = api.getComponent(el)
+      component = api.component(el)
       if (!component.set) {
-        api.setComponent(el, vnode)
+        api.component(el, vnode)
         return;
       }
     }

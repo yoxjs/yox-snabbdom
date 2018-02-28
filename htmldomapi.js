@@ -130,6 +130,12 @@ export function html(node, content) {
     : node.innerHTML = content
 }
 
+export function component(element, component) {
+  return isDef(component)
+    ? element.component = component
+    : element.component
+}
+
 export function find(selector, context) {
   return (context || env.doc).querySelector(selector)
 }
@@ -140,12 +146,4 @@ export function on(element, type, listener) {
 
 export function off(element, type, listener) {
   element.removeEventListener(type, listener, env.FALSE)
-}
-
-export function getComponent(element) {
-  return element.component
-}
-
-export function setComponent(element, component) {
-  return element.component = component
 }

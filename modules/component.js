@@ -17,7 +17,7 @@ function removeRef(instance, ref) {
 function createComponent(vnode) {
   let { el, component, instance, ref } = vnode
   if (component) {
-    el = this.getComponent(el)
+    el = this.component(el)
   }
   setRef(instance, ref, el)
 }
@@ -27,7 +27,7 @@ function updateComponent(vnode, oldVnode) {
   let { el, component, children, instance, ref } = vnode
 
   if (component) {
-    el = this.getComponent(el)
+    el = this.component(el)
     el.set(vnode.attrs)
     el.set(vnode.slots)
   }
