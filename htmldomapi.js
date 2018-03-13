@@ -21,11 +21,16 @@ attr2Prop[ 'defaultchecked' ] = 'defaultChecked'
 attr2Prop[ 'defaultmuted' ] = 'defaultMuted'
 attr2Prop[ 'defaultselected' ] = 'defaultSelected'
 
+const namespaces = {
+  svg: 'http://www.w3.org/2000/svg',
+  xlink: 'http://www.w3.org/1999/xlink',
+}
+
 export function createElement(tagName, parentNode) {
   const { SVGElement } = env.win
   return tagName === 'svg'
     || (parentNode && SVGElement && parentNode instanceof SVGElement)
-    ? env.doc.createElementNS('http://www.w3.org/2000/svg', tagName)
+    ? env.doc.createElementNS(namespaces.svg, tagName)
     : env.doc.createElement(tagName)
 }
 
@@ -63,9 +68,14 @@ export function setAttr(node, name, value) {
   if (propName || isBoolean) {
     setProp(node, propName || name, value)
   }
-  else {
-    node.setAttribute(name, value)
+  else if (string.has(name, char.CHAR_COLON)) {
+    let ns = namespaces[ name.split(char.CHAR_COLON)[ 0 ] ]
+    if (ns) {
+      node.setAttributeNS(ns, name, value)
+      return
+    }
   }
+  node.setAttribute(name, value)
 }
 
 export function removeAttr(node, name) {
