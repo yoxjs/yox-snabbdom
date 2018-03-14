@@ -21,15 +21,21 @@ attr2Prop[ 'defaultchecked' ] = 'defaultChecked'
 attr2Prop[ 'defaultmuted' ] = 'defaultMuted'
 attr2Prop[ 'defaultselected' ] = 'defaultSelected'
 
+const svgTags = array.toObject(
+  ('svg,g,defs,desc,metadata,symbol,use,'
+  + 'image,path,rect,circle,line,ellipse,polyline,polygon,'
+  + 'text,tspan,tref,textpath,'
+  + 'marker,pattern,clippath,mask,filter,cursor,view,animate,'
+  + 'font,font-face,glyph,missing-glyph').split(',')
+)
+
 const namespaces = {
   svg: 'http://www.w3.org/2000/svg',
   xlink: 'http://www.w3.org/1999/xlink',
 }
 
 export function createElement(tagName, parentNode) {
-  const { SVGElement } = env.win
-  return tagName === 'svg'
-    || (parentNode && SVGElement && parentNode instanceof SVGElement)
+  return svgTags[ tagName ]
     ? env.doc.createElementNS(namespaces.svg, tagName)
     : env.doc.createElement(tagName)
 }
