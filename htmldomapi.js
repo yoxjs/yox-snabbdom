@@ -73,6 +73,7 @@ export function setAttr(node, name, value) {
   // 比如 readonly
   if (propName || isBoolean) {
     setProp(node, propName || name, value)
+    return
   }
   else if (string.has(name, char.CHAR_COLON)) {
     let ns = namespaces[ name.split(char.CHAR_COLON)[ 0 ] ]
