@@ -34,7 +34,7 @@ const namespaces = {
   xlink: 'http://www.w3.org/1999/xlink',
 }
 
-export function createElement(tagName, parentNode) {
+export function createElement(tagName) {
   return svgTags[ tagName ]
     ? env.doc.createElementNS(namespaces.svg, tagName)
     : env.doc.createElement(tagName)

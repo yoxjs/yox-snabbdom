@@ -121,7 +121,7 @@ export function init(api) {
     }
 
     // 不管是组件还是元素，必须先有一个元素
-    el = vnode.el = api.createElement(component ? 'i' : tag, parentNode)
+    el = vnode.el = api.createElement(component ? 'i' : tag)
 
     if (component) {
 
