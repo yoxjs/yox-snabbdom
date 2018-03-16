@@ -73,16 +73,17 @@ export function setAttr(node, name, value) {
   // 比如 readonly
   if (propName || isBoolean) {
     setProp(node, propName || name, value)
-    return
   }
-  else if (string.has(name, char.CHAR_COLON)) {
-    let ns = namespaces[ name.split(char.CHAR_COLON)[ 0 ] ]
-    if (ns) {
-      node.setAttributeNS(ns, name, value)
-      return
+  else {
+    if (string.has(name, char.CHAR_COLON)) {
+      let parts = name.split(char.CHAR_COLON), ns = namespaces[ parts[ 0 ] ]
+      if (ns) {
+        node.setAttributeNS(ns, parts[ 1 ], value)
+        return
+      }
     }
+    node.setAttribute(name, value)
   }
-  node.setAttribute(name, value)
 }
 
 export function removeAttr(node, name) {
@@ -93,6 +94,13 @@ export function removeAttr(node, name) {
     removeProp(node, name)
   }
   else {
+    if (string.has(name, char.CHAR_COLON)) {
+      let parts = name.split(char.CHAR_COLON), ns = namespaces[ parts[ 0 ] ]
+      if (ns) {
+        node.removeAttributeNS(ns, parts[ 1 ])
+        return
+      }
+    }
     node.removeAttribute(name)
   }
 }
