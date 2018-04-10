@@ -70,6 +70,9 @@ export function setAttr(node, name, value) {
   if (isBoolean) {
     value = value === env.TRUE || value === env.RAW_TRUE || value === name
   }
+  else if (value == env.NULL) {
+    value = char.CHAR_BLANK
+  }
   // 比如 readonly
   if (propName || isBoolean) {
     setProp(node, propName || name, value)
