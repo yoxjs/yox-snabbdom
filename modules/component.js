@@ -1,5 +1,6 @@
 
 import * as config from 'yox-config'
+import * as env from 'yox-common/util/env'
 
 function setRef(instance, ref, value) {
   if (ref) {
