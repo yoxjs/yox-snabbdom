@@ -263,7 +263,7 @@ export function init(api) {
 
   let enterVnode = function (vnode) {
     let { el, hooks } = vnode
-    if (hooks.enter) {
+    if (hooks && hooks.enter) {
       el.$entering = env.TRUE
       hooks.enter(
         el,
@@ -275,20 +275,22 @@ export function init(api) {
   }
 
   let cancelVnode = function (vnode) {
-    let { el, hooks. } = vnode
-    if (hooks.cancelEnter && el.$entering) {
-      hooks.cancelEnter(el)
-      el.$entering = env.NULL
-    }
-    if (hooks.cancelLeave && el.$leaving) {
-      hooks.cancelLeave(el)
-      el.$leaving = env.NULL
+    let { el, hooks } = vnode
+    if (hooks) {
+      if (hooks.cancelEnter && el.$entering) {
+        hooks.cancelEnter(el)
+        el.$entering = env.NULL
+      }
+      if (hooks.cancelLeave && el.$leaving) {
+        hooks.cancelLeave(el)
+        el.$leaving = env.NULL
+      }
     }
   }
 
   let leaveVnode = function (vnode, done) {
     let { el, hooks } = vnode
-    if (hooks.leave) {
+    if (hooks && hooks.leave) {
       cancelVnode(vnode)
       el.$leaving = env.TRUE
       hooks.leave(
