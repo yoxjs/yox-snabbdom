@@ -75,7 +75,7 @@ export function createTextVnode(text) {
   }
 }
 
-export function createElementVnode(tag, attrs, props, directives, children, slots, ref, key, instance) {
+export function createElementVnode(tag, attrs, props, directives, children, slots, ref, key, instance, hooks) {
   return {
     tag,
     attrs,
@@ -87,11 +87,12 @@ export function createElementVnode(tag, attrs, props, directives, children, slot
     key,
     instance,
     text: env.UNDEFINED,
+    hooks,
   }
 }
 
-export function createComponentVnode(tag, attrs, props, directives, children, slots, ref, key, instance) {
-  let vnode = createElementVnode(tag, attrs, props, directives, children, slots, ref, key, instance)
+export function createComponentVnode(tag, attrs, props, directives, children, slots, ref, key, instance, hooks) {
+  let vnode = createElementVnode(tag, attrs, props, directives, children, slots, ref, key, instance, hooks)
   vnode.component = env.TRUE
   return vnode
 }
@@ -228,8 +229,8 @@ export function init(api) {
   }
 
   let destroyVnode = function (vnode) {
-    let { el, component, children } = vnode
     cancelVnode(vnode)
+    let { el, component, children } = vnode
     if (component) {
       component = api.component(el)
       if (component.set) {
@@ -261,10 +262,10 @@ export function init(api) {
   }
 
   let enterVnode = function (vnode) {
-    let { el, enter } = vnode
-    if (enter) {
+    let { el, hooks } = vnode
+    if (hooks.enter) {
       el.$entering = env.TRUE
-      enter(
+      hooks.enter(
         el,
         function () {
           el.$entering = env.NULL
@@ -274,23 +275,23 @@ export function init(api) {
   }
 
   let cancelVnode = function (vnode) {
-    let { el, cancelEnter, cancelLeave } = vnode
-    if (cancelEnter && el.$entering) {
-      cancelEnter(el)
+    let { el, hooks. } = vnode
+    if (hooks.cancelEnter && el.$entering) {
+      hooks.cancelEnter(el)
       el.$entering = env.NULL
     }
-    if (cancelLeave && el.$leaving) {
-      cancelLeave(el)
+    if (hooks.cancelLeave && el.$leaving) {
+      hooks.cancelLeave(el)
       el.$leaving = env.NULL
     }
   }
 
   let leaveVnode = function (vnode, done) {
-    let { el, leave } = vnode
-    if (leave) {
+    let { el, hooks } = vnode
+    if (hooks.leave) {
       cancelVnode(vnode)
       el.$leaving = env.TRUE
-      leave(
+      hooks.leave(
         el,
         function () {
           el.$leaving = env.NULL
