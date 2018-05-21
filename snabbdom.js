@@ -195,6 +195,7 @@ export function init(api) {
     let el = createElement(parentNode, vnode)
     if (el) {
       api.before(parentNode, el, before)
+      enterVnode(vnode)
     }
   }
 
@@ -212,9 +213,14 @@ export function init(api) {
   let removeVnode = function (parentNode, vnode) {
     let { tag, el, component } = vnode
     if (tag) {
-      if (!destroyVnode(vnode)) {
-        api.remove(parentNode, el)
-      }
+      leaveVnode(
+        vnode,
+        function () {
+          if (!destroyVnode(vnode)) {
+            api.remove(parentNode, el)
+          }
+        }
+      )
     }
     else if (el) {
       api.remove(parentNode, el)
@@ -223,6 +229,7 @@ export function init(api) {
 
   let destroyVnode = function (vnode) {
     let { el, component, children } = vnode
+    cancelVnode(vnode)
     if (component) {
       component = api.component(el)
       if (component.set) {
@@ -251,6 +258,49 @@ export function init(api) {
       oldVnode.el
     )
     removeVnode(parentNode, oldVnode)
+  }
+
+  let enterVnode = function (vnode) {
+    let { el, enter } = vnode
+    if (enter) {
+      el.$entering = env.TRUE
+      enter(
+        el,
+        function () {
+          el.$entering = env.NULL
+        }
+      )
+    }
+  }
+
+  let cancelVnode = function (vnode) {
+    let { el, cancelEnter, cancelLeave } = vnode
+    if (cancelEnter && el.$entering) {
+      cancelEnter(el)
+      el.$entering = env.NULL
+    }
+    if (cancelLeave && el.$leaving) {
+      cancelLeave(el)
+      el.$leaving = env.NULL
+    }
+  }
+
+  let leaveVnode = function (vnode, done) {
+    let { el, leave } = vnode
+    if (leave) {
+      cancelVnode(vnode)
+      el.$leaving = env.TRUE
+      leave(
+        el,
+        function () {
+          el.$leaving = env.NULL
+          done()
+        }
+      )
+    }
+    else {
+      done()
+    }
   }
 
   let updateChildren = function (parentNode, oldChildren, newChildren) {
