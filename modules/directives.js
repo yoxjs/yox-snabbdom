@@ -29,7 +29,7 @@ function bindDirective(vnode, key, api) {
 }
 
 function unbindDirective(vnode, key) {
-  let { unbinds } = vnode
+  let { unbinds } = vnode.data
   if (unbinds && unbinds[ key ]) {
     unbinds[ key ]()
     delete unbinds[ key ]
@@ -81,24 +81,20 @@ function updateDirectives(vnode, oldVnode) {
     }
   )
 
-  let oldUnbinds = oldVnode && oldVnode.unbinds
-  if (oldUnbinds) {
-    if (newUnbinds) {
-      object.extend(newUnbinds, oldUnbinds)
+  if (newUnbinds) {
+    let { data } = vnode
+    if (data.unbinds) {
+      object.extend(data.unbinds, newUnbinds)
     }
     else {
-      newUnbinds = oldUnbinds
+      data.unbinds = newUnbinds
     }
-  }
-
-  if (newUnbinds) {
-    vnode.unbinds = newUnbinds
   }
 
 }
 
 function destroyDirectives(vnode) {
-  let { unbinds } = vnode
+  let { unbinds } = vnode.data
   if (unbinds) {
     object.each(
       unbinds,

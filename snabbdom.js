@@ -113,6 +113,8 @@ export function init(api) {
 
     let { el, tag, component, slots, children, text, instance } = vnode
 
+    vnode.data = { }
+
     if (string.falsy(tag)) {
       return vnode.el = api.createText(text)
     }
@@ -156,6 +158,8 @@ export function init(api) {
 
             vnode.el = el
             api.component(el, component)
+
+            enterVnode(vnode)
 
             moduleEmitter.fire(HOOK_CREATE, vnode, api)
 
@@ -229,7 +233,6 @@ export function init(api) {
   }
 
   let destroyVnode = function (vnode) {
-    cancelVnode(vnode)
     let { el, component, children } = vnode
     if (component) {
       component = api.component(el)
@@ -237,7 +240,7 @@ export function init(api) {
         moduleEmitter.fire(HOOK_DESTROY, vnode, api)
         api.component(el, env.NULL)
         component.destroy()
-        return true
+        return env.TRUE
       }
       api.component(el, env.NULL)
     }
@@ -258,48 +261,34 @@ export function init(api) {
       vnode.el,
       oldVnode.el
     )
+    enterVnode(vnode)
     removeVnode(parentNode, oldVnode)
   }
 
   let enterVnode = function (vnode) {
-    let { el, hooks } = vnode
-    if (hooks && hooks.enter) {
-      el.$entering = env.TRUE
-      hooks.enter(
-        el,
-        function () {
-          el.$entering = env.NULL
-        }
-      )
-    }
-  }
-
-  let cancelVnode = function (vnode) {
-    let { el, hooks } = vnode
+    let { el, hooks, data } = vnode
     if (hooks) {
-      if (hooks.cancelEnter && el.$entering) {
-        hooks.cancelEnter(el)
-        el.$entering = env.NULL
+      if (data.leaving) {
+        data.leaving()
       }
-      if (hooks.cancelLeave && el.$leaving) {
-        hooks.cancelLeave(el)
-        el.$leaving = env.NULL
+      if (hooks.enter) {
+        hooks.enter(el, env.noop)
       }
     }
   }
 
   let leaveVnode = function (vnode, done) {
-    let { el, hooks } = vnode
-    if (hooks && hooks.leave) {
-      cancelVnode(vnode)
-      el.$leaving = env.TRUE
-      hooks.leave(
-        el,
-        function () {
-          el.$leaving = env.NULL
+    let { el, hooks, data } = vnode
+    if (hooks
+      && hooks.leave
+    ) {
+      data.leaving = function () {
+        if (done) {
           done()
+          done = env.NULL
         }
-      )
+      }
+      hooks.leave(el, data.leaving)
     }
     else {
       done()
@@ -396,11 +385,13 @@ export function init(api) {
         }
 
         if (activeVnode) {
+          activeVnode.data = oldStartVnode.data
           api.before(
             parentNode,
             activeVnode.el,
             oldStartVnode.el
           )
+          enterVnode(activeVnode)
         }
 
         newStartVnode = newChildren[ ++newStartIndex ]
@@ -434,8 +425,10 @@ export function init(api) {
       return
     }
 
-    let { el, component } = oldVnode
+    let { el, component, data } = oldVnode
+
     vnode.el = el
+    vnode.data = data
 
     if (!isPatchable(oldVnode, vnode)) {
       let parentNode = api.parent(el)
