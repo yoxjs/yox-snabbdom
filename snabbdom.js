@@ -273,8 +273,8 @@ export function init(api) {
       }
       execute(
         hooks.enter,
-        [ el, env.noop ],
-        instance
+        instance,
+        [ el, env.noop ]
       )
     }
   }
@@ -290,8 +290,8 @@ export function init(api) {
       }
       execute(
         hooks.leave,
-        [ el, data.leaving ],
-        instance
+        instance,
+        [ el, data.leaving ]
       )
     }
     else {
