@@ -266,29 +266,33 @@ export function init(api) {
   }
 
   let enterVnode = function (vnode) {
-    let { el, hooks, data } = vnode
+    let { el, hooks, data, instance } = vnode
     if (hooks) {
       if (data.leaving) {
         data.leaving()
       }
-      if (hooks.enter) {
-        hooks.enter(el, env.noop)
-      }
+      execute(
+        hooks.enter,
+        [ el, env.noop ],
+        instance
+      )
     }
   }
 
   let leaveVnode = function (vnode, done) {
-    let { el, hooks, data } = vnode
-    if (hooks
-      && hooks.leave
-    ) {
+    let { el, hooks, data, instance } = vnode
+    if (hooks) {
       data.leaving = function () {
         if (done) {
           done()
           done = env.NULL
         }
       }
-      hooks.leave(el, data.leaving)
+      execute(
+        hooks.leave,
+        [ el, data.leaving ],
+        instance
+      )
     }
     else {
       done()
@@ -495,6 +499,7 @@ export function init(api) {
       ? {
         el: oldVnode,
         tag: api.tag(oldVnode),
+        data: { },
       }
       : oldVnode,
       vnode
