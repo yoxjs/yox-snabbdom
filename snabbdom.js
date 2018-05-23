@@ -389,13 +389,12 @@ export function init(api) {
     }
 
     if (oldStartIndex > oldEndIndex) {
-      activeVnode = newChildren[ newEndIndex + 1 ]
       addVnodes(
         parentNode,
         newChildren,
         newStartIndex,
         newEndIndex,
-        activeVnode
+        newChildren[ newEndIndex + 1 ]
       )
     }
     else if (newStartIndex > newEndIndex) {

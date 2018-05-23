@@ -177,3 +177,31 @@ export function on(element, type, listener) {
 export function off(element, type, listener) {
   element.removeEventListener(type, listener, env.FALSE)
 }
+
+export function addClass(element, className) {
+  let { classList } = element
+  if (classList) {
+    classList.add(className)
+  }
+  else {
+    classList = element.className.split(char.CHAR_WHITESPACE)
+    if (!array.has(classList, className)) {
+      array.push(classList, className)
+      element.className = array.join(classList, char.CHAR_WHITESPACE)
+    }
+  }
+}
+
+export function removeClass(element, className) {
+  let { classList } = element
+  if (classList) {
+    classList.remove(className)
+  }
+  else {
+    let classList = element.className.split(char.CHAR_WHITESPACE)
+    if (array.has(classList, className)) {
+      array.remove(classList, className)
+      element.className = array.join(classList, char.CHAR_WHITESPACE)
+    }
+  }
+}
