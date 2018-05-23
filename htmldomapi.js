@@ -198,7 +198,7 @@ export function removeClass(element, className) {
     classList.remove(className)
   }
   else {
-    let classList = element.className.split(char.CHAR_WHITESPACE)
+    classList = element.className.split(char.CHAR_WHITESPACE)
     if (array.has(classList, className)) {
       array.remove(classList, className)
       element.className = array.join(classList, char.CHAR_WHITESPACE)
