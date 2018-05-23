@@ -109,7 +109,7 @@ export function isTextVnode(vnode) {
 
 export function init(api) {
 
-  let createElement = function (parentNode, vnode) {
+  let createElement = function (vnode) {
 
     let { el, tag, component, slots, children, text, instance } = vnode
 
@@ -197,10 +197,8 @@ export function init(api) {
   }
 
   let addVnode = function (parentNode, vnode, before) {
-    let el = createElement(parentNode, vnode)
-    if (el) {
-      api.before(parentNode, el, before)
-      enterVnode(vnode)
+    if (createElement(vnode)) {
+      insertVnode(parentNode, vnode, before)
     }
   }
 
@@ -255,14 +253,12 @@ export function init(api) {
     moduleEmitter.fire(HOOK_DESTROY, vnode, api)
   }
 
-  let replaceVnode = function (parentNode, oldVnode, vnode) {
-    api.before(
-      parentNode,
-      vnode.el,
-      oldVnode.el
-    )
-    enterVnode(vnode)
-    removeVnode(parentNode, oldVnode)
+  let insertVnode = function (parentNode, vnode, oldVnode) {
+    let { el } = vnode, hasParent = api.parent(el)
+    api.before(parentNode, el, oldVnode ? oldVnode.el : env.NULL)
+    if (!hasParent) {
+      enterVnode(vnode)
+    }
   }
 
   let enterVnode = function (vnode) {
@@ -390,12 +386,7 @@ export function init(api) {
 
         if (activeVnode) {
           activeVnode.data = oldStartVnode.data
-          api.before(
-            parentNode,
-            activeVnode.el,
-            oldStartVnode.el
-          )
-          enterVnode(activeVnode)
+          insertVnode(parentNode, activeVnode, oldStartVnode)
         }
 
         newStartVnode = newChildren[ ++newStartIndex ]
@@ -410,7 +401,7 @@ export function init(api) {
         newChildren,
         newStartIndex,
         newEndIndex,
-        activeVnode ? activeVnode.el : env.NULL
+        activeVnode
       )
     }
     else if (newStartIndex > newEndIndex) {
@@ -436,8 +427,9 @@ export function init(api) {
 
     if (!isPatchable(oldVnode, vnode)) {
       let parentNode = api.parent(el)
-      if (createElement(parentNode, vnode)) {
-        parentNode && replaceVnode(parentNode, oldVnode, vnode)
+      if (createElement(vnode) && parentNode) {
+        insertVnode(parentNode, vnode, oldVnode)
+        removeVnode(parentNode, oldVnode)
       }
       return
     }
