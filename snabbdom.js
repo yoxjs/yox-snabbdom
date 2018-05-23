@@ -109,11 +109,11 @@ export function isTextVnode(vnode) {
 
 export function init(api) {
 
-  let createElement = function (vnode) {
+  let createElement = function (vnode, data) {
 
     let { el, tag, component, slots, children, text, instance } = vnode
 
-    vnode.data = { }
+    vnode.data = data || { }
 
     if (string.falsy(tag)) {
       return vnode.el = api.createText(text)
@@ -190,15 +190,13 @@ export function init(api) {
   }
 
   let addVnodes = function (parentNode, vnodes, startIndex, endIndex, before) {
+    let vnode
     while (startIndex <= endIndex) {
-      addVnode(parentNode, vnodes[ startIndex ], before)
+      vnode = vnodes[ startIndex ]
+      if (createElement(vnode)) {
+        insertVnode(parentNode, vnode, before)
+      }
       startIndex++
-    }
-  }
-
-  let addVnode = function (parentNode, vnode, before) {
-    if (createElement(vnode)) {
-      insertVnode(parentNode, vnode, before)
     }
   }
 
@@ -377,15 +375,11 @@ export function init(api) {
           oldChildren[ oldIndex ] = env.NULL
         }
         // 新元素
-        else {
-          activeVnode = createElement(parentNode, newStartVnode)
-          if (activeVnode) {
-            activeVnode = newStartVnode
-          }
+        else if (createElement(newStartVnode, oldStartVnode.data)) {
+          activeVnode = newStartVnode
         }
 
         if (activeVnode) {
-          activeVnode.data = oldStartVnode.data
           insertVnode(parentNode, activeVnode, oldStartVnode)
         }
 
