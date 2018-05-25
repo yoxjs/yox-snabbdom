@@ -31,13 +31,11 @@ function createComponent(vnode) {
 
 function updateComponent(vnode, oldVnode) {
 
-  let { el, component, children, instance, ref, attrs } = vnode
+  let { el, component, children, instance, ref } = vnode
 
   if (component) {
     el = this.component(el)
-    if (attrs) {
-      el.set(el.validate(attrs))
-    }
+    el.set(node.attrs)
     el.set(vnode.slots)
   }
 
