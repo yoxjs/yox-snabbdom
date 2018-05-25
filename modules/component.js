@@ -35,7 +35,7 @@ function updateComponent(vnode, oldVnode) {
 
   if (component) {
     el = this.component(el)
-    el.set(node.attrs)
+    el.set(vnode.attrs)
     el.set(vnode.slots)
   }
 
