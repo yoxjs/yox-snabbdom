@@ -232,13 +232,18 @@ export function init(api) {
     let { el, component, children } = vnode
     if (component) {
       component = api.component(el)
-      if (component.set) {
-        moduleEmitter.fire(HOOK_DESTROY, vnode, api)
+      if (vnode.parent === vnode.instance) {
+        if (component.set) {
+          moduleEmitter.fire(HOOK_DESTROY, vnode, api)
+          api.component(el, env.NULL)
+          component.destroy()
+          return env.TRUE
+        }
         api.component(el, env.NULL)
-        component.destroy()
-        return env.TRUE
       }
-      api.component(el, env.NULL)
+      else {
+        return
+      }
     }
     else if (children) {
       array.each(
