@@ -28,14 +28,6 @@ function bindDirective(vnode, key, api) {
 
 }
 
-function unbindDirective(vnode, key) {
-  let { unbinds } = vnode.data
-  if (unbinds && unbinds[ key ]) {
-    unbinds[ key ]()
-    delete unbinds[ key ]
-  }
-}
-
 function updateDirectives(vnode, oldVnode) {
 
   let newDirectives = vnode.directives
@@ -48,7 +40,7 @@ function updateDirectives(vnode, oldVnode) {
   newDirectives = newDirectives || { }
   oldDirectives = oldDirectives || { }
 
-  let api = this, newUnbinds
+  let api = this, { data } = vnode, oldUnbinds = data.unbinds, newUnbinds
 
   object.each(
     newDirectives,
@@ -59,7 +51,10 @@ function updateDirectives(vnode, oldVnode) {
         if (directive.value !== oldDirective.value
           || directive.keypath !== oldDirective.keypath
         ) {
-          unbindDirective(oldVnode, key)
+          if (oldUnbinds && oldUnbinds[ key ]) {
+            oldUnbinds[ key ]()
+            delete oldUnbinds[ key ]
+          }
           unbind = bindDirective(vnode, key, api)
         }
       }
@@ -75,16 +70,19 @@ function updateDirectives(vnode, oldVnode) {
   object.each(
     oldDirectives,
     function (directive, key) {
-      if (!object.has(newDirectives, key)) {
-        unbindDirective(oldVnode, key)
+      if (!object.has(newDirectives, key)
+        && oldUnbinds
+        && oldUnbinds[ key ]
+      ) {
+        oldUnbinds[ key ]()
+        delete oldUnbinds[ key ]
       }
     }
   )
 
   if (newUnbinds) {
-    let { data } = vnode
-    if (data.unbinds) {
-      object.extend(data.unbinds, newUnbinds)
+    if (oldUnbinds) {
+      object.extend(oldUnbinds, newUnbinds)
     }
     else {
       data.unbinds = newUnbinds
@@ -98,8 +96,9 @@ function destroyDirectives(vnode) {
   if (unbinds) {
     object.each(
       unbinds,
-      function (unbind) {
+      function (unbind, key) {
         unbind()
+        delete unbinds[ key ]
       }
     )
   }
