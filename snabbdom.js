@@ -113,7 +113,7 @@ export function init(api) {
 
     let { el, tag, component, slots, children, text, instance } = vnode
 
-    vnode.data = data || { }
+    vnode.data = { }
 
     if (string.falsy(tag)) {
       return vnode.el = api.createText(text)
@@ -380,7 +380,7 @@ export function init(api) {
           oldChildren[ oldIndex ] = env.NULL
         }
         // 新元素
-        else if (createElement(newStartVnode, oldStartVnode.data)) {
+        else if (createElement(newStartVnode)) {
           activeVnode = newStartVnode
         }
 
