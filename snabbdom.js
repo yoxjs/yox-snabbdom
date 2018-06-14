@@ -142,7 +142,7 @@ export function init(api) {
 
           if (vnode && tag === vnode.tag) {
 
-            component = vnode.parent.create(
+            component = (vnode.parent || vnode.instance).create(
               options,
               {
                 el,
