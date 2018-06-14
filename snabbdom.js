@@ -144,12 +144,12 @@ export function init(api) {
 
             let host = vnode.parent || instance, extensions
 
-            let modelKeypath = directives && directives.model && directives.model.value
+            let modelKeypath = directives && directives.model && directives.model[ env.RAW_VALUE ]
             if (modelKeypath) {
               if (!attrs) {
                 attrs = vnode.attrs = { }
               }
-              let field = options.model || 'value'
+              let field = options.model || env.RAW_VALUE
               if (!object.has(attrs, field)) {
                 attrs[ field ] = host.get(modelKeypath)
               }
