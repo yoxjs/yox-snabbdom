@@ -111,7 +111,7 @@ export function init(api) {
 
   let createElement = function (vnode, data) {
 
-    let { el, tag, component, slots, children, text, instance } = vnode
+    let { el, tag, component, attrs, slots, directives, children, text, instance } = vnode
 
     vnode.data = { }
 
@@ -142,13 +142,30 @@ export function init(api) {
 
           if (vnode && tag === vnode.tag) {
 
-            component = (vnode.parent || vnode.instance).create(
+            let host = vnode.parent || instance, extensions
+
+            let modelKeypath = directives && directives.model && directives.model.value
+            if (modelKeypath) {
+              if (!attrs) {
+                attrs = vnode.attrs = { }
+              }
+              let field = options.model || 'value'
+              if (!object.has(attrs, field)) {
+                attrs[ field ] = host.get(modelKeypath)
+              }
+              extensions = {
+                $model: field,
+              }
+            }
+
+            component = host.create(
               options,
               {
                 el,
                 slots,
-                props: vnode.attrs,
+                props: attrs,
                 replace: env.TRUE,
+                extensions,
               }
             )
             el = component.$el
