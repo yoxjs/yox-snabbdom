@@ -20,7 +20,7 @@ function bindDirective(vnode, key, api) {
     options.component = api.component(el)
   }
 
-  let bind = instance.directive(node.name),
+  let bind = instance.directive(node[ env.RAW_NAME ]),
   unbind = bind && bind(options)
 
   if (is.func(unbind)) {
