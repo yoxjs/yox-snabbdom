@@ -50,7 +50,7 @@ function updateDirectives(vnode, oldVnode) {
       if (object.has(oldDirectives, key)) {
         let oldDirective = oldDirectives[ key ]
         if (directive[ env.RAW_VALUE ] !== oldDirective[ env.RAW_VALUE ]
-          || directive.keypath !== oldDirective.keypath
+          || directive[ env.RAW_KEYPATH ] !== oldDirective[ env.RAW_KEYPATH ]
         ) {
           if (oldUnbinds && oldUnbinds[ key ]) {
             oldUnbinds[ key ]()
