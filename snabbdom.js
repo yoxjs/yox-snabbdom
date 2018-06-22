@@ -99,7 +99,7 @@ export function createComponentVnode(tag, attrs, props, directives, children, sl
 
 export function isVnode(vnode) {
   return vnode
-    && object.has(vnode, 'text')
+    && object.has(vnode, env.RAW_TEXT)
 }
 
 export function isTextVnode(vnode) {
@@ -460,15 +460,15 @@ export function init(api) {
     let args = [ vnode, oldVnode ]
     moduleEmitter.fire(HOOK_UPDATE, args, api)
 
-    let newText = vnode.text
-    let newChildren = vnode.children
+    let newText = vnode[ env.RAW_TEXT ]
+    let newChildren = vnode[ env.RAW_CHILDREN ]
 
-    let oldText = oldVnode.text
-    let oldChildren = oldVnode.children
+    let oldText = oldVnode[ env.RAW_TEXT ]
+    let oldChildren = oldVnode[ env.RAW_CHILDREN ]
 
     if (is.string(newText)) {
       if (newText !== oldText) {
-        api.text(el, newText)
+        api[ env.RAW_TEXT ](el, newText)
       }
     }
     else {
@@ -481,7 +481,7 @@ export function init(api) {
       // 有新的没旧的 - 新增节点
       else if (newChildren) {
         if (is.string(oldText)) {
-          api.text(el, char.CHAR_BLANK)
+          api[ env.RAW_TEXT ](el, char.CHAR_BLANK)
         }
         addVnodes(el, newChildren, 0, newChildren[ env.RAW_LENGTH ] - 1)
       }
@@ -491,7 +491,7 @@ export function init(api) {
       }
       // 有旧的 text 没有新的 text
       else if (is.string(oldText)) {
-        api.text(el, char.CHAR_BLANK)
+        api[ env.RAW_TEXT ](el, char.CHAR_BLANK)
       }
     }
 
