@@ -10,7 +10,7 @@ import * as object from 'yox-common/util/object'
 
 const attr2Prop = { }
 attr2Prop[ 'for' ] = 'htmlFor'
-attr2Prop[ 'value' ] = 'value'
+attr2Prop[ env.RAW_VALUE ] = env.RAW_VALUE
 attr2Prop[ 'class' ] = 'className'
 attr2Prop[ 'style' ] = 'style.cssText'
 attr2Prop[ 'nohref' ] = 'noHref'
@@ -162,8 +162,8 @@ export function html(node, content) {
 
 export function component(element, component) {
   return isDef(component)
-    ? element.component = component
-    : element.component
+    ? element[ env.RAW_COMPONENT ] = component
+    : element[ env.RAW_COMPONENT ]
 }
 
 export function find(selector, context) {
