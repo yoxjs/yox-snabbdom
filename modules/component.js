@@ -22,32 +22,34 @@ function removeRef(instance, ref) {
 }
 
 function createComponent(vnode) {
-  let { el, component, instance, ref } = vnode
-  if (component) {
-    el = this.component(el)
+  let el = vnode.el
+  if (vnode[ env.RAW_COMPONENT ]) {
+    el = this[ env.RAW_COMPONENT ](el)
   }
-  setRef(instance, ref, el)
+  setRef(vnode.instance, vnode[ env.RAW_REF ], el)
 }
 
 function updateComponent(vnode, oldVnode) {
 
-  let { el, component, children, instance, ref } = vnode
+  let el = vnode.el,
+  instance = vnode.instance,
+  ref = vnode[ env.RAW_REF ]
 
-  if (component) {
-    el = this.component(el)
+  if (vnode[ env.RAW_COMPONENT ]) {
+    el = this[ env.RAW_COMPONENT ](el)
     el.set(vnode.attrs)
     el.set(vnode.slots)
   }
 
-  if (oldVnode && oldVnode.ref !== ref) {
-    removeRef(instance, oldVnode.ref)
+  if (oldVnode && oldVnode[ env.RAW_REF ] !== ref) {
+    removeRef(instance, oldVnode[ env.RAW_REF ])
     setRef(instance, ref, el)
   }
 
 }
 
 function destroyComponent(vnode) {
-  removeRef(vnode.instance, vnode.ref)
+  removeRef(vnode.instance, vnode[ env.RAW_REF ])
 }
 
 export default {

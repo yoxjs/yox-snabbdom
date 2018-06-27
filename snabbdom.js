@@ -46,14 +46,14 @@ array.each(
 modules = env.NULL
 
 function isPatchable(vnode1, vnode2) {
-  return vnode1.key === vnode2.key
-    && vnode1.tag === vnode2.tag
+  return vnode1[ env.RAW_KEY ] === vnode2[ env.RAW_KEY ]
+    && vnode1[ env.RAW_TAG ] === vnode2[ env.RAW_TAG ]
 }
 
 function createKeyToIndex(vnodes, startIndex, endIndex) {
   let result = { }, key
   while (startIndex <= endIndex) {
-    key = vnodes[ startIndex ].key
+    key = vnodes[ startIndex ][ env.RAW_KEY ]
     if (isDef(key)) {
       result[ key ] = startIndex
     }
@@ -93,7 +93,7 @@ export function createElementVnode(tag, attrs, props, directives, children, slot
 
 export function createComponentVnode(tag, attrs, props, directives, children, slots, ref, key, instance, hooks) {
   let vnode = createElementVnode(tag, attrs, props, directives, children, slots, ref, key, instance, hooks)
-  vnode.component = env.TRUE
+  vnode[ env.RAW_COMPONENT ] = env.TRUE
   return vnode
 }
 
@@ -104,7 +104,7 @@ export function isVnode(vnode) {
 
 export function isTextVnode(vnode) {
   return isVnode(vnode)
-    && !object.has(vnode, 'tag')
+    && !object.has(vnode, env.RAW_TAG)
 }
 
 export function init(api) {
@@ -128,19 +128,19 @@ export function init(api) {
 
     if (component) {
 
-      api.component(el, vnode)
+      api[ env.RAW_COMPONENT ](el, vnode)
 
-      instance.component(
+      instance[ env.RAW_COMPONENT ](
         tag,
         function (options) {
 
           if (!options) {
-            logger.fatal(`"${tag}" component is not found.`)
+            logger.fatal(`"${tag}" ${env.RAW_COMPONENT} is not found.`)
           }
 
-          vnode = api.component(el)
+          vnode = api[ env.RAW_COMPONENT ](el)
 
-          if (vnode && tag === vnode.tag) {
+          if (vnode && tag === vnode[ env.RAW_TAG ]) {
 
             let host = vnode.parent || instance, extensions
 
@@ -170,11 +170,11 @@ export function init(api) {
             )
             el = component.$el
             if (!el) {
-              logger.fatal(`"${tag}" component must have a root element.`)
+              logger.fatal(`"${tag}" ${env.RAW_COMPONENT} must have a root element.`)
             }
 
             vnode.el = el
-            api.component(el, component)
+            api[ env.RAW_COMPONENT ](el, component)
 
             enterVnode(vnode)
 
@@ -229,8 +229,9 @@ export function init(api) {
   }
 
   let removeVnode = function (parentNode, vnode) {
-    let { tag, el, component } = vnode
-    if (tag) {
+    let el = vnode.el
+
+    if (vnode[ env.RAW_TAG ]) {
       leaveVnode(
         vnode,
         function () {
@@ -246,17 +247,20 @@ export function init(api) {
   }
 
   let destroyVnode = function (vnode) {
-    let { el, component, children } = vnode
+    let el = vnode.el,
+    children = vnode[ env.RAW_CHILDREN ],
+    component = vnode[ env.RAW_COMPONENT ]
+
     if (component) {
-      component = api.component(el)
+      component = api[ env.RAW_COMPONENT ](el)
       if (vnode.parent === vnode.instance) {
         if (component.set) {
           moduleEmitter.fire(HOOK_DESTROY, vnode, api)
-          api.component(el, env.NULL)
+          api[ env.RAW_COMPONENT ](el, env.NULL)
           component.destroy()
           return env.TRUE
         }
-        api.component(el, env.NULL)
+        api[ env.RAW_COMPONENT ](el, env.NULL)
       }
       else {
         return
@@ -388,7 +392,7 @@ export function init(api) {
           oldKeyToIndex = createKeyToIndex(oldChildren, oldStartIndex, oldEndIndex)
         }
 
-        oldIndex = oldKeyToIndex[ newStartVnode.key ]
+        oldIndex = oldKeyToIndex[ newStartVnode[ env.RAW_KEY ] ]
 
         // 移动元素
         if (is.number(oldIndex)) {
@@ -435,10 +439,11 @@ export function init(api) {
       return
     }
 
-    let { el, component, data } = oldVnode
+    let el = oldVnode.el,
+    component = oldVnode[ env.RAW_COMPONENT ]
 
     vnode.el = el
-    vnode.data = data
+    vnode.data = oldVnode.data
 
     if (!isPatchable(oldVnode, vnode)) {
       let parentNode = api.parent(el)
@@ -450,9 +455,9 @@ export function init(api) {
     }
 
     if (component) {
-      component = api.component(el)
+      component = api[ env.RAW_COMPONENT ](el)
       if (!component.set) {
-        api.component(el, vnode)
+        api[ env.RAW_COMPONENT ](el, vnode)
         return;
       }
     }
@@ -505,7 +510,7 @@ export function init(api) {
       api.isElement(oldVnode)
       ? {
         el: oldVnode,
-        tag: api.tag(oldVnode),
+        tag: api[ env.RAW_TAG ](oldVnode),
         data: { },
       }
       : oldVnode,
