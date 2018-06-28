@@ -1,16 +1,17 @@
 
+import * as env from 'yox-common/util/env'
 import * as char from 'yox-common/util/char'
 import * as object from 'yox-common/util/object'
 
 function createProps(vnode, oldVnode) {
 
-  let { component, props } = vnode
-  if (!component && props) {
-    let api = this, oldProps = oldVnode && oldVnode.props || { }
+  let props = vnode.props
+  if (!vnode[ env.RAW_COMPONENT ] && props) {
+    let api = this, oldProps = oldVnode && oldVnode.props
     object.each(
       props,
       function (value, name) {
-        if (value !== oldProps[ name ]) {
+        if (!oldProps || value !== oldProps[ name ]) {
           api.setProp(vnode.el, name, value)
         }
       }
@@ -21,16 +22,15 @@ function createProps(vnode, oldVnode) {
 
 function removeProps(vnode, oldVnode) {
 
-  let { component, props } = vnode, oldProps = oldVnode.props, api = this
-  if (!component && oldProps) {
-    props = props || { }
+  let props = vnode.props, oldProps = oldVnode.props, api = this
+  if (!vnode[ env.RAW_COMPONENT ] && oldProps) {
     object.each(
       oldProps,
       function (value, name) {
         // 现在只有 innerText 和 innerHTML 会走进这里
         // 对于这两种属性，为了确保兼容性，不能设为 null 或 undefined，因为 IE 会认为是字符串 null 或 undefined
         // 但我们真实想要的是置为空字符串
-        if (!object.has(props, name)) {
+        if (!props || !object.has(props, name)) {
           api.setProp(vnode.el, name, char.CHAR_BLANK)
         }
       }

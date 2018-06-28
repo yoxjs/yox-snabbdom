@@ -5,7 +5,7 @@ import * as object from 'yox-common/util/object'
 
 function bindDirective(vnode, key, api) {
 
-  let { el, tag, attrs, directives, component, instance } = vnode
+  let { el, tag, attrs, directives, instance } = vnode
 
   let node = directives[ key ],
   options = {
@@ -16,7 +16,7 @@ function bindDirective(vnode, key, api) {
     attrs: attrs || { },
   }
 
-  if (component) {
+  if (vnode[ env.RAW_COMPONENT ]) {
     options[ env.RAW_COMPONENT ] = api[ env.RAW_COMPONENT ](el)
   }
 
@@ -41,7 +41,7 @@ function updateDirectives(vnode, oldVnode) {
   newDirectives = newDirectives || { }
   oldDirectives = oldDirectives || { }
 
-  let api = this, { data } = vnode, oldUnbinds = data.unbinds, newUnbinds
+  let api = this, data = vnode.data, oldUnbinds = data.unbinds, newUnbinds
 
   object.each(
     newDirectives,
