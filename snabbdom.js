@@ -111,7 +111,7 @@ export function init(api) {
 
   let createElement = function (vnode, data) {
 
-    let { el, tag, component, attrs, slots, directives, children, text, instance } = vnode
+    let { el, tag, component, directives, children, text, instance } = vnode
 
     vnode.data = { }
 
@@ -142,6 +142,7 @@ export function init(api) {
 
           if (vnode && tag === vnode[ env.RAW_TAG ]) {
 
+            let { attrs, slots } = vnode
             let host = vnode.parent || instance, extensions
 
             let modelKeypath = directives && directives.model && directives.model[ env.RAW_VALUE ]
