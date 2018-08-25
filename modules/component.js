@@ -24,7 +24,7 @@ function removeRef(instance, ref) {
 function createComponent(vnode) {
   let el = vnode.el
   if (vnode[ env.RAW_COMPONENT ]) {
-    el = this[ env.RAW_COMPONENT ](el)
+    el = this[ env.RAW_COMPONENT ](vnode.data.id)
   }
   setRef(vnode.instance, vnode[ env.RAW_REF ], el)
 }
@@ -36,7 +36,7 @@ function updateComponent(vnode, oldVnode) {
   ref = vnode[ env.RAW_REF ]
 
   if (vnode[ env.RAW_COMPONENT ]) {
-    el = this[ env.RAW_COMPONENT ](el)
+    el = this[ env.RAW_COMPONENT ](vnode.data.id)
     el.set(vnode.attrs)
     el.set(vnode.slots)
   }

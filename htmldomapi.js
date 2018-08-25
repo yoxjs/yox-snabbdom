@@ -157,12 +157,6 @@ export function html(node, content) {
     : node.innerHTML = content
 }
 
-export function component(element, component) {
-  return isDef(component)
-    ? element[ env.RAW_COMPONENT ] = component
-    : element[ env.RAW_COMPONENT ]
-}
-
 export function find(selector, context) {
   return (context || env.doc).querySelector(selector)
 }
@@ -202,3 +196,14 @@ export function removeClass(element, className) {
     }
   }
 }
+
+
+const components = { }
+
+export function component(id, component) {
+  return isDef(component)
+    ? components[ id ] = component
+    : components[ id ]
+}
+
+

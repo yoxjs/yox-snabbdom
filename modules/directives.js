@@ -5,19 +5,19 @@ import * as object from 'yox-common/util/object'
 
 function bindDirective(vnode, key, api) {
 
-  let { el, tag, attrs, directives, instance } = vnode
+  let { directives, instance } = vnode
 
   let node = directives[ key ],
   options = {
-    el,
+    el: vnode.el,
     node,
     instance,
     directives,
-    attrs: attrs || { },
+    attrs: vnode.attrs || { },
   }
 
   if (vnode[ env.RAW_COMPONENT ]) {
-    options[ env.RAW_COMPONENT ] = api[ env.RAW_COMPONENT ](el)
+    options[ env.RAW_COMPONENT ] = api[ env.RAW_COMPONENT ](vnode.data.id)
   }
 
   let bind = instance.directive(node[ env.RAW_NAME ]),

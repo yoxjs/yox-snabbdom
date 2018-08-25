@@ -107,13 +107,17 @@ export function isTextVnode(vnode) {
     && !object.has(vnode, env.RAW_TAG)
 }
 
+let guid = 0
+
 export function init(api) {
 
   let createElement = function (vnode, data) {
 
     let { el, tag, component, directives, children, text, instance } = vnode
 
-    vnode.data = { }
+    let id = ++guid
+
+    vnode.data = { id }
 
     if (string.falsy(tag)) {
       return vnode.el = api.createText(text)
@@ -128,7 +132,7 @@ export function init(api) {
 
     if (component) {
 
-      api[ env.RAW_COMPONENT ](el, vnode)
+      api[ env.RAW_COMPONENT ](id, vnode)
 
       instance[ env.RAW_COMPONENT ](
         tag,
@@ -138,7 +142,7 @@ export function init(api) {
             logger.fatal(`"${tag}" ${env.RAW_COMPONENT} is not found.`)
           }
 
-          vnode = api[ env.RAW_COMPONENT ](el)
+          vnode = api[ env.RAW_COMPONENT ](id)
 
           if (vnode && tag === vnode[ env.RAW_TAG ]) {
 
@@ -175,7 +179,7 @@ export function init(api) {
             }
 
             vnode.el = el
-            api[ env.RAW_COMPONENT ](el, component)
+            api[ env.RAW_COMPONENT ](id, component)
 
             enterVnode(vnode)
 
@@ -253,15 +257,16 @@ export function init(api) {
     component = vnode[ env.RAW_COMPONENT ]
 
     if (component) {
-      component = api[ env.RAW_COMPONENT ](el)
+      let { id } = vnode.data
+      component = api[ env.RAW_COMPONENT ](id)
       if (vnode.parent === vnode.instance) {
         if (component.set) {
           moduleEmitter.fire(HOOK_DESTROY, vnode, api)
-          api[ env.RAW_COMPONENT ](el, env.NULL)
+          api[ env.RAW_COMPONENT ](id, env.NULL)
           component.destroy()
           return env.TRUE
         }
-        api[ env.RAW_COMPONENT ](el, env.NULL)
+        api[ env.RAW_COMPONENT ](id, env.NULL)
       }
       else {
         return
@@ -456,9 +461,10 @@ export function init(api) {
     }
 
     if (component) {
-      component = api[ env.RAW_COMPONENT ](el)
+      let { id } = vnode.data
+      component = api[ env.RAW_COMPONENT ](id)
       if (!component.set) {
-        api[ env.RAW_COMPONENT ](el, vnode)
+        api[ env.RAW_COMPONENT ](id, vnode)
         return;
       }
     }
