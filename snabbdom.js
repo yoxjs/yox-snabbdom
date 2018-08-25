@@ -146,24 +146,28 @@ export function init(api) {
 
           if (vnode && tag === vnode[ env.RAW_TAG ]) {
 
-            let { attrs, slots } = vnode
-            let host = vnode.parent || instance, extensions
+            let extensions,
+            { attrs, slots } = vnode,
+            modelKeypath = directives && directives.model && directives.model[ env.RAW_VALUE ]
 
-            let modelKeypath = directives && directives.model && directives.model[ env.RAW_VALUE ]
             if (modelKeypath) {
               if (!attrs) {
                 attrs = vnode.attrs = { }
               }
               let field = options.model || env.RAW_VALUE
               if (!object.has(attrs, field)) {
-                attrs[ field ] = host.get(modelKeypath)
+                // 这里必须用 instance.get
+                // 因为必须从定义这段模板的组件实例获取数据
+                attrs[ field ] = instance.get(modelKeypath)
               }
               extensions = {
                 $model: field,
               }
             }
 
-            component = host.create(
+            // 这里优先用 vnode.parent
+            // 因为要实现正确的父子关系
+            component = (vnode.parent || instance).create(
               options,
               {
                 el,
