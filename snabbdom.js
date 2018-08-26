@@ -113,7 +113,7 @@ export function init(api) {
 
   let createElement = function (vnode, data) {
 
-    let { el, tag, component, directives, children, text, instance } = vnode
+    let { el, tag, component, children, text, instance } = vnode
 
     let id = ++guid
 
@@ -146,37 +146,10 @@ export function init(api) {
 
           if (vnode && tag === vnode[ env.RAW_TAG ]) {
 
-            let extensions,
-            { attrs, slots } = vnode,
-            modelKeypath = directives && directives.model && directives.model[ env.RAW_VALUE ]
-
-            if (modelKeypath) {
-              if (!attrs) {
-                attrs = vnode.attrs = { }
-              }
-              let field = options.model || env.RAW_VALUE
-              if (!object.has(attrs, field)) {
-                // 这里必须用 instance.get
-                // 因为必须从定义这段模板的组件实例获取数据
-                attrs[ field ] = instance.get(modelKeypath)
-              }
-              extensions = {
-                $model: field,
-              }
-            }
-
             // 这里优先用 vnode.parent
             // 因为要实现正确的父子关系
-            component = (vnode.parent || instance).create(
-              options,
-              {
-                el,
-                slots,
-                props: attrs,
-                replace: env.TRUE,
-                extensions,
-              }
-            )
+            component = (vnode.parent || instance).create(options, vnode, el)
+
             el = component.$el
             if (!el) {
               logger.fatal(`"${tag}" ${env.RAW_COMPONENT} must have a root element.`)
