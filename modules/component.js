@@ -32,12 +32,15 @@ function createComponent(vnode) {
 function updateComponent(vnode, oldVnode) {
 
   let el = vnode.el,
+  attrs = vnode.attrs,
   instance = vnode.instance,
   ref = vnode[ env.RAW_REF ]
 
   if (vnode[ env.RAW_COMPONENT ]) {
     el = this[ env.RAW_COMPONENT ](vnode.data.id)
-    el.set(vnode.attrs)
+    if (attrs) {
+      el.set(el.checkPropTypes(attrs))
+    }
     el.set(vnode.slots)
   }
 
