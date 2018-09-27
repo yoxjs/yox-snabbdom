@@ -43,7 +43,7 @@ function updateComponent(vnode, oldVnode) {
       // 如果有双向绑定，要把它的值取出来放进 attrs
       let modelField = el.$model
       if (attrs.$model && modelField && !object.has(attrs, modelField)) {
-        props[ modelField ] = instance.get(attrs.$model)
+        attrs[ modelField ] = instance.get(attrs.$model)
       }
       el.set(el.checkPropTypes(attrs))
     }
