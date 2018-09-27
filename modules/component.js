@@ -1,6 +1,7 @@
 
 import * as config from 'yox-config'
 import * as env from 'yox-common/util/env'
+import * as object from 'yox-common/util/object'
 
 function setRef(instance, ref, value) {
   if (ref) {
@@ -39,6 +40,11 @@ function updateComponent(vnode, oldVnode) {
   if (vnode[ env.RAW_COMPONENT ]) {
     el = this[ env.RAW_COMPONENT ](vnode.data.id)
     if (attrs) {
+      // 如果有双向绑定，要把它的值取出来放进 attrs
+      let modelField = el.$model
+      if (attrs.$model && modelField && !object.has(attrs, modelField)) {
+        props[ modelField ] = instance.get(attrs.$model)
+      }
       el.set(el.checkPropTypes(attrs))
     }
     el.set(vnode.slots)
