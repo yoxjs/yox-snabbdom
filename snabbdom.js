@@ -75,7 +75,7 @@ export function createTextVnode(text) {
   }
 }
 
-export function createElementVnode(tag, attrs, props, directives, children, slots, ref, key, instance, hooks) {
+export function createElementVnode(tag, attrs, props, directives, children, slots, model, ref, key, instance, hooks) {
   return {
     tag,
     attrs,
@@ -83,6 +83,7 @@ export function createElementVnode(tag, attrs, props, directives, children, slot
     directives,
     children,
     slots,
+    model,
     ref,
     key,
     instance,
@@ -91,8 +92,8 @@ export function createElementVnode(tag, attrs, props, directives, children, slot
   }
 }
 
-export function createComponentVnode(tag, attrs, props, directives, children, slots, ref, key, instance, hooks) {
-  let vnode = createElementVnode(tag, attrs, props, directives, children, slots, ref, key, instance, hooks)
+export function createComponentVnode(tag, attrs, props, directives, children, slots, model, ref, key, instance, hooks) {
+  let vnode = createElementVnode(tag, attrs, props, directives, children, slots, model, ref, key, instance, hooks)
   vnode[ env.RAW_COMPONENT ] = env.TRUE
   return vnode
 }
