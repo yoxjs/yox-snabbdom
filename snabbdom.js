@@ -230,8 +230,7 @@ export function init(api) {
   }
 
   let destroyVnode = function (vnode) {
-    let el = vnode.el,
-    children = vnode[ env.RAW_CHILDREN ],
+    let children = vnode[ env.RAW_CHILDREN ],
     component = vnode[ env.RAW_COMPONENT ]
 
     if (component) {

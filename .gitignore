@@ -19,3 +19,5 @@ bin-release/
 # information for Eclipse / Flash Builder.
 
 node_modules
+package-lock.json
+yarn.lock
