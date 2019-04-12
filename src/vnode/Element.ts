@@ -11,11 +11,11 @@ export default interface Element extends VNode {
 
   props: Property[]
 
+  slots: Object | void
+
   directives: Directive[]
 
   children: Element[]
-
-  slots: Object | void
 
   model: string | void
 

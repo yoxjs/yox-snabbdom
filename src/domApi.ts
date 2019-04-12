@@ -154,8 +154,8 @@ export function children(node: Node) {
 
 export function text(node: HTMLElement, content?: string) {
   return content == env.NULL
-    ? node.nodeValue
-    : node.nodeValue = content
+    ? node.textContent
+    : node.textContent = content
 }
 
 export function html(node: HTMLElement, content?: string) {

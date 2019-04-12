@@ -1,10 +1,12 @@
-
 import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
 
-function createAttrs(vnode) {
+import VNode from '../vnode/VNode'
+
+function createAttr(vnode: VNode) {
 
   let { el, attrs } = vnode, api = this
+
   if (!vnode[ env.RAW_COMPONENT ] && attrs) {
     object.each(
       attrs,
@@ -16,7 +18,7 @@ function createAttrs(vnode) {
 
 }
 
-function updateAttrs(vnode, oldVnode) {
+function updateAttr(vnode, oldVnode) {
 
   let { el, attrs } = vnode, oldAttrs = oldVnode.attrs, api = this
   if (vnode[ env.RAW_COMPONENT ] || !attrs && !oldAttrs) {
@@ -47,6 +49,6 @@ function updateAttrs(vnode, oldVnode) {
 }
 
 export default {
-  create: createAttrs,
-  update: updateAttrs,
+  create: createAttr,
+  update: updateAttr,
 }

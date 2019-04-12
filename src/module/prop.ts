@@ -1,4 +1,3 @@
-
 import * as env from 'yox-common/util/env'
 import * as char from 'yox-common/util/char'
 import * as object from 'yox-common/util/object'
