@@ -7,9 +7,15 @@ export default interface VNode {
 
   tag: string
 
+  isComponent: boolean
+
+  isSvg: boolean
+
+  isStatic: boolean
+
   props: Record<string, Property>
 
-  directives: Directive[]
+  directives: Record<string, Directive>
 
   model: string | void
 

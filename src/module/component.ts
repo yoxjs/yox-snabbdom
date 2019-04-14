@@ -2,6 +2,7 @@
 import * as config from 'yox-config'
 import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
+import Component from '../vnode/Component';
 
 function setRef(instance, ref, value) {
   if (ref) {
@@ -15,11 +16,8 @@ function setRef(instance, ref, value) {
   }
 }
 
-function removeRef(instance, ref) {
-  // 不是本次更新视图新增的
-  if (ref && !instance.$flags[ ref ]) {
-    delete instance.$refs[ ref ]
-  }
+export function create(vnode: Component) {
+
 }
 
 function createComponent(vnode) {
@@ -52,14 +50,13 @@ function updateComponent(vnode, oldVnode) {
   }
 
   if (oldVnode && oldVnode[ env.RAW_REF ] !== ref) {
-    removeRef(instance, oldVnode[ env.RAW_REF ])
     setRef(instance, ref, el)
   }
 
 }
 
 function destroyComponent(vnode) {
-  removeRef(vnode.instance, vnode[ env.RAW_REF ])
+
 }
 
 export default {
