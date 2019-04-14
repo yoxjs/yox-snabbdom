@@ -1,39 +1,53 @@
 import * as env from 'yox-common/util/env'
-import * as char from 'yox-common/util/char'
 import * as object from 'yox-common/util/object'
 
-function createProps(vnode, oldVnode) {
+import Element from '../vnode/Element'
+import Property from '../vnode/Property'
 
-  let props = vnode.props
-  if (!vnode[ env.RAW_COMPONENT ] && props) {
-    let api = this, oldProps = oldVnode && oldVnode.props
+export function create(api: any, vnode: Element) {
+
+  let { el, props } = vnode
+
+  if (props) {
     object.each(
       props,
-      function (value, name) {
-        if (!oldProps || value !== oldProps[ name ]) {
-          api.setProp(vnode.el, name, value)
-        }
+      function (prop: Property, name: string) {
+        api.setProp(el, name, prop.value)
       }
     )
   }
 
 }
 
-function removeProps(vnode, oldVnode) {
+export function update(api: any, vnode: Element, oldVnode: Element) {
 
-  let props = vnode.props, oldProps = oldVnode.props, api = this
-  if (!vnode[ env.RAW_COMPONENT ] && oldProps) {
+  let { el, props } = vnode, oldProps = oldVnode.props
+
+  if (props || oldProps) {
+
+    props = props || env.EMPTY_OBJECT
+    oldProps = oldProps || env.EMPTY_OBJECT
+
     object.each(
-      oldProps,
-      function (value, name) {
-        // 现在只有 innerText 和 innerHTML 会走进这里
-        // 对于这两种属性，为了确保兼容性，不能设为 null 或 undefined，因为 IE 会认为是字符串 null 或 undefined
-        // 但我们真实想要的是置为空字符串
-        if (!props || !object.has(props, name)) {
-          api.setProp(vnode.el, name, char.CHAR_BLANK)
+      props,
+      function (attr: Property, name: string) {
+        if (!oldProps[name]
+          || attr.value !== oldProps[name].value
+        ) {
+          api.setProp(el, name, attr.value)
         }
       }
     )
+
+    object.each(
+      oldProps,
+      function (attr: Property, name: string) {
+        if (!props[name]) {
+          api.removeProp(el, name, attr.hint)
+        }
+      }
+    )
+
   }
 
 }
@@ -49,8 +63,8 @@ function removeProps(vnode, oldVnode) {
 //
 // 这种情况，先用 innerHTML 覆盖，再处理 child1 child2
 //
-export default {
-  create: createProps,
-  update: removeProps,
-  postpatch: createProps,
-}
+// export default {
+//   create: createProps,
+//   update: removeProps,
+//   postpatch: createProps,
+// }

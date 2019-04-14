@@ -1,7 +1,7 @@
+import * as config from 'yox-config'
 
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
-import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
 import * as string from 'yox-common/util/string'
@@ -12,42 +12,19 @@ import Emitter from 'yox-common/util/Emitter'
 import isDef from 'yox-common/function/isDef'
 import execute from 'yox-common/function/execute'
 import toString from 'yox-common/function/toString'
-
-import attrs from './modules/attrs'
-import props from './modules/props'
-import directives from './modules/directives'
-import component from './modules/component'
-
-const TAG_COMMENT = '!'
+import Text from './src/vnode/Text';
+import VNode from './src/vnode/VNode';
 
 const HOOK_CREATE = 'create'
 const HOOK_UPDATE = 'update'
 const HOOK_POSTPATCH = 'postpatch'
 const HOOK_DESTROY = 'destroy'
 
-let modules = [
-  component, attrs, props, directives
-]
-
 const moduleEmitter = new Emitter()
 
-array.each(
-  [ HOOK_CREATE, HOOK_UPDATE, HOOK_POSTPATCH, HOOK_DESTROY ],
-  function (hook) {
-    array.each(
-      modules,
-      function (item) {
-        moduleEmitter.on(hook, item[ hook ])
-      }
-    )
-  }
-)
-
-modules = env.NULL
-
-function isPatchable(vnode1, vnode2) {
-  return vnode1[ env.RAW_KEY ] === vnode2[ env.RAW_KEY ]
-    && vnode1[ env.RAW_TAG ] === vnode2[ env.RAW_TAG ]
+function isPatchable(vnode1: VNode, vnode2: VNode) {
+  return vnode1.key === vnode2.key
+    && vnode1.tag === vnode2.tag
 }
 
 function createKeyToIndex(vnodes, startIndex, endIndex) {
@@ -62,16 +39,17 @@ function createKeyToIndex(vnodes, startIndex, endIndex) {
   return result
 }
 
-export function createCommentVnode(text) {
+export function createCommentVnode(text: string) {
   return {
-    tag: TAG_COMMENT,
+    tag: config.TAG_COMMENT,
     text: toString(text),
   }
 }
 
-export function createTextVnode(text) {
+export function createTextVnode(text: string, keypath: string): Text {
   return {
-    text: toString(text),
+    text,
+    keypath,
   }
 }
 
@@ -98,16 +76,6 @@ export function createComponentVnode(tag, attrs, props, directives, children, sl
   return vnode
 }
 
-export function isVnode(vnode) {
-  return vnode
-    && object.has(vnode, env.RAW_TEXT)
-}
-
-export function isTextVnode(vnode) {
-  return isVnode(vnode)
-    && !object.has(vnode, env.RAW_TAG)
-}
-
 let guid = 0
 
 export function init(api) {
@@ -124,7 +92,7 @@ export function init(api) {
       return vnode.el = api.createText(text)
     }
 
-    if (tag === TAG_COMMENT) {
+    if (tag === config.TAG_COMMENT) {
       return vnode.el = api.createComment(text)
     }
 
@@ -416,7 +384,7 @@ export function init(api) {
     }
   }
 
-  let patchVnode = function (oldVnode, vnode) {
+  let patchVnode = function (oldVnode: VNode, vnode: VNode) {
 
     if (oldVnode === vnode) {
       return
@@ -470,7 +438,7 @@ export function init(api) {
       // 有新的没旧的 - 新增节点
       else if (newChildren) {
         if (is.string(oldText)) {
-          api[ env.RAW_TEXT ](el, char.CHAR_BLANK)
+          api[ env.RAW_TEXT ](el, env.EMPTY_STRING)
         }
         addVnodes(el, newChildren, 0, newChildren[ env.RAW_LENGTH ] - 1)
       }
@@ -480,7 +448,7 @@ export function init(api) {
       }
       // 有旧的 text 没有新的 text
       else if (is.string(oldText)) {
-        api[ env.RAW_TEXT ](el, char.CHAR_BLANK)
+        api[ env.RAW_TEXT ](el, env.EMPTY_STRING)
       }
     }
 
@@ -488,13 +456,13 @@ export function init(api) {
 
   }
 
-  return function (oldVnode, vnode) {
+  return function (oldVnode: Element | VNode, vnode?: VNode) {
 
     patchVnode(
       api.isElement(oldVnode)
       ? {
         el: oldVnode,
-        tag: api[ env.RAW_TAG ](oldVnode),
+        tag: api.tag(oldVnode),
         data: { },
       }
       : oldVnode,

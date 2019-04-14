@@ -1,8 +1,6 @@
-import VNode from './VNode'
+export default interface Property {
 
-export default interface Property extends VNode {
-
-  name: string
+  hint: number
 
   value: any
 

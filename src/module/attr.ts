@@ -1,54 +1,54 @@
 import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
 
-import VNode from '../vnode/VNode'
+import Element from '../vnode/Element'
+import Attribute from '../vnode/Attribute'
 
-function createAttr(vnode: VNode) {
+export function create(api: any, vnode: Element) {
 
-  let { el, attrs } = vnode, api = this
+  let { el, attrs } = vnode
 
-  if (!vnode[ env.RAW_COMPONENT ] && attrs) {
+  if (attrs) {
     object.each(
       attrs,
-      function (value, name) {
-        api.setAttr(el, name, value)
+      function (attr: Attribute, name: string) {
+        api.setAttr(el, name, attr.value, attr.namespace)
       }
     )
   }
 
 }
 
-function updateAttr(vnode, oldVnode) {
+export function update(api: any, vnode: Element, oldVnode: Element) {
 
-  let { el, attrs } = vnode, oldAttrs = oldVnode.attrs, api = this
-  if (vnode[ env.RAW_COMPONENT ] || !attrs && !oldAttrs) {
-    return
+  let { el, attrs } = vnode, oldAttrs = oldVnode.attrs
+
+  if (attrs || oldAttrs) {
+
+    attrs = attrs || env.EMPTY_OBJECT
+    oldAttrs = oldAttrs || env.EMPTY_OBJECT
+
+    object.each(
+      attrs,
+      function (attr: Attribute, name: string) {
+        if (!oldAttrs[name]
+          || attr.value !== oldAttrs[name].value
+          || attr.namespace !== oldAttrs[name].namespace
+        ) {
+          api.setAttr(el, name, attr.value, attr.namespace)
+        }
+      }
+    )
+
+    object.each(
+      oldAttrs,
+      function (attr: Attribute, name: string) {
+        if (!attrs[name]) {
+          api.removeAttr(el, name, attr.namespace)
+        }
+      }
+    )
+
   }
 
-  oldAttrs = oldAttrs || { }
-  attrs = attrs || { }
-
-  object.each(
-    attrs,
-    function (value, name) {
-      if (!object.has(oldAttrs, name) || value !== oldAttrs[ name ]) {
-        api.setAttr(el, name, value)
-      }
-    }
-  )
-
-  object.each(
-    oldAttrs,
-    function (value, name) {
-      if (!object.has(attrs, name)) {
-        api.removeAttr(el, name)
-      }
-    }
-  )
-
-}
-
-export default {
-  create: createAttr,
-  update: updateAttr,
 }

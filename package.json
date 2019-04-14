@@ -7,9 +7,6 @@
     "example": "example",
     "test": "test"
   },
-  "devDependencies": {
-    "yox-common": "^0.17.3"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/yoxjs/yox-snabbdom.git"
@@ -20,5 +17,9 @@
   "bugs": {
     "url": "https://github.com/yoxjs/yox-snabbdom/issues"
   },
-  "homepage": "https://github.com/yoxjs/yox-snabbdom#readme"
+  "homepage": "https://github.com/yoxjs/yox-snabbdom#readme",
+  "dependencies": {
+    "yox-common": "0.17.5",
+    "yox-config": "^0.1.2"
+  }
 }

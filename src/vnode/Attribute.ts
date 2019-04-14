@@ -1,10 +1,6 @@
-import VNode from './VNode'
-
-export default interface Attribute extends VNode {
+export default interface Attribute {
 
   namespace: string
-
-  name: string
 
   value: any
 

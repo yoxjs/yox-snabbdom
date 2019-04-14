@@ -1,6 +1,4 @@
-import VNode from './VNode'
-
-export default interface Directive extends VNode {
+export default interface Directive {
 
   name: string
 
