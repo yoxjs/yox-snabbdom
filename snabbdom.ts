@@ -7,8 +7,6 @@ import * as object from 'yox-common/util/object'
 import * as string from 'yox-common/util/string'
 import * as logger from 'yox-common/util/logger'
 
-import Emitter from 'yox-common/util/Emitter'
-
 import isDef from 'yox-common/function/isDef'
 import execute from 'yox-common/function/execute'
 import toString from 'yox-common/function/toString'
@@ -41,67 +39,29 @@ let guid = 0
 
 export function init(api) {
 
-  let createElement = function (vnode: VNode) {
+  let createVnode = function (vnode: VNode) {
 
-    let { el, tag, component, children, text, instance } = vnode
+    let { tag, isComponent, isComment, isText, children, text, instance } = vnode
 
     let id = ++guid
 
     vnode.data = { id }
 
-    if (string.falsy(tag)) {
+    if (isText) {
       return vnode.el = api.createText(text)
     }
 
-    if (tag === config.TAG_COMMENT) {
+    if (isComment) {
       return vnode.el = api.createComment(text)
     }
 
     // 不管是组件还是元素，必须先有一个元素
-    el = vnode.el = api.createElement(component ? 'div' : tag)
+    let el = vnode.el = api.createElement(isComponent ? 'div' : tag)
 
-    if (component) {
-
-      api[ env.RAW_COMPONENT ](id, vnode)
-
-      instance[ env.RAW_COMPONENT ](
-        tag,
-        function (options) {
-
-          if (!options) {
-            logger.fatal(`"${tag}" ${env.RAW_COMPONENT} is not found.`)
-          }
-
-          vnode = api[ env.RAW_COMPONENT ](id)
-
-          if (vnode && tag === vnode[ env.RAW_TAG ]) {
-
-            // 这里优先用 vnode.parent
-            // 因为要实现正确的父子关系
-            component = (vnode.parent || instance).create(options, vnode, el)
-
-            el = component.$el
-            if (!el) {
-              logger.fatal(`"${tag}" ${env.RAW_COMPONENT} must have a root element.`)
-            }
-
-            vnode.el = el
-            api[ env.RAW_COMPONENT ](id, component)
-
-            enterVnode(vnode)
-
-            moduleEmitter.fire(HOOK_CREATE, vnode, api)
-
-          }
-
-        }
-      )
-
-    }
-    else {
+    if (!isComponent) {
 
       if (is.array(children)) {
-        addVnodes(el, children, 0, children[ env.RAW_LENGTH ] - 1)
+        addVnodes(el, children as VNode[], 0, children.length - 1)
       }
       else if (is.string(text)) {
         api.append(
@@ -114,6 +74,42 @@ export function init(api) {
 
     }
 
+
+    api[ env.RAW_COMPONENT ](id, vnode)
+
+    instance[ env.RAW_COMPONENT ](
+      tag,
+      function (options) {
+
+        if (!options) {
+          logger.fatal(`"${tag}" ${env.RAW_COMPONENT} is not found.`)
+        }
+
+        vnode = api[ env.RAW_COMPONENT ](id)
+
+        if (vnode && tag === vnode[ env.RAW_TAG ]) {
+
+          // 这里优先用 vnode.parent
+          // 因为要实现正确的父子关系
+          component = (vnode.parent || instance).create(options, vnode, el)
+
+          el = component.$el
+          if (!el) {
+            logger.fatal(`"${tag}" ${env.RAW_COMPONENT} must have a root element.`)
+          }
+
+          vnode.el = el
+          api[ env.RAW_COMPONENT ](id, component)
+
+          enterVnode(vnode)
+
+          moduleEmitter.fire(HOOK_CREATE, vnode, api)
+
+        }
+
+      }
+    )
+
     return el
 
   },
@@ -122,7 +118,7 @@ export function init(api) {
     let vnode: VNode
     while (startIndex <= endIndex) {
       vnode = vnodes[startIndex]
-      if (createElement(vnode)) {
+      if (createVnode(vnode)) {
         insertVnode(parentNode, vnode, before)
       }
       startIndex++
@@ -314,7 +310,7 @@ export function init(api) {
           oldChildren[ oldIndex ] = env.NULL
         }
         // 新元素
-        else if (createElement(newStartVnode)) {
+        else if (createVnode(newStartVnode)) {
           activeVnode = newStartVnode
         }
 
@@ -358,7 +354,7 @@ export function init(api) {
 
     if (!isPatchable(oldVnode, vnode)) {
       let parentNode = api.parent(el)
-      if (createElement(vnode) && parentNode) {
+      if (createVnode(vnode) && parentNode) {
         insertVnode(parentNode, vnode, oldVnode)
         removeVnode(parentNode, oldVnode)
       }
