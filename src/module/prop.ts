@@ -12,7 +12,7 @@ export function create(api: any, vnode: VNode) {
     object.each(
       nativeProps,
       function (prop: Property, name: string) {
-        api.setProp(el, name, prop.value)
+        api.prop(el, name, prop.value)
       }
     )
   }
@@ -30,20 +30,20 @@ export function update(api: any, vnode: VNode, oldVnode: VNode) {
 
     object.each(
       nativeProps,
-      function (attr: Property, name: string) {
+      function (prop: Property, name: string) {
         if (!oldNativeProps[name]
-          || attr.value !== oldNativeProps[name].value
+          || prop.value !== oldNativeProps[name].value
         ) {
-          api.setProp(el, name, attr.value)
+          api.prop(el, name, prop.value)
         }
       }
     )
 
     object.each(
       oldNativeProps,
-      function (attr: Property, name: string) {
+      function (prop: Property, name: string) {
         if (!nativeProps[name]) {
-          api.removeProp(el, name, attr.hint)
+          api.removeProp(el, name, prop.hint)
         }
       }
     )

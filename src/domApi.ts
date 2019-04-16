@@ -39,8 +39,13 @@ export function isElement(node: Node): boolean {
   return node.nodeType === 1
 }
 
-export function setProp(node: HTMLElement, name: string, value: string | number | boolean) {
-  object.set(node, name, value, env.FALSE)
+export function prop(node: HTMLElement, name: string, value: string | number | boolean) {
+  if (isDef(value)) {
+    object.set(node, name, value, env.FALSE)
+  }
+  else {
+    return object.get(node, name)
+  }
 }
 
 export function removeProp(node: HTMLElement, name: string, hint?: number) {
@@ -54,22 +59,17 @@ export function removeProp(node: HTMLElement, name: string, hint?: number) {
   )
 }
 
-export function setAttr(node: HTMLElement, name: string, value: any, namespace?: string) {
-  if (namespace && namespaces[namespace]) {
-    node.setAttributeNS(namespaces[namespace], name, value)
+export function attr(node: HTMLElement, name: string, value?: string): string | void {
+  if (isDef(value)) {
+    node.setAttribute(name, value)
   }
   else {
-    node.setAttribute(name, value)
+    return node.getAttribute(name)
   }
 }
 
-export function removeAttr(node: HTMLElement, name: string, namespace?: string) {
-  if (namespace && namespaces[namespace]) {
-    node.removeAttributeNS(namespaces[namespace], name)
-  }
-  else {
-    node.removeAttribute(name)
-  }
+export function removeAttr(node: HTMLElement, name: string) {
+  node.removeAttribute(name)
 }
 
 export function before(parentNode: Node, newNode: Node, referenceNode: Node) {
@@ -112,16 +112,33 @@ export function children(node: Node) {
   return node.childNodes
 }
 
-export function text(node: HTMLElement, content?: string) {
+export function text(node: HTMLElement, content?: string): string | void {
   return content == env.NULL
     ? node.textContent
     : node.textContent = content
 }
 
-export function html(node: HTMLElement, content?: string) {
+export function html(node: HTMLElement, content?: string): string | void {
   return content == env.NULL
     ? node.innerHTML
     : node.innerHTML = content
+}
+
+export function data(node: HTMLElement, name: string, value?: string): string | void {
+  const { dataset } = node
+  if (isDef(value)) {
+    if (dataset) {
+      dataset[name] = value
+    }
+    else {
+      attr(node, `data-${name}`, value)
+    }
+  }
+  else {
+    return dataset
+      ? dataset[name]
+      : attr(node, `data-${name}`)
+  }
 }
 
 export function find(selector: string, context?: Node) {
@@ -157,20 +174,8 @@ export function removeClass(element: HTMLElement, className: string) {
   }
   else {
     const classes = element.className.split(CHAR_WHITESPACE)
-    if (array.has(classes, className)) {
-      array.remove(classes, className)
+    if (array.remove(classes, className)) {
       element.className = array.join(classes, CHAR_WHITESPACE)
     }
   }
 }
-
-
-const components = {}
-
-export function component(id, component) {
-  return isDef(component)
-    ? components[id] = component
-    : components[id]
-}
-
-

@@ -12,7 +12,7 @@ export function create(api: any, vnode: VNode) {
     object.each(
       nativeAttrs,
       function (attr: Attribute, name: string) {
-        api.setAttr(el, name, attr.value, attr.namespace)
+        api.attr(el, name, attr.value)
       }
     )
   }
@@ -33,9 +33,8 @@ export function update(api: any, vnode: VNode, oldVnode: VNode) {
       function (attr: Attribute, name: string) {
         if (!oldNativeAttrs[name]
           || attr.value !== oldNativeAttrs[name].value
-          || attr.namespace !== oldNativeAttrs[name].namespace
         ) {
-          api.setAttr(el, name, attr.value, attr.namespace)
+          api.attr(el, name, attr.value)
         }
       }
     )
@@ -44,7 +43,7 @@ export function update(api: any, vnode: VNode, oldVnode: VNode) {
       oldNativeAttrs,
       function (attr: Attribute, name: string) {
         if (!nativeAttrs[name]) {
-          api.removeAttr(el, name, attr.namespace)
+          api.removeAttr(el, name)
         }
       }
     )
