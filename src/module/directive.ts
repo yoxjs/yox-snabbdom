@@ -1,12 +1,12 @@
 import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
 
-import VNode from '../vnode/VNode'
-import Directive from '../vnode/Directive'
+import VNode from 'yox-template-compiler/src/vnode/VNode'
+import Directive from 'yox-template-compiler/src/vnode/Directive'
 
 export function update(vnode: VNode, oldVnode?: VNode) {
 
-  let { directives } = vnode, oldDirectives = oldVnode.directives
+  let { el, directives } = vnode, oldDirectives = oldVnode.directives
 
   if (directives || oldDirectives) {
 
@@ -17,10 +17,12 @@ export function update(vnode: VNode, oldVnode?: VNode) {
       directives,
       function (directive: Directive, name: string) {
         if (!oldDirectives[name]) {
-          directive.lifecycle.bind()
+          directive.hooks.bind(el, directive, vnode)
         }
-        else if (directive.value !== oldDirectives[name].value) {
-          directive.lifecycle.update()
+        else if (directive.value !== oldDirectives[name].value
+          || directive.keypath !== oldDirectives[name].keypath
+        ) {
+          directive.hooks.update(el, directive, vnode, oldVnode)
         }
       }
     )
@@ -29,7 +31,7 @@ export function update(vnode: VNode, oldVnode?: VNode) {
       oldDirectives,
       function (directive: Directive, name: string) {
         if (!directives[name]) {
-          directive.lifecycle.unbind()
+          directive.hooks.unbind(el, directive, oldVnode)
         }
       }
     )
@@ -39,12 +41,12 @@ export function update(vnode: VNode, oldVnode?: VNode) {
 }
 
 export function remove(vnode: VNode) {
-  const { directives } = vnode
+  const { el, directives } = vnode
   if (directives) {
     object.each(
       directives,
       function (directive: Directive) {
-        directive.lifecycle.unbind()
+        directive.hooks.unbind(el, directive, vnode)
       }
     )
   }

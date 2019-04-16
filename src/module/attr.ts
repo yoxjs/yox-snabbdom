@@ -1,16 +1,16 @@
 import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
 
-import Element from '../vnode/Element'
-import Attribute from '../vnode/Attribute'
+import VNode from 'yox-template-compiler/src/vnode/VNode'
+import Attribute from 'yox-template-compiler/src/vnode/Attribute'
 
-export function create(api: any, vnode: Element) {
+export function create(api: any, vnode: VNode) {
 
-  let { el, attrs } = vnode
+  const { el, nativeAttrs } = vnode
 
-  if (attrs) {
+  if (nativeAttrs) {
     object.each(
-      attrs,
+      nativeAttrs,
       function (attr: Attribute, name: string) {
         api.setAttr(el, name, attr.value, attr.namespace)
       }
@@ -19,21 +19,21 @@ export function create(api: any, vnode: Element) {
 
 }
 
-export function update(api: any, vnode: Element, oldVnode: Element) {
+export function update(api: any, vnode: VNode, oldVnode: VNode) {
 
-  let { el, attrs } = vnode, oldAttrs = oldVnode.attrs
+  let { el, nativeAttrs } = vnode, oldNativeAttrs = oldVnode.nativeAttrs
 
-  if (attrs || oldAttrs) {
+  if (nativeAttrs || oldNativeAttrs) {
 
-    attrs = attrs || env.EMPTY_OBJECT
-    oldAttrs = oldAttrs || env.EMPTY_OBJECT
+    nativeAttrs = nativeAttrs || env.EMPTY_OBJECT
+    oldNativeAttrs = oldNativeAttrs || env.EMPTY_OBJECT
 
     object.each(
-      attrs,
+      nativeAttrs,
       function (attr: Attribute, name: string) {
-        if (!oldAttrs[name]
-          || attr.value !== oldAttrs[name].value
-          || attr.namespace !== oldAttrs[name].namespace
+        if (!oldNativeAttrs[name]
+          || attr.value !== oldNativeAttrs[name].value
+          || attr.namespace !== oldNativeAttrs[name].namespace
         ) {
           api.setAttr(el, name, attr.value, attr.namespace)
         }
@@ -41,9 +41,9 @@ export function update(api: any, vnode: Element, oldVnode: Element) {
     )
 
     object.each(
-      oldAttrs,
+      oldNativeAttrs,
       function (attr: Attribute, name: string) {
-        if (!attrs[name]) {
+        if (!nativeAttrs[name]) {
           api.removeAttr(el, name, attr.namespace)
         }
       }

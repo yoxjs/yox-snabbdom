@@ -1,16 +1,16 @@
 import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
 
-import Element from '../vnode/Element'
-import Property from '../vnode/Property'
+import VNode from 'yox-template-compiler/src/vnode/VNode'
+import Property from 'yox-template-compiler/src/vnode/Property'
 
-export function create(api: any, vnode: Element) {
+export function create(api: any, vnode: VNode) {
 
-  let { el, props } = vnode
+  const { el, nativeProps } = vnode
 
-  if (props) {
+  if (nativeProps) {
     object.each(
-      props,
+      nativeProps,
       function (prop: Property, name: string) {
         api.setProp(el, name, prop.value)
       }
@@ -19,20 +19,20 @@ export function create(api: any, vnode: Element) {
 
 }
 
-export function update(api: any, vnode: Element, oldVnode: Element) {
+export function update(api: any, vnode: VNode, oldVnode: VNode) {
 
-  let { el, props } = vnode, oldProps = oldVnode.props
+  let { el, nativeProps } = vnode, oldNativeProps = oldVnode.nativeProps
 
-  if (props || oldProps) {
+  if (nativeProps || oldNativeProps) {
 
-    props = props || env.EMPTY_OBJECT
-    oldProps = oldProps || env.EMPTY_OBJECT
+    nativeProps = nativeProps || env.EMPTY_OBJECT
+    oldNativeProps = oldNativeProps || env.EMPTY_OBJECT
 
     object.each(
-      props,
+      nativeProps,
       function (attr: Property, name: string) {
-        if (!oldProps[name]
-          || attr.value !== oldProps[name].value
+        if (!oldNativeProps[name]
+          || attr.value !== oldNativeProps[name].value
         ) {
           api.setProp(el, name, attr.value)
         }
@@ -40,9 +40,9 @@ export function update(api: any, vnode: Element, oldVnode: Element) {
     )
 
     object.each(
-      oldProps,
+      oldNativeProps,
       function (attr: Property, name: string) {
-        if (!props[name]) {
+        if (!nativeProps[name]) {
           api.removeProp(el, name, attr.hint)
         }
       }

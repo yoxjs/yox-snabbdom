@@ -97,7 +97,7 @@ export function init(api) {
     }
 
     // 不管是组件还是元素，必须先有一个元素
-    el = vnode.el = api.createElement(component ? 'i' : tag)
+    el = vnode.el = api.createElement(component ? 'div' : tag)
 
     if (component) {
 
@@ -461,10 +461,10 @@ export function init(api) {
     patchVnode(
       api.isElement(oldVnode)
       ? {
-        el: oldVnode,
-        tag: api.tag(oldVnode),
-        data: { },
-      }
+          el: oldVnode,
+          tag: api.tag(oldVnode),
+          data: { },
+        }
       : oldVnode,
       vnode
     )
