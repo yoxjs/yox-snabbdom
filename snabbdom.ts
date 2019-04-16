@@ -12,15 +12,13 @@ import Emitter from 'yox-common/util/Emitter'
 import isDef from 'yox-common/function/isDef'
 import execute from 'yox-common/function/execute'
 import toString from 'yox-common/function/toString'
-import Text from './src/vnode/Text';
-import VNode from './src/vnode/VNode';
+
+import VNode from 'yox-template-compiler/src/vnode/VNode'
 
 const HOOK_CREATE = 'create'
 const HOOK_UPDATE = 'update'
 const HOOK_POSTPATCH = 'postpatch'
 const HOOK_DESTROY = 'destroy'
-
-const moduleEmitter = new Emitter()
 
 function isPatchable(vnode1: VNode, vnode2: VNode) {
   return vnode1.key === vnode2.key
@@ -39,48 +37,11 @@ function createKeyToIndex(vnodes, startIndex, endIndex) {
   return result
 }
 
-export function createCommentVnode(text: string) {
-  return {
-    tag: config.TAG_COMMENT,
-    text: toString(text),
-  }
-}
-
-export function createTextVnode(text: string, keypath: string): Text {
-  return {
-    text,
-    keypath,
-  }
-}
-
-export function createElementVnode(tag, attrs, props, directives, children, slots, model, ref, key, instance, hooks) {
-  return {
-    tag,
-    attrs,
-    props,
-    directives,
-    children,
-    slots,
-    model,
-    ref,
-    key,
-    instance,
-    text: env.UNDEFINED,
-    hooks,
-  }
-}
-
-export function createComponentVnode(tag, attrs, props, directives, children, slots, model, ref, key, instance, hooks) {
-  let vnode = createElementVnode(tag, attrs, props, directives, children, slots, model, ref, key, instance, hooks)
-  vnode[ env.RAW_COMPONENT ] = env.TRUE
-  return vnode
-}
-
 let guid = 0
 
 export function init(api) {
 
-  let createElement = function (vnode, data) {
+  let createElement = function (vnode: VNode) {
 
     let { el, tag, component, children, text, instance } = vnode
 
@@ -155,31 +116,53 @@ export function init(api) {
 
     return el
 
-  }
+  },
 
-  let addVnodes = function (parentNode, vnodes, startIndex, endIndex, before) {
-    let vnode
+  addVnodes = function (parentNode: Node, vnodes: VNode[], startIndex: number, endIndex: number, before?: VNode) {
+    let vnode: VNode
     while (startIndex <= endIndex) {
-      vnode = vnodes[ startIndex ]
+      vnode = vnodes[startIndex]
       if (createElement(vnode)) {
         insertVnode(parentNode, vnode, before)
       }
       startIndex++
     }
-  }
+  },
 
-  let removeVnodes = function (parentNode, vnodes, startIndex, endIndex) {
-    let vnode
+  insertVnode = function (parentNode: Node, vnode: VNode, before?: VNode) {
+    const hasParent = api.parent(vnode.el)
+    api.before(parentNode, vnode.el, before ? before.el : env.NULL)
+    if (!hasParent) {
+      enterVnode(vnode)
+    }
+  },
+
+  enterVnode = function (vnode: VNode) {
+    let { el, hooks, instance } = vnode
+    if (hooks) {
+      if (data.leaving) {
+        data.leaving()
+      }
+      execute(
+        hooks.enter,
+        instance,
+        [el, env.EMPTY_FUNCTION]
+      )
+    }
+  },
+
+  removeVnodes = function (parentNode: Node, vnodes: VNode[], startIndex: number, endIndex: number) {
+    let vnode: VNode
     while (startIndex <= endIndex) {
-      vnode = vnodes[ startIndex ]
+      vnode = vnodes[startIndex]
       if (vnode) {
         removeVnode(parentNode, vnode)
       }
       startIndex++
     }
-  }
+  },
 
-  let removeVnode = function (parentNode, vnode) {
+  removeVnode = function (parentNode: Node, vnode: VNode) {
     let el = vnode.el
 
     if (vnode[ env.RAW_TAG ]) {
@@ -195,13 +178,13 @@ export function init(api) {
     else if (el) {
       api.remove(parentNode, el)
     }
-  }
+  },
 
-  let destroyVnode = function (vnode) {
-    let children = vnode[ env.RAW_CHILDREN ],
-    component = vnode[ env.RAW_COMPONENT ]
+  destroyVnode = function (vnode: VNode) {
 
-    if (component) {
+    const { children, isComponent, isStatic } = vnode
+
+    if (isComponent) {
       let { id } = vnode.data
       component = api[ env.RAW_COMPONENT ](id)
       if (vnode.parent === vnode.instance) {
@@ -217,40 +200,19 @@ export function init(api) {
         return
       }
     }
-    else if (children) {
+    else if (!isStatic && children) {
       array.each(
         children,
-        function (child) {
+        function (child: VNode) {
           destroyVnode(child)
         }
       )
     }
     moduleEmitter.fire(HOOK_DESTROY, vnode, api)
-  }
+  },
 
-  let insertVnode = function (parentNode, vnode, oldVnode) {
-    let { el } = vnode, hasParent = api.parent(el)
-    api.before(parentNode, el, oldVnode ? oldVnode.el : env.NULL)
-    if (!hasParent) {
-      enterVnode(vnode)
-    }
-  }
 
-  let enterVnode = function (vnode) {
-    let { el, hooks, data, instance } = vnode
-    if (hooks) {
-      if (data.leaving) {
-        data.leaving()
-      }
-      execute(
-        hooks.enter,
-        instance,
-        [ el, env.noop ]
-      )
-    }
-  }
-
-  let leaveVnode = function (vnode, done) {
+  leaveVnode = function (vnode: VNode, done: Function) {
     let { el, hooks, data, instance } = vnode
     if (hooks) {
       data.leaving = function () {
@@ -268,9 +230,9 @@ export function init(api) {
     else {
       done()
     }
-  }
+  },
 
-  let updateChildren = function (parentNode, oldChildren, newChildren) {
+  updateChildren = function (parentNode: Node, oldChildren: VNode[], newChildren: VNode[]) {
 
     let oldStartIndex = 0
     let oldEndIndex = oldChildren[ env.RAW_LENGTH ] - 1
@@ -382,19 +344,17 @@ export function init(api) {
         oldEndIndex
       )
     }
-  }
+  },
 
-  let patchVnode = function (oldVnode: VNode, vnode: VNode) {
+  patchVnode = function (oldVnode: VNode, vnode: VNode) {
 
     if (oldVnode === vnode) {
       return
     }
 
-    let el = oldVnode.el,
-    component = oldVnode[ env.RAW_COMPONENT ]
+    let { el, isComponent } = oldVnode
 
     vnode.el = el
-    vnode.data = oldVnode.data
 
     if (!isPatchable(oldVnode, vnode)) {
       let parentNode = api.parent(el)
@@ -456,14 +416,13 @@ export function init(api) {
 
   }
 
-  return function (oldVnode: Element | VNode, vnode?: VNode) {
+  return function (oldVnode: Node | VNode, vnode?: VNode) {
 
     patchVnode(
       api.isElement(oldVnode)
       ? {
           el: oldVnode,
           tag: api.tag(oldVnode),
-          data: { },
         }
       : oldVnode,
       vnode

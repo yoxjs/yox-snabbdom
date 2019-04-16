@@ -41,7 +41,7 @@ export function update(api: any, vnode: VNode, oldVnode: VNode) {
 
     object.each(
       oldNativeAttrs,
-      function (attr: Attribute, name: string) {
+      function (_: Attribute, name: string) {
         if (!nativeAttrs[name]) {
           api.removeAttr(el, name)
         }

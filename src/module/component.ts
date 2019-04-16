@@ -8,7 +8,7 @@ import VNode from 'yox-template-compiler/src/vnode/VNode'
 export function update(vnode: VNode, oldVnode?: VNode) {
 
   let el = vnode.el,
-  nativeAttrs = vnode.nativeAttrs,
+  props = vnode.props,
   model = vnode.model,
   instance = vnode.instance,
   ref = vnode.ref
@@ -18,13 +18,13 @@ export function update(vnode: VNode, oldVnode?: VNode) {
   }
   if (vnode[ env.RAW_COMPONENT ]) {
     el = this[ env.RAW_COMPONENT ](vnode.data.id)
-    if (nativeAttrs) {
-      // 如果有双向绑定，要把它的值取出来放进 nativeAttrs
+    if (props) {
+      // 如果有双向绑定，要把它的值取出来放进 props
       let modelField = el.$model
-      if (model && modelField && !object.has(nativeAttrs, modelField)) {
-        nativeAttrs[ modelField ] = instance.get(model)
+      if (model && modelField && !object.has(props, modelField)) {
+        props[ modelField ] = instance.get(model)
       }
-      el.set(el.checkPropTypes(nativeAttrs))
+      el.set(el.checkPropTypes(props))
     }
     el.set(vnode.slots)
   }

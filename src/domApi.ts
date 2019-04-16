@@ -17,10 +17,10 @@ namespaces = {
   xlink: domain + '1999/xlink',
 }
 
-export function createElement(tagName: string, svg: boolean): HTMLElement {
-  return svg
-    ? env.doc.createElementNS(namespaces.svg, tagName)
-    : env.doc.createElement(tagName)
+export function createElement(tag: string, isSvg: boolean): HTMLElement {
+  return isSvg
+    ? env.doc.createElementNS(namespaces.svg, tag)
+    : env.doc.createElement(tag)
 }
 
 export function createText(text: string): Node {
@@ -126,18 +126,23 @@ export function html(node: HTMLElement, content?: string): string | void {
 
 export function data(node: HTMLElement, name: string, value?: string): string | void {
   const { dataset } = node
-  if (isDef(value)) {
-    if (dataset) {
+  if (dataset) {
+    if (isDef(value)) {
       dataset[name] = value
     }
     else {
-      attr(node, `data-${name}`, value)
+      return dataset[name]
     }
   }
   else {
-    return dataset
-      ? dataset[name]
-      : attr(node, `data-${name}`)
+    // 驼峰转连字符
+    name = `data-${string.hyphenate(name)}`
+    if (isDef(value)) {
+      attr(node, name, value)
+    }
+    else {
+      return attr(node, name)
+    }
   }
 }
 
