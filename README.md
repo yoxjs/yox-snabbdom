@@ -7,3 +7,8 @@
 
 setAttr => attr
 setProp => prop
+
+测试点
+
+1. transition
+2. 子组件里的 slot 组件被销毁

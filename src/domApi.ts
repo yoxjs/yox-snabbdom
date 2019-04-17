@@ -6,8 +6,11 @@ import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
 import * as string from 'yox-common/util/string'
 import * as object from 'yox-common/util/object'
+import VNode from 'yox-template-compiler/src/vnode/VNode';
 
 const CHAR_WHITESPACE = ' ',
+
+DATA_VNODE = 'v',
 
 domain = 'http://www.w3.org/',
 
@@ -39,7 +42,7 @@ export function isElement(node: Node): boolean {
   return node.nodeType === 1
 }
 
-export function prop(node: HTMLElement, name: string, value: string | number | boolean) {
+export function prop(node: HTMLElement, name: string, value: string | number | boolean): string | number | boolean | void {
   if (isDef(value)) {
     object.set(node, name, value, env.FALSE)
   }
@@ -70,6 +73,39 @@ export function attr(node: HTMLElement, name: string, value?: string): string | 
 
 export function removeAttr(node: HTMLElement, name: string) {
   node.removeAttribute(name)
+}
+
+export function data(node: HTMLElement, name: string, value?: string): string | void {
+  // 不用 dataset，因为 removeData 时不好处理，这样反而还少了兼容问题
+  return attr(node, `data-${string.hyphenate(name)}`, value)
+}
+
+export function removeData(node: HTMLElement, name: string) {
+  removeAttr(node, `data-${string.hyphenate(name)}`)
+}
+
+// id 是线性递增的，因此用数组存储最为合适
+const vnodes = []
+
+export function vnode(node: HTMLElement, id?: number, vnode?: VNode): VNode | void {
+  if (id && vnode) {
+    data(node, DATA_VNODE, `${id}`)
+    vnodes[id] = vnode
+  }
+  else {
+    const key = id ? id : data(node, DATA_VNODE)
+    if (key) {
+      return vnodes[key]
+    }
+  }
+}
+
+export function removeVnode(node: HTMLElement, id?: number) {
+  const key = id ? id : data(node, DATA_VNODE)
+  if (key) {
+    removeData(node, DATA_VNODE)
+    vnodes[key] = env.UNDEFINED
+  }
 }
 
 export function before(parentNode: Node, newNode: Node, referenceNode: Node) {
@@ -122,28 +158,6 @@ export function html(node: HTMLElement, content?: string): string | void {
   return content == env.NULL
     ? node.innerHTML
     : node.innerHTML = content
-}
-
-export function data(node: HTMLElement, name: string, value?: string): string | void {
-  const { dataset } = node
-  if (dataset) {
-    if (isDef(value)) {
-      dataset[name] = value
-    }
-    else {
-      return dataset[name]
-    }
-  }
-  else {
-    // 驼峰转连字符
-    name = `data-${string.hyphenate(name)}`
-    if (isDef(value)) {
-      attr(node, name, value)
-    }
-    else {
-      return attr(node, name)
-    }
-  }
 }
 
 export function find(selector: string, context?: Node) {

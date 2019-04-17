@@ -6,13 +6,13 @@ import Attribute from 'yox-template-compiler/src/vnode/Attribute'
 
 export function create(api: any, vnode: VNode) {
 
-  const { el, nativeAttrs } = vnode
+  const { node, nativeAttrs } = vnode
 
   if (nativeAttrs) {
     object.each(
       nativeAttrs,
       function (attr: Attribute, name: string) {
-        api.attr(el, name, attr.value)
+        api.attr(node, name, attr.value)
       }
     )
   }
@@ -21,7 +21,7 @@ export function create(api: any, vnode: VNode) {
 
 export function update(api: any, vnode: VNode, oldVnode: VNode) {
 
-  let { el, nativeAttrs } = vnode, oldNativeAttrs = oldVnode.nativeAttrs
+  let { node, nativeAttrs } = vnode, oldNativeAttrs = oldVnode.nativeAttrs
 
   if (nativeAttrs || oldNativeAttrs) {
 
@@ -34,7 +34,7 @@ export function update(api: any, vnode: VNode, oldVnode: VNode) {
         if (!oldNativeAttrs[name]
           || attr.value !== oldNativeAttrs[name].value
         ) {
-          api.attr(el, name, attr.value)
+          api.attr(node, name, attr.value)
         }
       }
     )
@@ -43,7 +43,7 @@ export function update(api: any, vnode: VNode, oldVnode: VNode) {
       oldNativeAttrs,
       function (_: Attribute, name: string) {
         if (!nativeAttrs[name]) {
-          api.removeAttr(el, name)
+          api.removeAttr(node, name)
         }
       }
     )
