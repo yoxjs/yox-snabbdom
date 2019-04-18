@@ -1,8 +1,8 @@
 import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
 
-import VNode from 'yox-template-compiler/src/vnode/VNode'
-import Attribute from 'yox-template-compiler/src/vnode/Attribute'
+import VNode from 'yox-type/src/vnode/VNode'
+import Attribute from 'yox-type/src/vnode/Attribute'
 
 import * as field from '../field'
 

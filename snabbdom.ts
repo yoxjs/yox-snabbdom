@@ -5,7 +5,9 @@ import * as logger from 'yox-common/util/logger'
 
 import isDef from 'yox-common/function/isDef'
 
-import VNode from 'yox-template-compiler/src/vnode/VNode'
+import API from 'yox-type/src/API'
+import VNode from 'yox-type/src/vnode/VNode'
+import YoxOptions from 'yox-type/src/YoxOptions'
 
 import * as field from './src/field'
 
@@ -41,14 +43,14 @@ function createComponent(vnode: VNode, options: Record<string, any>) {
   vnode.data[field.COMPONENT] = component
   vnode.data[field.LOADING] = env.FALSE
 
-  component.update(vnode)
+  // component.update(vnode)
   directive.update(vnode)
 
 }
 
 let guid = 0
 
-function createVnode(api: any, vnode: VNode): Node {
+function createVnode(api: API, vnode: VNode): Node {
 
   const { tag, isComponent, isComment, isText, children, text, instance } = vnode, data = {}
 
@@ -78,7 +80,7 @@ function createVnode(api: any, vnode: VNode): Node {
 
     instance.component(
       tag,
-      function (options: Record<string, any> | void) {
+      function (options: YoxOptions | void) {
         if (options) {
           if (isDef(data[field.LOADING])) {
             // 异步组件
@@ -139,7 +141,7 @@ function createVnode(api: any, vnode: VNode): Node {
 
 }
 
-function addVnodes(api: any, parentNode: Node, vnodes: VNode[], startIndex: number, endIndex: number, before?: VNode) {
+function addVnodes(api: API, parentNode: Node, vnodes: VNode[], startIndex: number, endIndex: number, before?: VNode) {
   let vnode: VNode
   while (startIndex <= endIndex) {
     vnode = vnodes[startIndex]
@@ -149,7 +151,7 @@ function addVnodes(api: any, parentNode: Node, vnodes: VNode[], startIndex: numb
   }
 }
 
-function insertVnode(api: any, parentNode: Node, vnode: VNode, before?: VNode) {
+function insertVnode(api: API, parentNode: Node, vnode: VNode, before?: VNode) {
   const { data } = vnode, hasParent = api.parent(data[field.NODE])
   api.before(parentNode, data[field.NODE], before ? before.data[field.NODE] : env.UNDEFINED)
   if (!hasParent && !data[field.LOADING]) {
@@ -157,11 +159,11 @@ function insertVnode(api: any, parentNode: Node, vnode: VNode, before?: VNode) {
   }
 }
 
-function enterVnode(api: any, vnode: VNode) {
+function enterVnode(api: API, vnode: VNode) {
 
 }
 
-function removeVnodes(api: any, parentNode: Node, vnodes: VNode[], startIndex: number, endIndex: number) {
+function removeVnodes(api: API, parentNode: Node, vnodes: VNode[], startIndex: number, endIndex: number) {
   let vnode: VNode
   while (startIndex <= endIndex) {
     vnode = vnodes[startIndex]
@@ -172,7 +174,7 @@ function removeVnodes(api: any, parentNode: Node, vnodes: VNode[], startIndex: n
   }
 }
 
-function removeVnode(api: any, parentNode: Node, vnode: VNode) {
+function removeVnode(api: API, parentNode: Node, vnode: VNode) {
   let node = vnode.data[field.NODE]
   if (vnode.isComment || vnode.isText) {
     api.remove(parentNode, node)
@@ -190,7 +192,7 @@ function removeVnode(api: any, parentNode: Node, vnode: VNode) {
   }
 }
 
-function destroyVnode(api: any, vnode: VNode) {
+function destroyVnode(api: API, vnode: VNode) {
 
   const { data, children, isComponent, isStatic } = vnode
 
@@ -220,11 +222,11 @@ function destroyVnode(api: any, vnode: VNode) {
 
 }
 
-function leaveVnode(api: any, vnode: VNode, done: Function) {
+function leaveVnode(api: API, vnode: VNode, done: Function) {
   done()
 }
 
-function updateChildren(api: any, parentNode: Node, newChildren: VNode[], oldChildren: VNode[]) {
+function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChildren: VNode[]) {
 
   let newStartIndex = 0,
   newEndIndex = newChildren.length - 1,
@@ -343,7 +345,7 @@ function updateChildren(api: any, parentNode: Node, newChildren: VNode[], oldChi
   }
 }
 
-function patchVnode(api: any, vnode: VNode, oldVnode: VNode) {
+function patchVnode(api: API, vnode: VNode, oldVnode: VNode) {
 
   if (vnode === oldVnode) {
     return
@@ -419,7 +421,7 @@ function patchVnode(api: any, vnode: VNode, oldVnode: VNode) {
 
 }
 
-export function patch(api: any, vnode: VNode, oldVnode: any) {
+export function patch(api: API, vnode: VNode, oldVnode: any) {
   if (oldVnode.data) {
     patchVnode(api, vnode, oldVnode)
   }
