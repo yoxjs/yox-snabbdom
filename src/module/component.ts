@@ -1,4 +1,3 @@
-
 import VNode from 'yox-template-compiler/src/vnode/VNode'
 
 import * as field from '../field'

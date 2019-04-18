@@ -426,7 +426,7 @@ export function patch(api: any, vnode: VNode, oldVnode: any) {
   else {
     const data: Record<string, any> = {},
 
-    lastVnode: any = {
+    lastVnode: VNode = {
       tag: api.tag(oldVnode),
       data,
     }
