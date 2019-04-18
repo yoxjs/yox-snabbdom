@@ -6,11 +6,8 @@ import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
 import * as string from 'yox-common/util/string'
 import * as object from 'yox-common/util/object'
-import VNode from 'yox-template-compiler/src/vnode/VNode';
 
 const CHAR_WHITESPACE = ' ',
-
-DATA_VNODE = 'v',
 
 domain = 'http://www.w3.org/',
 
@@ -82,30 +79,6 @@ export function data(node: HTMLElement, name: string, value?: string): string | 
 
 export function removeData(node: HTMLElement, name: string) {
   removeAttr(node, `data-${string.hyphenate(name)}`)
-}
-
-// id 是线性递增的，因此用数组存储最为合适
-const vnodes = []
-
-export function vnode(node: HTMLElement, id?: number, vnode?: VNode): VNode | void {
-  if (id && vnode) {
-    data(node, DATA_VNODE, `${id}`)
-    vnodes[id] = vnode
-  }
-  else {
-    const key = id ? id : data(node, DATA_VNODE)
-    if (key) {
-      return vnodes[key]
-    }
-  }
-}
-
-export function removeVnode(node: HTMLElement, id?: number) {
-  const key = id ? id : data(node, DATA_VNODE)
-  if (key) {
-    removeData(node, DATA_VNODE)
-    vnodes[key] = env.UNDEFINED
-  }
 }
 
 export function before(parentNode: Node, newNode: Node, referenceNode: Node) {

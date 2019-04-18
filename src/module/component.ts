@@ -1,36 +1,31 @@
 
-import * as config from 'yox-config'
-import * as env from 'yox-common/util/env'
-import * as object from 'yox-common/util/object'
-
 import VNode from 'yox-template-compiler/src/vnode/VNode'
+
+import * as field from '../field'
 
 export function update(vnode: VNode, oldVnode?: VNode) {
 
-  let el = vnode.el,
-  props = vnode.props,
-  model = vnode.model,
-  instance = vnode.instance,
-  ref = vnode.ref
+  let { data, ref, props, slots, instance } = vnode, node: any
 
   if (vnode.isComponent) {
-
-  }
-  if (vnode[ env.RAW_COMPONENT ]) {
-    el = this[ env.RAW_COMPONENT ](vnode.data.id)
-    if (props) {
-      // 如果有双向绑定，要把它的值取出来放进 props
-      let modelField = el.$model
-      if (model && modelField && !object.has(props, modelField)) {
-        props[ modelField ] = instance.get(model)
+    node = data[field.COMPONENT]
+    // 更新时才要 set
+    // 因为初始化时，所有这些都经过构造函数完成了
+    if (oldVnode) {
+      if (props) {
+        node.set(node.checkPropTypes(props))
       }
-      el.set(el.checkPropTypes(props))
+      if (slots) {
+        node.set(slots)
+      }
     }
-    el.set(vnode.slots)
+  }
+  else {
+    node = data[field.NODE]
   }
 
   if (ref) {
-    instance.$refs[ref] = el
+    instance.$refs[ref] = node
   }
 
 }
