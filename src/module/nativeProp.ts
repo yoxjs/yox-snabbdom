@@ -4,24 +4,9 @@ import * as object from 'yox-common/util/object'
 import VNode from 'yox-template-compiler/src/vnode/VNode'
 import Property from 'yox-template-compiler/src/vnode/Property'
 
-export function create(api: any, vnode: VNode) {
+export function update(api: any, vnode: VNode, oldVnode?: VNode) {
 
-  const { node, nativeProps } = vnode
-
-  if (nativeProps) {
-    object.each(
-      nativeProps,
-      function (prop: Property, name: string) {
-        api.prop(node, name, prop.value)
-      }
-    )
-  }
-
-}
-
-export function update(api: any, vnode: VNode, oldVnode: VNode) {
-
-  let { node, nativeProps } = vnode, oldNativeProps = oldVnode.nativeProps
+  let { node, nativeProps } = vnode, oldNativeProps = oldVnode && oldVnode.nativeProps
 
   if (nativeProps || oldNativeProps) {
 

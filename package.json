@@ -19,7 +19,6 @@
   },
   "homepage": "https://github.com/yoxjs/yox-snabbdom#readme",
   "dependencies": {
-    "yox-common": "0.18.2",
     "yox-config": "0.1.3",
     "yox-template-compiler": "0.27.9"
   }

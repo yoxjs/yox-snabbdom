@@ -1,5 +1,3 @@
-import * as config from 'yox-config'
-
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
@@ -13,10 +11,20 @@ import toString from 'yox-common/function/toString'
 
 import VNode from 'yox-template-compiler/src/vnode/VNode'
 
-import * as nativeAttr from './src/module/attr'
-import * as nativeProp from './src/module/prop'
+import * as nativeAttr from './src/module/nativeAttr'
+import * as nativeProp from './src/module/nativeProp'
 import * as directive from './src/module/directive'
 import * as component from './src/module/component'
+
+// vnode.data 存储的几个字段
+const DATA_ID = '$id'
+
+const DATA_VNODE = '$vnode'
+
+const DATA_LOADING = '$loading'
+
+const DATA_COMPONENT = '$component'
+
 
 function isPatchable(vnode: VNode, oldVnode: VNode): boolean {
   return vnode.tag === oldVnode.tag
@@ -35,26 +43,36 @@ function createKeyToIndex(vnodes: VNode[], startIndex: number, endIndex: number)
   return result
 }
 
-function createComponent(api: any, vnode: VNode, options: Record<string, any>) {
+function createComponent(vnode: VNode, options: Record<string, any>) {
 
   // 渲染同步加载的组件时，vnode.node 为空
+  // 渲染异步加载的组件时，vnode.node 不为空，因为初始化用了占位组件
   const component = (vnode.parent || vnode.instance).create(options, vnode, vnode.node)
 
   vnode.node = component.$node
-  vnode.component = component
+  vnode.data[DATA_COMPONENT] = component
+  vnode.data[DATA_LOADING] = env.FALSE
 
 }
 
+let guid = 0
+
 function createVnode(api: any, vnode: VNode): Node {
 
-  const { tag, isComponent, isComment, isText, children, text, instance } = vnode
+  const { tag, isComponent, isComment, isText, children, text, instance } = vnode, data = {}
+
+  data[DATA_ID] = ++guid
+
+  vnode.data = data
 
   if (isText) {
-    return vnode.node = api.createText(text)
+    vnode.node = api.createText(text)
+    return
   }
 
   if (isComment) {
-    return vnode.node = api.createComment(text)
+    vnode.node = api.createComment(text)
+    return
   }
 
   if (isComponent) {
@@ -71,11 +89,19 @@ function createVnode(api: any, vnode: VNode): Node {
       tag,
       function (options: Record<string, any> | void) {
         if (options) {
-          // 异步组件
-          if (syncOptions) {
-            const latest = api.vnode(vnode.node)
-            if (latest && tag === latest.tag) {
-              createComponent(api, latest, options)
+          if (isDef(data[DATA_LOADING])) {
+            // 异步组件
+            if (data[DATA_LOADING]) {
+
+              // 尝试使用最新的 vnode
+              if (data[DATA_VNODE]) {
+                vnode = data[DATA_VNODE]
+                // 用完就删掉
+                data[DATA_VNODE] = env.UNDEFINED
+              }
+
+              createComponent(vnode, options)
+
             }
           }
           // 同步组件
@@ -89,27 +115,19 @@ function createVnode(api: any, vnode: VNode): Node {
       }
     )
 
-    // 如果是异步加载，则用默认的 Placeholder 组件
-    // 外部必须配置这个组件，否则就别用了
-    if (!syncOptions) {
-      syncOptions = instance.component('Placeholder')
-      vnode.isLoading = env.TRUE
-    }
-
     if (syncOptions) {
-      createComponent(api, vnode, syncOptions)
+      createComponent(vnode, syncOptions)
     }
-    // 任性的代价就是 fatal
     else {
-      logger.fatal('component <Placeholder> is not found.')
+      vnode.node = api.createComment(env.EMPTY_STRING)
+      data[DATA_LOADING] = env.TRUE
+      return
     }
 
   }
   else {
 
     const node = vnode.node = api.createElement(vnode.tag)
-
-    api.vnode(node, vnode.id, vnode)
 
     if (children) {
       addVnodes(api, node, children, 0, children.length - 1)
@@ -123,11 +141,9 @@ function createVnode(api: any, vnode: VNode): Node {
 
   }
 
-  if (!vnode.isLoading) {
-    nativeAttr.create(api, vnode)
-    nativeProp.create(api, vnode)
-    directive.update(vnode)
-  }
+  nativeAttr.create(api, vnode)
+  nativeProp.create(api, vnode)
+  directive.update(vnode)
 
 }
 
@@ -144,7 +160,7 @@ function addVnodes(api: any, parentNode: Node, vnodes: VNode[], startIndex: numb
 function insertVnode(api: any, parentNode: Node, vnode: VNode, before?: VNode) {
   const hasParent = api.parent(vnode.node)
   api.before(parentNode, vnode.node, before ? before.node : env.UNDEFINED)
-  if (!hasParent && !vnode.isLoading) {
+  if (!hasParent && !vnode.data[DATA_LOADING]) {
     enterVnode(api, vnode)
   }
 }
@@ -184,17 +200,18 @@ function removeVnode(api: any, parentNode: Node, vnode: VNode) {
 
 function destroyVnode(api: any, vnode: VNode) {
 
-  const { children, isComponent, isStatic, component } = vnode
+  const { data, children, isComponent, isStatic } = vnode
 
   if (isComponent) {
     if (vnode.parent === vnode.instance) {
-      if (component) {
-        component.destroy()
+      if (data[DATA_COMPONENT]) {
+        data[DATA_COMPONENT].destroy()
+        data[DATA_COMPONENT] = env.UNDEFINED
         return env.TRUE
       }
-    }
-    else {
-      return
+      else if (data[DATA_LOADING]) {
+        data[DATA_LOADING] = env.FALSE
+      }
     }
   }
   else if (!isStatic && children) {
@@ -332,39 +349,40 @@ function updateChildren(api: any, parentNode: Node, newChildren: VNode[], oldChi
 
 function patchVnode(api: any, vnode: VNode, oldVnode: VNode) {
 
-  const { node, isComponent } = oldVnode
-
-  if (!node || oldVnode === vnode) {
+  if (vnode === oldVnode) {
     return
   }
 
+  const { node, data } = oldVnode
+
   // 如果不能 patch，则直接删除重建
   if (!isPatchable(vnode, oldVnode)) {
-    createVnode(api, vnode)
     const parentNode = api.parent(node)
-    if (parentNode) {
-      insertVnode(api, parentNode, vnode, oldVnode)
-      removeVnode(api, parentNode, oldVnode)
-    }
+    createVnode(api, vnode)
+    insertVnode(api, parentNode, vnode, oldVnode)
+    removeVnode(api, parentNode, oldVnode)
     return
   }
 
   vnode.node = node
+  vnode.data = data
 
-  if (isComponent) {
-    api.vnode(node)
-
-    let { id } = vnode.data
-    component = api[env.RAW_COMPONENT](id)
-    if (!component.set) {
-      api[env.RAW_COMPONENT](id, vnode)
-      return;
+  if (oldVnode.isComponent) {
+    if (data[DATA_LOADING]) {
+      data[DATA_VNODE] = vnode
     }
+    return
+  }
+
+  if (vnode.isStatic
+    && oldVnode.isStatic
+  ) {
+    return
   }
 
   // before update
 
-  let newText = vnode.text,
+  const newText = vnode.text,
   newChildren = vnode.children,
 
   oldText = oldVnode.text,
@@ -400,9 +418,5 @@ function patchVnode(api: any, vnode: VNode, oldVnode: VNode) {
   }
 
   // after update
-
-}
-
-export function patch(api: any, vnode: VNode, oldVnode: VNode) {
 
 }

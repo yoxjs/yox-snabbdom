@@ -4,24 +4,9 @@ import * as object from 'yox-common/util/object'
 import VNode from 'yox-template-compiler/src/vnode/VNode'
 import Attribute from 'yox-template-compiler/src/vnode/Attribute'
 
-export function create(api: any, vnode: VNode) {
+export function update(api: any, vnode: VNode, oldVnode?: VNode) {
 
-  const { node, nativeAttrs } = vnode
-
-  if (nativeAttrs) {
-    object.each(
-      nativeAttrs,
-      function (attr: Attribute, name: string) {
-        api.attr(node, name, attr.value)
-      }
-    )
-  }
-
-}
-
-export function update(api: any, vnode: VNode, oldVnode: VNode) {
-
-  let { node, nativeAttrs } = vnode, oldNativeAttrs = oldVnode.nativeAttrs
+  let { node, nativeAttrs } = vnode, oldNativeAttrs = oldVnode && oldVnode.nativeAttrs
 
   if (nativeAttrs || oldNativeAttrs) {
 
