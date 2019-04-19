@@ -7,7 +7,7 @@ import isDef from 'yox-common/function/isDef'
 
 import API from 'yox-type/src/API'
 import VNode from 'yox-type/src/vnode/VNode'
-import YoxOptions from 'yox-type/src/YoxOptions'
+import YoxOptions from 'yox-type/src/options/Yox'
 
 import * as field from './src/field'
 
@@ -39,11 +39,11 @@ function createComponent(vnode: VNode, options: Record<string, any>) {
   // 渲染异步加载的组件时，vnode.node 不为空，因为初始化用了占位组件
   const child = (vnode.parent || vnode.instance).create(options, vnode, vnode.node)
 
-  if (!child.$node) {
+  if (!child.$el) {
     logger.fatal('子组件没有创建元素，那还玩个毛啊')
   }
 
-  vnode.node = child.$node
+  vnode.node = child.$el
   vnode.data[field.COMPONENT] = child
   vnode.data[field.LOADING] = env.FALSE
 
