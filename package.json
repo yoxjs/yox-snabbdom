@@ -1,6 +1,6 @@
 {
   "name": "yox-snabbdom",
-  "version": "0.19.12",
+  "version": "0.19.13",
   "description": "Snabbdom for Yox.js",
   "main": "index.ts",
   "directories": {

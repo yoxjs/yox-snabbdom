@@ -426,17 +426,15 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
 
 }
 
-export function create(api: API, node: Node) {
+export function create(api: API, node: Node): VNode {
 
-  const data: Record<string, any> = {}
+  const data: Record<string, any> = {},
+
+  tag = api.tag(node)
 
   data[field.ID] = ++guid
 
-  return {
-    node,
-    tag: api.tag(node),
-    data,
-  }
+  return tag ? { node, tag, data } : { node, data }
 
 }
 
