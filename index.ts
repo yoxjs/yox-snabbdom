@@ -37,7 +37,11 @@ function createComponent(vnode: VNode, options: Record<string, any>) {
 
   // 渲染同步加载的组件时，vnode.node 为空
   // 渲染异步加载的组件时，vnode.node 不为空，因为初始化用了占位组件
-  const child = (vnode.parent || vnode.instance).create(options, vnode, vnode.node as HTMLElement)
+  const child = (vnode.parent || vnode.instance).create(options, vnode, vnode.node)
+
+  if (!child.$node) {
+    logger.fatal('子组件没有创建元素，那还玩个毛啊')
+  }
 
   vnode.node = child.$node
   vnode.data[field.COMPONENT] = child
@@ -254,14 +258,14 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
 
     // 从头到尾比较，位置相同且值得 patch
     else if (isPatchable(newStartVnode, oldStartVnode)) {
-      patchVnode(api, newStartVnode, oldStartVnode)
+      patch(api, newStartVnode, oldStartVnode)
       oldStartVnode = oldChildren[++oldStartIndex]
       newStartVnode = newChildren[++newStartIndex]
     }
 
     // 从尾到头比较，位置相同且值得 patch
     else if (isPatchable(newEndVnode, oldEndVnode)) {
-      patchVnode(api, newEndVnode, oldEndVnode)
+      patch(api, newEndVnode, oldEndVnode)
       oldEndVnode = oldChildren[--oldEndIndex]
       newEndVnode = newChildren[--newEndIndex]
     }
@@ -271,7 +275,7 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
     // 当 oldStartVnode 和 newEndVnode 值得 patch
     // 说明元素被移到右边了
     else if (isPatchable(newEndVnode, oldStartVnode)) {
-      patchVnode(api, newEndVnode, oldStartVnode)
+      patch(api, newEndVnode, oldStartVnode)
       api.before(
         parentNode,
         oldStartVnode.node,
@@ -284,7 +288,7 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
     // 当 oldEndVnode 和 newStartVnode 值得 patch
     // 说明元素被移到左边了
     else if (isPatchable(newStartVnode, oldEndVnode)) {
-      patchVnode(api, newStartVnode, oldEndVnode)
+      patch(api, newStartVnode, oldEndVnode)
       api.before(
         parentNode,
         oldEndVnode.node,
@@ -306,7 +310,7 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
       // 移动元素
       if (is.number(oldIndex)) {
         activeVnode = oldChildren[oldIndex]
-        patchVnode(api, activeVnode, newStartVnode)
+        patch(api, activeVnode, newStartVnode)
         oldChildren[oldIndex] = env.UNDEFINED
       }
       // 新元素
@@ -345,7 +349,7 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
   }
 }
 
-function patchVnode(api: API, vnode: VNode, oldVnode: VNode) {
+export function patch(api: API, vnode: VNode, oldVnode: VNode) {
 
   if (vnode === oldVnode) {
     return
@@ -422,22 +426,18 @@ function patchVnode(api: API, vnode: VNode, oldVnode: VNode) {
 
 }
 
-export function patch(api: API, vnode: VNode, oldVnode: any) {
-  if (oldVnode.data) {
-    patchVnode(api, vnode, oldVnode)
-  }
-  else {
-    const data: Record<string, any> = {},
+export function create(api: API, node: Node) {
 
-    lastVnode: VNode = {
-      node: oldVnode,
-      tag: api.tag(oldVnode),
-      data,
-    }
+  const data: Record<string, any> = {}
 
-    data[field.ID] = ++guid
-    patchVnode(api, vnode, lastVnode)
+  data[field.ID] = ++guid
+
+  return {
+    node,
+    tag: api.tag(node),
+    data,
   }
+
 }
 
 export function destroy(api: API, vnode: VNode) {

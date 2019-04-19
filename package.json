@@ -1,8 +1,8 @@
 {
   "name": "yox-snabbdom",
-  "version": "0.19.10",
+  "version": "0.19.11",
   "description": "Snabbdom for Yox.js",
-  "main": "snabbdom.js",
+  "main": "index.ts",
   "directories": {
     "example": "example",
     "test": "test"
@@ -21,7 +21,7 @@
   "dependencies": {
     "yox-common": "0.18.7",
     "yox-config": "0.1.5",
-    "yox-dom": "0.0.2",
-    "yox-type": "0.0.19"
+    "yox-dom": "0.0.4",
+    "yox-type": "0.0.21"
   }
 }
