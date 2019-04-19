@@ -4,15 +4,11 @@ import * as object from 'yox-common/util/object'
 import VNode from 'yox-type/src/vnode/VNode'
 import Attribute from 'yox-type/src/vnode/Attribute'
 
-import * as field from '../field'
-
 export function update(api: any, vnode: VNode, oldVnode?: VNode) {
 
-  let { nativeAttrs } = vnode, oldNativeAttrs = oldVnode && oldVnode.nativeAttrs
+  let { node, nativeAttrs } = vnode, oldNativeAttrs = oldVnode && oldVnode.nativeAttrs
 
   if (nativeAttrs || oldNativeAttrs) {
-
-    const node = vnode.data[field.NODE]
 
     nativeAttrs = nativeAttrs || env.EMPTY_OBJECT
     oldNativeAttrs = oldNativeAttrs || env.EMPTY_OBJECT

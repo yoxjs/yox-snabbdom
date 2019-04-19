@@ -1,6 +1,6 @@
 import VNode from 'yox-type/src/vnode/VNode'
 
-import * as field from '../field'
+import * as field from './field'
 
 export function update(vnode: VNode, oldVnode?: VNode) {
 
@@ -20,7 +20,7 @@ export function update(vnode: VNode, oldVnode?: VNode) {
     }
   }
   else {
-    node = data[field.NODE]
+    node = vnode.node
   }
 
   if (ref) {

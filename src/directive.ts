@@ -4,7 +4,7 @@ import * as object from 'yox-common/util/object'
 import VNode from 'yox-type/src/vnode/VNode'
 import Directive from 'yox-type/src/vnode/Directive'
 
-import * as field from '../field'
+import * as field from './field'
 
 export function update(vnode: VNode, oldVnode?: VNode) {
 
@@ -12,7 +12,7 @@ export function update(vnode: VNode, oldVnode?: VNode) {
 
   if (directives || oldDirectives) {
 
-    const node = vnode.isComponent ? data[field.COMPONENT] : data[field.NODE],
+    const node = data[field.COMPONENT] || vnode.node,
 
     isKeypathChange = oldVnode && vnode.keypath !== oldVnode.keypath
 
@@ -49,7 +49,7 @@ export function update(vnode: VNode, oldVnode?: VNode) {
 export function remove(vnode: VNode) {
   const { directives } = vnode
   if (directives) {
-    const node = vnode.data[field.NODE]
+    const node = vnode.data[field.COMPONENT] || vnode.node
     object.each(
       directives,
       function (directive: Directive) {
