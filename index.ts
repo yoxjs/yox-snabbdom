@@ -33,7 +33,7 @@ function createKeyToIndex(vnodes: VNode[], startIndex: number, endIndex: number)
   return result
 }
 
-function createComponent(vnode: VNode, options: Record<string, any>) {
+function createComponent(vnode: VNode, options: YoxOptions) {
 
   // 渲染同步加载的组件时，vnode.node 为空
   // 渲染异步加载的组件时，vnode.node 不为空，因为初始化用了占位组件
