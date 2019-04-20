@@ -6,6 +6,7 @@ import * as logger from 'yox-common/src/util/logger'
 import isDef from 'yox-common/src/function/isDef'
 
 import API from 'yox-type/src/API'
+import Yox from 'yox-type/src/Yox'
 import VNode from 'yox-type/src/vnode/VNode'
 import YoxOptions from 'yox-type/src/options/Yox'
 
@@ -21,11 +22,11 @@ function isPatchable(vnode: VNode, oldVnode: VNode): boolean {
     && vnode.key === oldVnode.key
 }
 
-function createKeyToIndex(vnodes: VNode[], startIndex: number, endIndex: number) {
-  let result: Record<string, number> = { }, key: string | void
+function createKeyToIndex(vnodes: (VNode | void)[], startIndex: number, endIndex: number) {
+  let result: Record<string, number> = { }, vnode: VNode | void, key: string | void
   while (startIndex <= endIndex) {
-    key = vnodes[startIndex].key
-    if (key) {
+    vnode = vnodes[startIndex]
+    if (vnode && (key = vnode.key)) {
       result[key] = startIndex
     }
     startIndex++
@@ -37,13 +38,15 @@ function createComponent(vnode: VNode, options: YoxOptions) {
 
   // 渲染同步加载的组件时，vnode.node 为空
   // 渲染异步加载的组件时，vnode.node 不为空，因为初始化用了占位组件
-  const child = (vnode.parent || vnode.instance).create(options, vnode, vnode.node)
+  const child = (vnode.parent || vnode.instance).create(options, vnode, vnode.node), node = child.$el
 
-  if (!child.$el) {
+  if (node) {
+    vnode.node = node
+  }
+  else {
     logger.fatal('子组件没有创建元素，那还玩个毛啊')
   }
 
-  vnode.node = child.$el
   vnode.data[field.COMPONENT] = child
   vnode.data[field.LOADING] = env.FALSE
 
@@ -54,7 +57,7 @@ function createComponent(vnode: VNode, options: YoxOptions) {
 
 let guid = 0
 
-function createVnode(api: API, vnode: VNode): Node {
+function createVnode(api: API, vnode: VNode) {
 
   const { tag, isComponent, isComment, isText, children, text, instance } = vnode, data = {}
 
@@ -63,12 +66,12 @@ function createVnode(api: API, vnode: VNode): Node {
   vnode.data = data
 
   if (isText) {
-    vnode.node = api.createText(text)
+    vnode.node = api.createText(text as string)
     return
   }
 
   if (isComment) {
-    vnode.node = api.createComment(text)
+    vnode.node = api.createComment(text as string)
     return
   }
 
@@ -80,10 +83,10 @@ function createVnode(api: API, vnode: VNode): Node {
 
     // 先用异步方式获取组件
     // 如果是同步加载，会立即赋给 syncOptions
-    let syncOptions: Record<string, any> | void
+    let syncOptions: Record<string, any> | undefined
 
     instance.component(
-      tag,
+      tag as string,
       function (options: YoxOptions | void) {
         if (options) {
           if (isDef(data[field.LOADING])) {
@@ -124,7 +127,7 @@ function createVnode(api: API, vnode: VNode): Node {
   }
   else {
 
-    const node = vnode.node = api.createElement(vnode.tag)
+    const node = vnode.node = api.createElement(vnode.tag as string)
 
     if (children) {
       addVnodes(api, node, children, 0, children.length - 1)
@@ -167,8 +170,8 @@ function enterVnode(api: API, vnode: VNode) {
 
 }
 
-function removeVnodes(api: API, parentNode: Node, vnodes: VNode[], startIndex: number, endIndex: number) {
-  let vnode: VNode
+function removeVnodes(api: API, parentNode: Node, vnodes: (VNode | void)[], startIndex: number, endIndex: number) {
+  let vnode: VNode | void
   while (startIndex <= endIndex) {
     vnode = vnodes[startIndex]
     if (vnode) {
@@ -239,7 +242,7 @@ function insertBefore(api: API, parentNode: Node, node: Node, referenceNode: Nod
   }
 }
 
-function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChildren: VNode[]) {
+function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChildren: (VNode | void)[]) {
 
   let newStartIndex = 0,
   newEndIndex = newChildren.length - 1,
@@ -251,9 +254,9 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
   oldStartVnode = oldChildren[oldStartIndex],
   oldEndVnode = oldChildren[oldEndIndex],
 
-  oldKeyToIndex: Record<string, number>,
-  oldIndex: number,
-  activeVnode: VNode
+  oldKeyToIndex: Record<string, number> | void,
+  oldIndex: number | void,
+  activeVnode: VNode | void
 
   while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
 
@@ -316,13 +319,17 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
         oldKeyToIndex = createKeyToIndex(oldChildren, oldStartIndex, oldEndIndex)
       }
 
-      oldIndex = newStartVnode.key && oldKeyToIndex[newStartVnode.key]
+      oldIndex = newStartVnode.key
+        ? oldKeyToIndex[newStartVnode.key]
+        : env.UNDEFINED
 
       // 移动元素
       if (is.number(oldIndex)) {
-        activeVnode = oldChildren[oldIndex]
-        patch(api, activeVnode, newStartVnode)
-        oldChildren[oldIndex] = env.UNDEFINED
+        activeVnode = oldChildren[oldIndex as number]
+        if (activeVnode) {
+          patch(api, activeVnode, newStartVnode)
+          oldChildren[oldIndex as number] = env.UNDEFINED
+        }
       }
       // 新元素
       else {
@@ -442,7 +449,7 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
 
 }
 
-export function create(api: API, node: Node): VNode {
+export function create(api: API, node: Node, instance: Yox): VNode {
 
   const data: Record<string, any> = {},
 
@@ -450,7 +457,13 @@ export function create(api: API, node: Node): VNode {
 
   data[field.ID] = ++guid
 
-  return tag ? { node, tag, data } : { node, data }
+  return {
+    node,
+    data,
+    tag,
+    instance,
+    keypath: env.EMPTY_STRING,
+  }
 
 }
 

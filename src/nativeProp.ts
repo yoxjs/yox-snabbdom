@@ -6,18 +6,21 @@ import Property from 'yox-type/src/vnode/Property'
 
 export function update(api: any, vnode: VNode, oldVnode?: VNode) {
 
-  let { node, nativeProps } = vnode, oldNativeProps = oldVnode && oldVnode.nativeProps
+  const { node, nativeProps } = vnode,
+
+  oldNativeProps = oldVnode && oldVnode.nativeProps
 
   if (nativeProps || oldNativeProps) {
 
-    nativeProps = nativeProps || env.EMPTY_OBJECT
-    oldNativeProps = oldNativeProps || env.EMPTY_OBJECT
+    const newValue = nativeProps || env.EMPTY_OBJECT,
+
+    oldValue = oldNativeProps || env.EMPTY_OBJECT
 
     object.each(
-      nativeProps,
+      newValue,
       function (prop: Property, name: string) {
-        if (!oldNativeProps[name]
-          || prop.value !== oldNativeProps[name].value
+        if (!oldValue[name]
+          || prop.value !== oldValue[name].value
         ) {
           api.prop(node, name, prop.value)
         }
@@ -25,9 +28,9 @@ export function update(api: any, vnode: VNode, oldVnode?: VNode) {
     )
 
     object.each(
-      oldNativeProps,
+      oldValue,
       function (prop: Property, name: string) {
-        if (!nativeProps[name]) {
+        if (!newValue[name]) {
           api.removeProp(node, name, prop.hint)
         }
       }

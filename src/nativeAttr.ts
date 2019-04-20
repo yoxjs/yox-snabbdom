@@ -6,18 +6,21 @@ import Attribute from 'yox-type/src/vnode/Attribute'
 
 export function update(api: any, vnode: VNode, oldVnode?: VNode) {
 
-  let { node, nativeAttrs } = vnode, oldNativeAttrs = oldVnode && oldVnode.nativeAttrs
+  const { node, nativeAttrs } = vnode,
+
+  oldNativeAttrs = oldVnode && oldVnode.nativeAttrs
 
   if (nativeAttrs || oldNativeAttrs) {
 
-    nativeAttrs = nativeAttrs || env.EMPTY_OBJECT
-    oldNativeAttrs = oldNativeAttrs || env.EMPTY_OBJECT
+    const newValue = nativeAttrs || env.EMPTY_OBJECT,
+
+    oldValue = oldNativeAttrs || env.EMPTY_OBJECT
 
     object.each(
-      nativeAttrs,
+      newValue,
       function (attr: Attribute, name: string) {
-        if (!oldNativeAttrs[name]
-          || attr.value !== oldNativeAttrs[name].value
+        if (!oldValue[name]
+          || attr.value !== oldValue[name].value
         ) {
           api.attr(node, name, attr.value)
         }
@@ -25,9 +28,9 @@ export function update(api: any, vnode: VNode, oldVnode?: VNode) {
     )
 
     object.each(
-      oldNativeAttrs,
+      oldValue,
       function (_: Attribute, name: string) {
-        if (!nativeAttrs[name]) {
+        if (!newValue[name]) {
           api.removeAttr(node, name)
         }
       }

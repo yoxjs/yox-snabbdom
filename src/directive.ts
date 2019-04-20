@@ -8,36 +8,43 @@ import * as field from './field'
 
 export function update(vnode: VNode, oldVnode?: VNode) {
 
-  let { data, directives } = vnode, oldDirectives = oldVnode && oldVnode.directives
+  const { data, directives } = vnode, oldDirectives = oldVnode && oldVnode.directives
 
   if (directives || oldDirectives) {
 
     const node = data[field.COMPONENT] || vnode.node,
 
-    isKeypathChange = oldVnode && vnode.keypath !== oldVnode.keypath
+    isKeypathChange = oldVnode && vnode.keypath !== oldVnode.keypath,
 
-    directives = directives || env.EMPTY_OBJECT
-    oldDirectives = oldDirectives || env.EMPTY_OBJECT
+    newValue = directives || env.EMPTY_OBJECT,
+
+    oldValue = oldDirectives || env.EMPTY_OBJECT
 
     object.each(
-      directives,
+      newValue,
       function (directive: Directive, name: string) {
-        if (!oldDirectives[name]) {
+        if (!oldValue[name]) {
           directive.hooks.bind(node, directive, vnode)
         }
-        else if (directive.value !== oldDirectives[name].value
+        else if (directive.value !== oldValue[name].value
           || isKeypathChange
         ) {
-          directive.hooks.update(node, directive, vnode, oldVnode)
+          const { update } = directive.hooks
+          if (update) {
+            update(node, directive, vnode, oldVnode as VNode)
+          }
         }
       }
     )
 
     object.each(
-      oldDirectives,
+      oldValue,
       function (directive: Directive, name: string) {
-        if (!directives[name]) {
-          directive.hooks.unbind(node, directive, oldVnode)
+        if (!newValue[name]) {
+          const { unbind } = directive.hooks
+          if (unbind) {
+            unbind(node, directive, oldVnode as VNode)
+          }
         }
       }
     )
@@ -53,7 +60,10 @@ export function remove(vnode: VNode) {
     object.each(
       directives,
       function (directive: Directive) {
-        directive.hooks.unbind(node, directive, vnode)
+        const { unbind } = directive.hooks
+        if (unbind) {
+          unbind(node, directive, vnode)
+        }
       }
     )
   }

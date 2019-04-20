@@ -18,9 +18,9 @@
   },
   "homepage": "https://github.com/yoxjs/yox-snabbdom#readme",
   "dependencies": {
-    "yox-common": "^0.18.10",
+    "yox-common": "^0.18.11",
     "yox-config": "^0.1.6",
-    "yox-dom": "^0.0.8",
-    "yox-type": "^0.0.27"
+    "yox-dom": "^0.0.9",
+    "yox-type": "^0.0.28"
   }
 }
