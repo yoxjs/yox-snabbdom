@@ -1,9 +1,9 @@
-import * as is from 'yox-common/util/is'
-import * as env from 'yox-common/util/env'
-import * as array from 'yox-common/util/array'
-import * as logger from 'yox-common/util/logger'
+import * as is from 'yox-common/src/util/is'
+import * as env from 'yox-common/src/util/env'
+import * as array from 'yox-common/src/util/array'
+import * as logger from 'yox-common/src/util/logger'
 
-import isDef from 'yox-common/function/isDef'
+import isDef from 'yox-common/src/function/isDef'
 
 import API from 'yox-type/src/API'
 import VNode from 'yox-type/src/vnode/VNode'
@@ -157,7 +157,7 @@ function addVnodes(api: API, parentNode: Node, vnodes: VNode[], startIndex: numb
 
 function insertVnode(api: API, parentNode: Node, vnode: VNode, before?: VNode) {
   const { node, data } = vnode, hasParent = api.parent(node)
-  api.before(parentNode, node, before ? before.node : env.UNDEFINED)
+  insertBefore(api, parentNode, node, before ? before.node : env.UNDEFINED)
   if (!hasParent && !data[field.LOADING]) {
     enterVnode(api, vnode)
   }
@@ -230,6 +230,15 @@ function leaveVnode(api: API, vnode: VNode, done: Function) {
   done()
 }
 
+function insertBefore(api: API, parentNode: Node, node: Node, referenceNode: Node | void) {
+  if (referenceNode) {
+    api.before(parentNode, node, referenceNode)
+  }
+  else {
+    api.append(parentNode, node)
+  }
+}
+
 function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChildren: VNode[]) {
 
   let newStartIndex = 0,
@@ -276,7 +285,8 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
     // 说明元素被移到右边了
     else if (isPatchable(newEndVnode, oldStartVnode)) {
       patch(api, newEndVnode, oldStartVnode)
-      api.before(
+      insertBefore(
+        api,
         parentNode,
         oldStartVnode.node,
         api.next(oldEndVnode.node)
@@ -289,7 +299,8 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
     // 说明元素被移到左边了
     else if (isPatchable(newStartVnode, oldEndVnode)) {
       patch(api, newStartVnode, oldEndVnode)
-      api.before(
+      insertBefore(
+        api,
         parentNode,
         oldEndVnode.node,
         oldStartVnode.node
@@ -360,9 +371,14 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
   // 如果不能 patch，则直接删除重建
   if (!isPatchable(vnode, oldVnode)) {
     const parentNode = api.parent(node)
-    createVnode(api, vnode)
-    insertVnode(api, parentNode, vnode, oldVnode)
-    removeVnode(api, parentNode, oldVnode)
+    if (parentNode) {
+      createVnode(api, vnode)
+      insertVnode(api, parentNode, vnode, oldVnode)
+      removeVnode(api, parentNode, oldVnode)
+    }
+    else {
+      logger.fatal('parentNode is not found.')
+    }
     return
   }
 
