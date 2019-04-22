@@ -38,7 +38,7 @@ function createComponent(vnode: VNode, options: YoxOptions) {
 
   // 渲染同步加载的组件时，vnode.node 为空
   // 渲染异步加载的组件时，vnode.node 不为空，因为初始化用了占位组件
-  const child = (vnode.parent || vnode.instance).create(options, vnode, vnode.node), node = child.$el
+  const child = (vnode.parent || vnode.context).create(options, vnode, vnode.node), node = child.$el
 
   if (node) {
     vnode.node = node
@@ -59,7 +59,7 @@ let guid = 0
 
 function createVnode(api: API, vnode: VNode) {
 
-  const { tag, isComponent, isComment, isText, children, text, instance } = vnode, data = {}
+  const { tag, isComponent, isComment, isText, children, text, context } = vnode, data = {}
 
   data[field.ID] = ++guid
 
@@ -85,7 +85,7 @@ function createVnode(api: API, vnode: VNode) {
     // 如果是同步加载，会立即赋给 syncOptions
     let syncOptions: Record<string, any> | undefined
 
-    instance.component(
+    context.component(
       tag as string,
       function (options: YoxOptions | void) {
         if (options) {
@@ -204,7 +204,7 @@ function destroyVnode(api: API, vnode: VNode) {
   const { data, children, isComponent, isStatic } = vnode
 
   if (isComponent) {
-    if (vnode.parent === vnode.instance) {
+    if (vnode.parent === vnode.context) {
       if (data[field.COMPONENT]) {
         data[field.COMPONENT].destroy()
         data[field.COMPONENT] = env.UNDEFINED
@@ -449,7 +449,7 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
 
 }
 
-export function create(api: API, node: Node, instance: Yox): VNode {
+export function create(api: API, node: Node, context: Yox, keypath: string): VNode {
 
   const data: Record<string, any> = {},
 
@@ -461,8 +461,8 @@ export function create(api: API, node: Node, instance: Yox): VNode {
     node,
     data,
     tag,
-    instance,
-    keypath: env.EMPTY_STRING,
+    context,
+    keypath,
   }
 
 }

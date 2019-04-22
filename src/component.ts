@@ -4,7 +4,7 @@ import * as field from './field'
 
 export function update(vnode: VNode, oldVnode?: VNode) {
 
-  let { data, ref, props, slots, instance } = vnode, node: any
+  let { data, ref, props, slots, context } = vnode, node: any
 
   if (vnode.isComponent) {
     node = data[field.COMPONENT]
@@ -24,7 +24,7 @@ export function update(vnode: VNode, oldVnode?: VNode) {
   }
 
   if (ref) {
-    instance.$refs[ref] = node
+    context.$refs[ref] = node
   }
 
 }
