@@ -34,6 +34,15 @@ function createKeyToIndex(vnodes: (VNode | void)[], startIndex: number, endIndex
   return result
 }
 
+function insertBefore(api: API, parentNode: Node, node: Node, referenceNode: Node | void) {
+  if (referenceNode) {
+    api.before(parentNode, node, referenceNode)
+  }
+  else {
+    api.append(parentNode, node)
+  }
+}
+
 function createComponent(vnode: VNode, options: YoxOptions) {
 
   // 渲染同步加载的组件时，vnode.node 为空
@@ -50,18 +59,22 @@ function createComponent(vnode: VNode, options: YoxOptions) {
   vnode.data[field.COMPONENT] = child
   vnode.data[field.LOADING] = env.FALSE
 
-  // component.update(vnode)
+  component.update(vnode)
   directive.update(vnode)
 
 }
 
 let guid = 0
 
+function createData(): Record<string, any> {
+  const data = {}
+  data[field.ID] = ++guid
+  return data
+}
+
 function createVnode(api: API, vnode: VNode) {
 
-  const { tag, isComponent, isComment, isText, children, text, context } = vnode, data = {}
-
-  data[field.ID] = ++guid
+  const { tag, isComponent, isComment, isText, children, text, context } = vnode, data = createData()
 
   vnode.data = data
 
@@ -97,7 +110,7 @@ function createVnode(api: API, vnode: VNode) {
               if (data[field.VNODE]) {
                 vnode = data[field.VNODE]
                 // 用完就删掉
-                data[field.VNODE] = env.UNDEFINED
+                delete data[field.VNODE]
               }
 
               createComponent(vnode, options)
@@ -139,10 +152,11 @@ function createVnode(api: API, vnode: VNode) {
       )
     }
 
-    component.update(vnode)
-    directive.update(vnode)
     nativeAttr.update(api, vnode)
     nativeProp.update(api, vnode)
+    component.update(vnode)
+
+    directive.update(vnode)
 
   }
 
@@ -224,22 +238,12 @@ function destroyVnode(api: API, vnode: VNode) {
     )
   }
 
-
   directive.remove(vnode)
 
 }
 
 function leaveVnode(api: API, vnode: VNode, done: Function) {
   done()
-}
-
-function insertBefore(api: API, parentNode: Node, node: Node, referenceNode: Node | void) {
-  if (referenceNode) {
-    api.before(parentNode, node, referenceNode)
-  }
-  else {
-    api.append(parentNode, node)
-  }
 }
 
 function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChildren: (VNode | void)[]) {
@@ -451,16 +455,10 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
 
 export function create(api: API, node: Node, context: Yox, keypath: string): VNode {
 
-  const data: Record<string, any> = {},
-
-  tag = api.tag(node)
-
-  data[field.ID] = ++guid
-
   return {
+    tag: api.tag(node),
+    data: createData(),
     node,
-    data,
-    tag,
     context,
     keypath,
   }

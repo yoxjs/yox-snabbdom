@@ -24,7 +24,10 @@ export function update(vnode: VNode, oldVnode?: VNode) {
   }
 
   if (ref) {
-    context.$refs[ref] = node
+    const refs = context.$refs
+    if (refs) {
+      refs[ref] = node
+    }
   }
 
 }
