@@ -43,11 +43,19 @@ function insertBefore(api: API, parentNode: Node, node: Node, referenceNode: Nod
   }
 }
 
-function createComponent(vnode: VNode, options: YoxOptions) {
+function createComponent(vnode: VNode, options: YoxOptions | void) {
+
+  if (!options) {
+    logger.fatal(`component [${vnode.tag}] is not found.`)
+    return
+  }
 
   // 渲染同步加载的组件时，vnode.node 为空
-  // 渲染异步加载的组件时，vnode.node 不为空，因为初始化用了占位组件
-  const child = (vnode.parent || vnode.context).create(options, vnode, vnode.node), node = child.$el
+  // 渲染异步加载的组件时，vnode.node 不为空，因为初始化用了占位节点
+  const child = (vnode.parent || vnode.context).create(options, vnode, vnode.node),
+
+  // 组件初始化创建的元素
+  node = child.$el as Node
 
   if (node) {
     vnode.node = node
@@ -62,6 +70,8 @@ function createComponent(vnode: VNode, options: YoxOptions) {
   component.update(vnode)
   directive.update(vnode)
 
+  return child
+
 }
 
 let guid = 0
@@ -74,7 +84,7 @@ function createData(): Record<string, any> {
 
 function createVnode(api: API, vnode: VNode) {
 
-  const { tag, isComponent, isComment, isText, children, text, context } = vnode, data = createData()
+  const { tag, isComponent, isComment, isText, children, text, html, context } = vnode, data = createData()
 
   vnode.data = data
 
@@ -90,51 +100,38 @@ function createVnode(api: API, vnode: VNode) {
 
   if (isComponent) {
 
-    // 如果渲染组件，必须确保有一个占位组件，理由如下：
-    // 1. 尽可能的提升用户体验（突然蹦一个组件出来是几个意思？）
-    // 2. virtual dom 的每一个节点，最好要有一个真实 node 对应
-
-    // 先用异步方式获取组件
-    // 如果是同步加载，会立即赋给 syncOptions
-    let syncOptions: Record<string, any> | undefined
+    let isAsync = env.TRUE
 
     context.component(
       tag as string,
-      function (options: YoxOptions | void) {
-        if (options) {
-          if (isDef(data[field.LOADING])) {
-            // 异步组件
-            if (data[field.LOADING]) {
-
-              // 尝试使用最新的 vnode
-              if (data[field.VNODE]) {
-                vnode = data[field.VNODE]
-                // 用完就删掉
-                delete data[field.VNODE]
-              }
-
-              createComponent(vnode, options)
-
+      function (options: any) {
+        if (isDef(data[field.LOADING])) {
+          // 异步组件
+          if (data[field.LOADING]) {
+            // 尝试使用最新的 vnode
+            if (data[field.VNODE]) {
+              vnode = data[field.VNODE]
+              // 用完就删掉
+              delete data[field.VNODE]
             }
-          }
-          // 同步组件
-          else {
-            syncOptions = options
+            enterVnode(
+              api,
+              vnode,
+              createComponent(vnode, options)
+            )
           }
         }
+        // 同步组件
         else {
-          logger.fatal(`component <${tag}> is not found.`)
+          createComponent(vnode, options)
+          isAsync = env.FALSE
         }
       }
     )
 
-    if (syncOptions) {
-      createComponent(vnode, syncOptions)
-    }
-    else {
-      vnode.node = api.createComment(env.EMPTY_STRING)
+    if (isAsync) {
+      vnode.node = api.createComment(env.RAW_COMPONENT)
       data[field.LOADING] = env.TRUE
-      return
     }
 
   }
@@ -151,11 +148,13 @@ function createVnode(api: API, vnode: VNode) {
         api.createText(text)
       )
     }
+    else if (html) {
+      api.html(node as HTMLElement, html)
+    }
 
     nativeAttr.update(api, vnode)
     nativeProp.update(api, vnode)
     component.update(vnode)
-
     directive.update(vnode)
 
   }
@@ -173,15 +172,50 @@ function addVnodes(api: API, parentNode: Node, vnodes: VNode[], startIndex: numb
 }
 
 function insertVnode(api: API, parentNode: Node, vnode: VNode, before?: VNode) {
-  const { node, data } = vnode, hasParent = api.parent(node)
-  insertBefore(api, parentNode, node, before ? before.node : env.UNDEFINED)
-  if (!hasParent && !data[field.LOADING]) {
-    enterVnode(api, vnode)
+
+  const { node, data } = vnode,
+
+  hasParent = api.parent(node)
+
+  // 这里不调用 insertBefore，避免判断两次
+  if (before) {
+    api.before(parentNode, node, before.node)
   }
+  else {
+    api.append(parentNode, node)
+  }
+
+  // 普通元素和组件的占位节点都会走到这里
+  // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
+  if (!hasParent) {
+    if (vnode.isComponent) {
+      const component = data[field.COMPONENT]
+      if (component) {
+        enterVnode(api, vnode, component)
+      }
+    }
+    else {
+      enterVnode(api, vnode)
+    }
+  }
+
 }
 
-function enterVnode(api: API, vnode: VNode) {
-
+function enterVnode(api: API, vnode: VNode, component?: Yox) {
+  // 如果组件根元素和组件本身都写了 transition
+  // 优先用外面定义的
+  // 因为这明确是在覆盖配置
+  let transition = vnode.transition
+  if (component) {
+    // 再看组件根元素是否有 transition
+    if (!transition) {
+      transition = (component.$vnode as VNode).transition
+    }
+    console.log('enter component', vnode, transition)
+  }
+  else {
+    console.log('enter element', vnode, transition)
+  }
 }
 
 function removeVnodes(api: API, parentNode: Node, vnodes: (VNode | void)[], startIndex: number, endIndex: number) {
@@ -196,8 +230,8 @@ function removeVnodes(api: API, parentNode: Node, vnodes: (VNode | void)[], star
 }
 
 function removeVnode(api: API, parentNode: Node, vnode: VNode) {
-  let node = vnode.node
-  if (vnode.isComment || vnode.isText) {
+  const node = vnode.node
+  if (vnode.isStatic || vnode.isComment || vnode.isText) {
     api.remove(parentNode, node)
   }
   else {
@@ -215,21 +249,24 @@ function removeVnode(api: API, parentNode: Node, vnode: VNode) {
 
 function destroyVnode(api: API, vnode: VNode) {
 
-  const { data, children, isComponent, isStatic } = vnode
+  const { data, children } = vnode
 
-  if (isComponent) {
+  if (vnode.isComponent) {
     if (vnode.parent === vnode.context) {
-      if (data[field.COMPONENT]) {
-        data[field.COMPONENT].destroy()
-        data[field.COMPONENT] = env.UNDEFINED
+      const component = data[field.COMPONENT]
+      if (component) {
+        component.destroy()
         return env.TRUE
       }
       else if (data[field.LOADING]) {
         data[field.LOADING] = env.FALSE
       }
     }
+    else {
+      return
+    }
   }
-  else if (!isStatic && children) {
+  else if (children) {
     array.each(
       children,
       function (child: VNode) {
@@ -243,6 +280,7 @@ function destroyVnode(api: API, vnode: VNode) {
 }
 
 function leaveVnode(api: API, vnode: VNode, done: Function) {
+  console.log('leave', vnode)
   done()
 }
 
@@ -372,7 +410,7 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
 }
 
 export function patch(api: API, vnode: VNode, oldVnode: VNode) {
-
+console.log('>>>>>>>>>>>>>>>> patch', vnode, oldVnode)
   if (vnode === oldVnode) {
     return
   }
@@ -381,14 +419,14 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
 
   // 如果不能 patch，则直接删除重建
   if (!isPatchable(vnode, oldVnode)) {
+    // 同步加载的组件，初始化时不会传入占位节点
+    // 它内部会自动生成一个注释节点，当 vnode 和注释节点对比时，必然无法 patch
+    // 于是走进此分支，为新组件创建一个 DOM 节点，然后继续 createComponent 后面的流程
     const parentNode = api.parent(node)
+    createVnode(api, vnode)
     if (parentNode) {
-      createVnode(api, vnode)
       insertVnode(api, parentNode, vnode, oldVnode)
       removeVnode(api, parentNode, oldVnode)
-    }
-    else {
-      logger.fatal('parentNode is not found.')
     }
     return
   }
@@ -396,10 +434,8 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
   vnode.node = node
   vnode.data = data
 
-  if (oldVnode.isComponent) {
-    if (data[field.LOADING]) {
-      data[field.VNODE] = vnode
-    }
+  if (oldVnode.isComponent && data[field.LOADING]) {
+    data[field.VNODE] = vnode
     return
   }
 
@@ -412,16 +448,25 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
   // before update
   nativeAttr.update(api, vnode, oldVnode)
   nativeProp.update(api, vnode, oldVnode)
+  component.update(vnode, oldVnode)
+  directive.update(vnode)
 
   const newText = vnode.text,
+  newHtml = vnode.html,
   newChildren = vnode.children,
 
   oldText = oldVnode.text,
+  oldHtml = oldVnode.html,
   oldChildren = oldVnode.children
 
   if (is.string(newText)) {
     if (newText !== oldText) {
       api.text(node, newText)
+    }
+  }
+  else if (is.string(newHtml)) {
+    if (newHtml !== oldHtml) {
+      api.html(node as HTMLElement, newHtml)
     }
   }
   else {
@@ -433,7 +478,7 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
     }
     // 有新的没旧的 - 新增节点
     else if (newChildren) {
-      if (is.string(oldText)) {
+      if (is.string(oldText) || is.string(oldHtml)) {
         api.text(node, env.EMPTY_STRING)
       }
       addVnodes(api, node, newChildren, 0, newChildren.length - 1)
@@ -443,13 +488,10 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
       removeVnodes(api, node, oldChildren, 0, oldChildren.length - 1)
     }
     // 有旧的 text 没有新的 text
-    else if (is.string(oldText)) {
+    else if (is.string(oldText) || is.string(oldHtml)) {
       api.text(node, env.EMPTY_STRING)
     }
   }
-
-  // after update
-  component.update(vnode, oldVnode)
 
 }
 
