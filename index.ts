@@ -23,7 +23,7 @@ function isPatchable(vnode: VNode, oldVnode: VNode): boolean {
 }
 
 function createKeyToIndex(vnodes: (VNode | void)[], startIndex: number, endIndex: number) {
-  let result: Record<string, number> = { }, vnode: VNode | void, key: string | void
+  let result: Record<string, number> = {}, vnode: VNode | void, key: string | void
   while (startIndex <= endIndex) {
     vnode = vnodes[startIndex]
     if (vnode && (key = vnode.key)) {
