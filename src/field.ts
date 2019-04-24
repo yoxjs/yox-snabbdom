@@ -7,3 +7,5 @@ export const VNODE = '$vnode'
 export const LOADING = '$loading'
 
 export const COMPONENT = '$component'
+
+export const LEAVING = '$leaving'

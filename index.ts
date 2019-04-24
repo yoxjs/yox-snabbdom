@@ -4,6 +4,7 @@ import * as array from 'yox-common/src/util/array'
 import * as logger from 'yox-common/src/util/logger'
 
 import isDef from 'yox-common/src/function/isDef'
+import execute from 'yox-common/src/function/execute'
 
 import API from 'yox-type/src/API'
 import Yox from 'yox-type/src/Yox'
@@ -115,7 +116,6 @@ function createVnode(api: API, vnode: VNode) {
               delete data[field.VNODE]
             }
             enterVnode(
-              api,
               vnode,
               createComponent(vnode, options)
             )
@@ -173,7 +173,7 @@ function addVnodes(api: API, parentNode: Node, vnodes: VNode[], startIndex: numb
 
 function insertVnode(api: API, parentNode: Node, vnode: VNode, before?: VNode) {
 
-  const { node, data } = vnode,
+  const { node, data, context } = vnode,
 
   hasParent = api.parent(node)
 
@@ -191,31 +191,24 @@ function insertVnode(api: API, parentNode: Node, vnode: VNode, before?: VNode) {
     if (vnode.isComponent) {
       const component = data[field.COMPONENT]
       if (component) {
-        enterVnode(api, vnode, component)
+        context.nextTick(
+          function () {
+            enterVnode(vnode, component)
+          },
+          env.TRUE
+        )
       }
     }
-    else {
-      enterVnode(api, vnode)
+    else if (!vnode.isStatic) {
+      context.nextTick(
+        function () {
+          enterVnode(vnode)
+        },
+        env.TRUE
+      )
     }
   }
 
-}
-
-function enterVnode(api: API, vnode: VNode, component?: Yox) {
-  // 如果组件根元素和组件本身都写了 transition
-  // 优先用外面定义的
-  // 因为这明确是在覆盖配置
-  let transition = vnode.transition
-  if (component) {
-    // 再看组件根元素是否有 transition
-    if (!transition) {
-      transition = (component.$vnode as VNode).transition
-    }
-    console.log('enter component', vnode, transition)
-  }
-  else {
-    console.log('enter element', vnode, transition)
-  }
 }
 
 function removeVnodes(api: API, parentNode: Node, vnodes: (VNode | void)[], startIndex: number, endIndex: number) {
@@ -230,20 +223,30 @@ function removeVnodes(api: API, parentNode: Node, vnodes: (VNode | void)[], star
 }
 
 function removeVnode(api: API, parentNode: Node, vnode: VNode) {
-  const node = vnode.node
-  if (vnode.isStatic || vnode.isComment || vnode.isText) {
+  const { node } = vnode
+  if (vnode.isStatic) {
     api.remove(parentNode, node)
   }
   else {
-    leaveVnode(
-      api,
-      vnode,
-      function () {
-        if (!destroyVnode(api, vnode)) {
-          api.remove(parentNode, node)
-        }
+
+    let done = function () {
+      destroyVnode(api, vnode)
+      api.remove(parentNode, node)
+    },
+
+    component: Yox | void
+
+    if (vnode.isComponent) {
+      component = vnode.data[field.COMPONENT]
+      // 异步组件，还没加载成功就被删除了
+      if (!component) {
+        done()
+        return
       }
-    )
+    }
+
+    leaveVnode(vnode, component, done)
+
   }
 }
 
@@ -255,32 +258,80 @@ function destroyVnode(api: API, vnode: VNode) {
     if (vnode.parent === vnode.context) {
       const component = data[field.COMPONENT]
       if (component) {
+        directive.remove(vnode)
         component.destroy()
-        return env.TRUE
       }
-      else if (data[field.LOADING]) {
+      else [
         data[field.LOADING] = env.FALSE
-      }
-    }
-    else {
-      return
+      ]
     }
   }
-  else if (children) {
-    array.each(
-      children,
-      function (child: VNode) {
-        destroyVnode(api, child)
-      }
-    )
+  else {
+    directive.remove(vnode)
+    if (children) {
+      array.each(
+        children,
+        function (child: VNode) {
+          destroyVnode(api, child)
+        }
+      )
+    }
   }
-
-  directive.remove(vnode)
 
 }
 
-function leaveVnode(api: API, vnode: VNode, done: Function) {
-  console.log('leave', vnode)
+/**
+ * vnode 触发 enter hook 时，外部一般会做一些淡入动画
+ */
+function enterVnode(vnode: VNode, component: Yox | void) {
+  // 如果组件根元素和组件本身都写了 transition
+  // 优先用外面定义的
+  // 因为这明确是在覆盖配置
+  let { data, transition } = vnode
+  if (component && !transition) {
+    // 再看组件根元素是否有 transition
+    transition = (component.$vnode as VNode).transition
+  }
+  execute(data[field.LEAVING])
+  if (transition) {
+    const { enter } = transition
+    if (enter) {
+      enter(vnode.node as HTMLElement, env.EMPTY_FUNCTION)
+      return
+    }
+  }
+}
+
+/**
+ * vnode 触发 leave hook 时，外部一般会做一些淡出动画
+ * 动画结束后才能移除节点，否则无法产生动画
+ * 这里由外部调用 done 来通知内部动画结束
+ */
+function leaveVnode(vnode: VNode, component: Yox | void, done: () => void) {
+  // 如果组件根元素和组件本身都写了 transition
+  // 优先用外面定义的
+  // 因为这明确是在覆盖配置
+  let { data, transition } = vnode
+  if (component && !transition) {
+    // 再看组件根元素是否有 transition
+    transition = (component.$vnode as VNode).transition
+  }
+  if (transition) {
+    const { leave } = transition
+    if (leave) {
+      leave(
+        vnode.node as HTMLElement,
+        data[field.LEAVING] = function () {
+          if (data[field.LEAVING]) {
+            done()
+            data[field.LEAVING] = env.UNDEFINED
+          }
+        }
+      )
+      return
+    }
+  }
+  // 如果没有淡出动画，直接结束
   done()
 }
 
@@ -496,17 +547,28 @@ console.log('>>>>>>>>>>>>>>>> patch', vnode, oldVnode)
 }
 
 export function create(api: API, node: Node, context: Yox, keypath: string): VNode {
-
   return {
     tag: api.tag(node),
     data: createData(),
+    isStatic: env.TRUE,
+    isComment: env.FALSE,
     node,
     context,
     keypath,
   }
-
 }
 
-export function destroy(api: API, vnode: VNode) {
-
+export function destroy(api: API, vnode: VNode, isRemove?: boolean) {
+  if (isRemove) {
+    const parentNode = api.parent(vnode.node)
+    if (parentNode) {
+      removeVnode(api, parentNode, vnode)
+    }
+    else {
+      logger.fatal('没有 parentNode 无法销毁 vnode')
+    }
+  }
+  else {
+    destroyVnode(api, vnode)
+  }
 }

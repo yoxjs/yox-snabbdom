@@ -9,7 +9,7 @@ import * as field from './field'
 export function update(vnode: VNode, oldVnode?: VNode) {
 
   const { data, directives } = vnode, oldDirectives = oldVnode && oldVnode.directives
-
+  console.log('directive update', vnode, oldVnode)
   if (directives || oldDirectives) {
 
     const node = data[field.COMPONENT] || vnode.node,
@@ -56,6 +56,7 @@ export function update(vnode: VNode, oldVnode?: VNode) {
 
 export function remove(vnode: VNode) {
   const { directives } = vnode
+  console.log('directive remove', vnode)
   if (directives) {
     const node = vnode.data[field.COMPONENT] || vnode.node
     object.each(

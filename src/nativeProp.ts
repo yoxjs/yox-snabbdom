@@ -9,7 +9,7 @@ export function update(api: any, vnode: VNode, oldVnode?: VNode) {
   const { node, nativeProps } = vnode,
 
   oldNativeProps = oldVnode && oldVnode.nativeProps
-
+  console.log('prop update', vnode, oldVnode)
   if (nativeProps || oldNativeProps) {
 
     const newValue = nativeProps || env.EMPTY_OBJECT,
