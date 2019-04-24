@@ -9,7 +9,7 @@ export function update(api: any, vnode: VNode, oldVnode?: VNode) {
   const { node, nativeAttrs } = vnode,
 
   oldNativeAttrs = oldVnode && oldVnode.nativeAttrs
-  console.log('attr update', vnode, oldVnode)
+
   if (nativeAttrs || oldNativeAttrs) {
 
     const newValue = nativeAttrs || env.EMPTY_OBJECT,

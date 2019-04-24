@@ -5,7 +5,7 @@ import * as field from './field'
 export function update(vnode: VNode, oldVnode?: VNode) {
 
   let { data, ref, props, slots, context } = vnode, node: any
-console.log('component update', vnode, oldVnode)
+
   if (vnode.isComponent) {
     node = data[field.COMPONENT]
     // 更新时才要 set

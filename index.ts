@@ -85,7 +85,9 @@ function createData(): Record<string, any> {
 
 function createVnode(api: API, vnode: VNode) {
 
-  const { tag, isComponent, isComment, isText, children, text, html, context } = vnode, data = createData()
+  const { tag, isComponent, isComment, isText, children, text, html, context } = vnode,
+
+  data = createData()
 
   vnode.data = data
 
@@ -140,7 +142,7 @@ function createVnode(api: API, vnode: VNode) {
     const node = vnode.node = api.createElement(vnode.tag as string)
 
     if (children) {
-      addVnodes(api, node, children, 0, children.length - 1)
+      addVnodes(api, node, children)
     }
     else if (text) {
       api.append(
@@ -149,7 +151,7 @@ function createVnode(api: API, vnode: VNode) {
       )
     }
     else if (html) {
-      api.html(node as HTMLElement, html)
+      api.html(node as Element, html)
     }
 
     nativeAttr.update(api, vnode)
@@ -158,16 +160,15 @@ function createVnode(api: API, vnode: VNode) {
     directive.update(vnode)
 
   }
-
 }
 
-function addVnodes(api: API, parentNode: Node, vnodes: VNode[], startIndex: number, endIndex: number, before?: VNode) {
-  let vnode: VNode
-  while (startIndex <= endIndex) {
-    vnode = vnodes[startIndex]
+function addVnodes(api: API, parentNode: Node, vnodes: VNode[], startIndex?: number, endIndex?: number, before?: VNode) {
+  let vnode: VNode, start = startIndex || 0, end = endIndex || vnodes.length - 1
+  while (start <= (end as number)) {
+    vnode = vnodes[start]
     createVnode(api, vnode)
     insertVnode(api, parentNode, vnode, before)
-    startIndex++
+    start++
   }
 }
 
@@ -188,43 +189,44 @@ function insertVnode(api: API, parentNode: Node, vnode: VNode, before?: VNode) {
   // 普通元素和组件的占位节点都会走到这里
   // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
   if (!hasParent) {
+    let enter: Function | void
     if (vnode.isComponent) {
       const component = data[field.COMPONENT]
       if (component) {
-        context.nextTick(
-          function () {
-            enterVnode(vnode, component)
-          },
-          env.TRUE
-        )
+        enter = function () {
+          enterVnode(vnode, component)
+        }
       }
     }
-    else if (!vnode.isStatic) {
-      context.nextTick(
-        function () {
-          enterVnode(vnode)
-        },
-        env.TRUE
-      )
+    else if (!vnode.isStatic && !vnode.isText && !vnode.isComment) {
+      enter = function () {
+        enterVnode(vnode)
+      }
+    }
+    if (enter) {
+      // 执行到这时，组件还没有挂载到 DOM 树
+      // 如果此时直接触发 enter，外部还需要做多余的工作，比如 setTimeout
+      // 索性这里直接等挂载到 DOM 数之后再触发
+      context.nextTick(enter, env.TRUE)
     }
   }
 
 }
 
-function removeVnodes(api: API, parentNode: Node, vnodes: (VNode | void)[], startIndex: number, endIndex: number) {
-  let vnode: VNode | void
-  while (startIndex <= endIndex) {
-    vnode = vnodes[startIndex]
+function removeVnodes(api: API, parentNode: Node, vnodes: (VNode | void)[], startIndex?: number, endIndex?: number) {
+  let vnode: VNode | void, start = startIndex || 0, end = endIndex || vnodes.length - 1
+  while (start <= end) {
+    vnode = vnodes[start]
     if (vnode) {
       removeVnode(api, parentNode, vnode)
     }
-    startIndex++
+    start++
   }
 }
 
 function removeVnode(api: API, parentNode: Node, vnode: VNode) {
   const { node } = vnode
-  if (vnode.isStatic) {
+  if (vnode.isStatic || vnode.isText || vnode.isComment) {
     api.remove(parentNode, node)
   }
   else {
@@ -296,7 +298,10 @@ function enterVnode(vnode: VNode, component: Yox | void) {
   if (transition) {
     const { enter } = transition
     if (enter) {
-      enter(vnode.node as HTMLElement, env.EMPTY_FUNCTION)
+      enter(
+        vnode.node as HTMLElement,
+        env.EMPTY_FUNCTION
+      )
       return
     }
   }
@@ -335,12 +340,12 @@ function leaveVnode(vnode: VNode, component: Yox | void, done: () => void) {
   done()
 }
 
-function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChildren: (VNode | void)[]) {
+function updateChildren(api: API, parentNode: Node, children: VNode[], oldChildren: (VNode | void)[]) {
 
   let newStartIndex = 0,
-  newEndIndex = newChildren.length - 1,
-  newStartVnode = newChildren[newStartIndex],
-  newEndVnode = newChildren[newEndIndex],
+  newEndIndex = children.length - 1,
+  newStartVnode = children[newStartIndex],
+  newEndVnode = children[newEndIndex],
 
   oldStartIndex = 0,
   oldEndIndex = oldChildren.length - 1,
@@ -365,14 +370,14 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
     else if (isPatchable(newStartVnode, oldStartVnode)) {
       patch(api, newStartVnode, oldStartVnode)
       oldStartVnode = oldChildren[++oldStartIndex]
-      newStartVnode = newChildren[++newStartIndex]
+      newStartVnode = children[++newStartIndex]
     }
 
     // 从尾到头比较，位置相同且值得 patch
     else if (isPatchable(newEndVnode, oldEndVnode)) {
       patch(api, newEndVnode, oldEndVnode)
       oldEndVnode = oldChildren[--oldEndIndex]
-      newEndVnode = newChildren[--newEndIndex]
+      newEndVnode = children[--newEndIndex]
     }
 
     // 比较完两侧的节点，剩下就是 位置发生改变的节点 和 全新的节点
@@ -388,7 +393,7 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
         api.next(oldEndVnode.node)
       )
       oldStartVnode = oldChildren[++oldStartIndex]
-      newEndVnode = newChildren[--newEndIndex]
+      newEndVnode = children[--newEndIndex]
     }
 
     // 当 oldEndVnode 和 newStartVnode 值得 patch
@@ -402,7 +407,7 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
         oldStartVnode.node
       )
       oldEndVnode = oldChildren[--oldEndIndex]
-      newStartVnode = newChildren[++newStartIndex]
+      newStartVnode = children[++newStartIndex]
     }
 
     // 尝试同级元素的 key
@@ -434,7 +439,7 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
         insertVnode(api, parentNode, activeVnode, oldStartVnode)
       }
 
-      newStartVnode = newChildren[++newStartIndex]
+      newStartVnode = children[++newStartIndex]
 
     }
   }
@@ -443,10 +448,10 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
     addVnodes(
       api,
       parentNode,
-      newChildren,
+      children,
       newStartIndex,
       newEndIndex,
-      newChildren[newEndIndex + 1]
+      children[newEndIndex + 1]
     )
   }
   else if (newStartIndex > newEndIndex) {
@@ -461,17 +466,17 @@ function updateChildren(api: API, parentNode: Node, newChildren: VNode[], oldChi
 }
 
 export function patch(api: API, vnode: VNode, oldVnode: VNode) {
-console.log('>>>>>>>>>>>>>>>> patch', vnode, oldVnode)
+
   if (vnode === oldVnode) {
     return
   }
 
   const { node, data } = oldVnode
 
-  // 如果不能 patch，则直接删除重建
+  // 如果不能 patch，则删除重建
   if (!isPatchable(vnode, oldVnode)) {
     // 同步加载的组件，初始化时不会传入占位节点
-    // 它内部会自动生成一个注释节点，当 vnode 和注释节点对比时，必然无法 patch
+    // 它内部会自动生成一个注释节点，当它的根 vnode 和注释节点对比时，必然无法 patch
     // 于是走进此分支，为新组件创建一个 DOM 节点，然后继续 createComponent 后面的流程
     const parentNode = api.parent(node)
     createVnode(api, vnode)
@@ -490,53 +495,48 @@ console.log('>>>>>>>>>>>>>>>> patch', vnode, oldVnode)
     return
   }
 
-  if (vnode.isStatic
-    && oldVnode.isStatic
-  ) {
+  if (vnode.isStatic && oldVnode.isStatic) {
     return
   }
 
-  // before update
   nativeAttr.update(api, vnode, oldVnode)
   nativeProp.update(api, vnode, oldVnode)
   component.update(vnode, oldVnode)
-  directive.update(vnode)
+  directive.update(vnode, oldVnode)
 
-  const newText = vnode.text,
-  newHtml = vnode.html,
-  newChildren = vnode.children,
+  const { text, html, children } = vnode,
 
   oldText = oldVnode.text,
   oldHtml = oldVnode.html,
   oldChildren = oldVnode.children
 
-  if (is.string(newText)) {
-    if (newText !== oldText) {
-      api.text(node, newText)
+  if (is.string(text)) {
+    if (text !== oldText) {
+      api.text(node, text)
     }
   }
-  else if (is.string(newHtml)) {
-    if (newHtml !== oldHtml) {
-      api.html(node as HTMLElement, newHtml)
+  else if (is.string(html)) {
+    if (html !== oldHtml) {
+      api.html(node as Element, html)
     }
   }
   else {
     // 两个都有需要 diff
-    if (newChildren && oldChildren) {
-      if (newChildren !== oldChildren) {
-        updateChildren(api, node, newChildren, oldChildren)
+    if (children && oldChildren) {
+      if (children !== oldChildren) {
+        updateChildren(api, node, children, oldChildren)
       }
     }
     // 有新的没旧的 - 新增节点
-    else if (newChildren) {
+    else if (children) {
       if (is.string(oldText) || is.string(oldHtml)) {
         api.text(node, env.EMPTY_STRING)
       }
-      addVnodes(api, node, newChildren, 0, newChildren.length - 1)
+      addVnodes(api, node, children)
     }
     // 有旧的没新的 - 删除节点
     else if (oldChildren) {
-      removeVnodes(api, node, oldChildren, 0, oldChildren.length - 1)
+      removeVnodes(api, node, oldChildren)
     }
     // 有旧的 text 没有新的 text
     else if (is.string(oldText) || is.string(oldHtml)) {
@@ -546,12 +546,11 @@ console.log('>>>>>>>>>>>>>>>> patch', vnode, oldVnode)
 
 }
 
-export function create(api: API, node: Node, context: Yox, keypath: string): VNode {
+export function create(api: API, node: Node, isComment: boolean, context: Yox, keypath: string): VNode {
   return {
     tag: api.tag(node),
     data: createData(),
-    isStatic: env.TRUE,
-    isComment: env.FALSE,
+    isComment,
     node,
     context,
     keypath,
