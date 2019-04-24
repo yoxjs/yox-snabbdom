@@ -257,16 +257,14 @@ function destroyVnode(api: API, vnode: VNode) {
   const { data, children } = vnode
 
   if (vnode.isComponent) {
-    if (vnode.parent === vnode.context) {
-      const component = data[field.COMPONENT]
-      if (component) {
-        directive.remove(vnode)
-        component.destroy()
-      }
-      else [
-        data[field.LOADING] = env.FALSE
-      ]
+    const component = data[field.COMPONENT]
+    if (component) {
+      directive.remove(vnode)
+      component.destroy()
     }
+    else [
+      data[field.LOADING] = env.FALSE
+    ]
   }
   else {
     directive.remove(vnode)
