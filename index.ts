@@ -23,16 +23,27 @@ function isPatchable(vnode: VNode, oldVnode: VNode): boolean {
     && vnode.key === oldVnode.key
 }
 
-function createKeyToIndex(vnodes: (VNode | void)[], startIndex: number, endIndex: number) {
-  let result: Record<string, number> = {}, vnode: VNode | void, key: string | void
+function createKeyToIndex(vnodes: (VNode | void)[], startIndex: number, endIndex: number): Record<string, number> {
+
+  let result: Record<string, number> | void,
+
+  vnode: VNode | void,
+
+  key: string | void
+
   while (startIndex <= endIndex) {
     vnode = vnodes[startIndex]
     if (vnode && (key = vnode.key)) {
+      if (!result) {
+        result = {}
+      }
       result[key] = startIndex
     }
     startIndex++
   }
-  return result
+
+  return result || env.EMPTY_OBJECT
+
 }
 
 function insertBefore(api: API, parentNode: Node, node: Node, referenceNode: Node | void) {
@@ -85,7 +96,11 @@ function createData(): Record<string, any> {
 
 function createVnode(api: API, vnode: VNode) {
 
-  const { tag, isComponent, isComment, isText, children, text, html, context } = vnode,
+  let { tag, node, data, isComponent, isComment, isText, children, text, html, context } = vnode
+
+  if (node && data) {
+    return
+  }
 
   data = createData()
 
@@ -139,7 +154,7 @@ function createVnode(api: API, vnode: VNode) {
   }
   else {
 
-    const node = vnode.node = api.createElement(vnode.tag as string)
+    node = vnode.node = api.createElement(vnode.tag as string)
 
     if (children) {
       addVnodes(api, node, children)
@@ -259,8 +274,21 @@ function destroyVnode(api: API, vnode: VNode) {
   if (vnode.isComponent) {
     const component = data[field.COMPONENT]
     if (component) {
-      directive.remove(vnode)
-      component.destroy()
+      /**
+       * 如果一个子组件的模板是这样写的：
+       *
+       * <div>
+       *   {{#if visible}}
+       *      <slot name="children"/>
+       *   {{/if}}
+       * </div>
+       *
+       * 当 visible 从 true 变为 false 时，不能销毁 slot 导入的组件
+       */
+      if (vnode.context === vnode.parent) {
+        directive.remove(vnode)
+        component.destroy()
+      }
     }
     else [
       data[field.LOADING] = env.FALSE
@@ -340,10 +368,10 @@ function leaveVnode(vnode: VNode, component: Yox | void, done: () => void) {
 
 function updateChildren(api: API, parentNode: Node, children: VNode[], oldChildren: (VNode | void)[]) {
 
-  let newStartIndex = 0,
-  newEndIndex = children.length - 1,
-  newStartVnode = children[newStartIndex],
-  newEndVnode = children[newEndIndex],
+  let startIndex = 0,
+  endIndex = children.length - 1,
+  startVnode = children[startIndex],
+  endVnode = children[endIndex],
 
   oldStartIndex = 0,
   oldEndIndex = oldChildren.length - 1,
@@ -351,61 +379,66 @@ function updateChildren(api: API, parentNode: Node, children: VNode[], oldChildr
   oldEndVnode = oldChildren[oldEndIndex],
 
   oldKeyToIndex: Record<string, number> | void,
-  oldIndex: number | void,
-  activeVnode: VNode | void
+  oldIndex: number | void
 
-  while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+  while (oldStartIndex <= oldEndIndex && startIndex <= endIndex) {
 
-    // 下面有设为 NULL 的逻辑
-    if (!oldStartVnode) {
-      oldStartVnode = oldChildren[++oldStartIndex] // Vnode has been moved left
+    // 下面有设为 UNDEFINED 的逻辑
+    if (!startVnode) {
+      startVnode = children[++startIndex];
+    }
+    else if (!endVnode) {
+      endVnode = children[--endIndex];
+    }
+    else if (!oldStartVnode) {
+      oldStartVnode = oldChildren[++oldStartIndex]
     }
     else if (!oldEndVnode) {
       oldEndVnode = oldChildren[--oldEndIndex]
     }
 
     // 从头到尾比较，位置相同且值得 patch
-    else if (isPatchable(newStartVnode, oldStartVnode)) {
-      patch(api, newStartVnode, oldStartVnode)
+    else if (isPatchable(startVnode, oldStartVnode)) {
+      patch(api, startVnode, oldStartVnode)
+      startVnode = children[++startIndex]
       oldStartVnode = oldChildren[++oldStartIndex]
-      newStartVnode = children[++newStartIndex]
     }
 
     // 从尾到头比较，位置相同且值得 patch
-    else if (isPatchable(newEndVnode, oldEndVnode)) {
-      patch(api, newEndVnode, oldEndVnode)
+    else if (isPatchable(endVnode, oldEndVnode)) {
+      patch(api, endVnode, oldEndVnode)
+      endVnode = children[--endIndex]
       oldEndVnode = oldChildren[--oldEndIndex]
-      newEndVnode = children[--newEndIndex]
     }
 
     // 比较完两侧的节点，剩下就是 位置发生改变的节点 和 全新的节点
 
-    // 当 oldStartVnode 和 newEndVnode 值得 patch
+    // 当 endVnode 和 oldStartVnode 值得 patch
     // 说明元素被移到右边了
-    else if (isPatchable(newEndVnode, oldStartVnode)) {
-      patch(api, newEndVnode, oldStartVnode)
+    else if (isPatchable(endVnode, oldStartVnode)) {
+      patch(api, endVnode, oldStartVnode)
       insertBefore(
         api,
         parentNode,
         oldStartVnode.node,
         api.next(oldEndVnode.node)
       )
+      endVnode = children[--endIndex]
       oldStartVnode = oldChildren[++oldStartIndex]
-      newEndVnode = children[--newEndIndex]
     }
 
-    // 当 oldEndVnode 和 newStartVnode 值得 patch
+    // 当 oldEndVnode 和 startVnode 值得 patch
     // 说明元素被移到左边了
-    else if (isPatchable(newStartVnode, oldEndVnode)) {
-      patch(api, newStartVnode, oldEndVnode)
+    else if (isPatchable(startVnode, oldEndVnode)) {
+      patch(api, startVnode, oldEndVnode)
       insertBefore(
         api,
         parentNode,
         oldEndVnode.node,
         oldStartVnode.node
       )
+      startVnode = children[++startIndex]
       oldEndVnode = oldChildren[--oldEndIndex]
-      newStartVnode = children[++newStartIndex]
     }
 
     // 尝试同级元素的 key
@@ -415,29 +448,24 @@ function updateChildren(api: API, parentNode: Node, children: VNode[], oldChildr
         oldKeyToIndex = createKeyToIndex(oldChildren, oldStartIndex, oldEndIndex)
       }
 
-      oldIndex = newStartVnode.key
-        ? oldKeyToIndex[newStartVnode.key]
+      // 新节点之前的位置
+      oldIndex = startVnode.key
+        ? oldKeyToIndex[startVnode.key]
         : env.UNDEFINED
 
       // 移动元素
-      if (is.number(oldIndex)) {
-        activeVnode = oldChildren[oldIndex as number]
-        if (activeVnode) {
-          patch(api, activeVnode, newStartVnode)
-          oldChildren[oldIndex as number] = env.UNDEFINED
-        }
+      if (isDef(oldIndex)) {
+        patch(api, startVnode, oldChildren[oldIndex as number] as VNode)
+        oldChildren[oldIndex as number] = env.UNDEFINED
       }
       // 新元素
       else {
-        createVnode(api, newStartVnode)
-        activeVnode = newStartVnode
+        createVnode(api, startVnode)
       }
 
-      if (activeVnode) {
-        insertVnode(api, parentNode, activeVnode, oldStartVnode)
-      }
+      insertVnode(api, parentNode, startVnode, oldStartVnode)
 
-      newStartVnode = children[++newStartIndex]
+      startVnode = children[++startIndex]
 
     }
   }
@@ -447,12 +475,12 @@ function updateChildren(api: API, parentNode: Node, children: VNode[], oldChildr
       api,
       parentNode,
       children,
-      newStartIndex,
-      newEndIndex,
-      children[newEndIndex + 1]
+      startIndex,
+      endIndex,
+      children[endIndex + 1]
     )
   }
-  else if (newStartIndex > newEndIndex) {
+  else if (startIndex > endIndex) {
     removeVnodes(
       api,
       parentNode,
@@ -488,11 +516,14 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
   vnode.node = node
   vnode.data = data
 
+  // 组件正在异步加载，更新为最新的 vnode
+  // 当异步加载完成时才能用上最新的 vnode
   if (oldVnode.isComponent && data[field.LOADING]) {
     data[field.VNODE] = vnode
     return
   }
 
+  // 两棵静态子树就别折腾了
   if (vnode.isStatic && oldVnode.isStatic) {
     return
   }
@@ -518,28 +549,26 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
       api.html(node as Element, html)
     }
   }
-  else {
-    // 两个都有需要 diff
-    if (children && oldChildren) {
-      if (children !== oldChildren) {
-        updateChildren(api, node, children, oldChildren)
-      }
+  // 两个都有需要 diff
+  else if (children && oldChildren) {
+    if (children !== oldChildren) {
+      updateChildren(api, node, children, oldChildren)
     }
-    // 有新的没旧的 - 新增节点
-    else if (children) {
-      if (is.string(oldText) || is.string(oldHtml)) {
-        api.text(node, env.EMPTY_STRING)
-      }
-      addVnodes(api, node, children)
-    }
-    // 有旧的没新的 - 删除节点
-    else if (oldChildren) {
-      removeVnodes(api, node, oldChildren)
-    }
-    // 有旧的 text 没有新的 text
-    else if (is.string(oldText) || is.string(oldHtml)) {
+  }
+  // 有新的没旧的 - 新增节点
+  else if (children) {
+    if (is.string(oldText) || is.string(oldHtml)) {
       api.text(node, env.EMPTY_STRING)
     }
+    addVnodes(api, node, children)
+  }
+  // 有旧的没新的 - 删除节点
+  else if (oldChildren) {
+    removeVnodes(api, node, oldChildren)
+  }
+  // 有旧的 text 没有新的 text
+  else if (is.string(oldText) || is.string(oldHtml)) {
+    api.text(node, env.EMPTY_STRING)
   }
 
 }
