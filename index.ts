@@ -273,26 +273,30 @@ function removeVnode(api: API, parentNode: Node, vnode: VNode) {
 
 function destroyVnode(api: API, vnode: VNode) {
 
+  /**
+   * 如果一个子组件的模板是这样写的：
+   *
+   * <div>
+   *   {{#if visible}}
+   *      <slot name="children"/>
+   *   {{/if}}
+   * </div>
+   *
+   * 当 visible 从 true 变为 false 时，不能销毁 slot 导入的任何 vnode
+   * 不论是组件或是元素，都不能销毁，只能简单的 remove，
+   * 否则子组件下一次展现它们时，会出问题
+   */
+  if (vnode.context !== vnode.parent) {
+    return
+  }
+
   const { data, children } = vnode
 
   if (vnode.isComponent) {
     const component = data[field.COMPONENT]
     if (component) {
-      /**
-       * 如果一个子组件的模板是这样写的：
-       *
-       * <div>
-       *   {{#if visible}}
-       *      <slot name="children"/>
-       *   {{/if}}
-       * </div>
-       *
-       * 当 visible 从 true 变为 false 时，不能销毁 slot 导入的组件
-       */
-      if (vnode.context === vnode.parent) {
-        directive.remove(vnode)
-        component.destroy()
-      }
+      directive.remove(vnode)
+      component.destroy()
     }
     else [
       data[field.LOADING] = env.FALSE
