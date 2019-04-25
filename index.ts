@@ -286,7 +286,7 @@ function destroyVnode(api: API, vnode: VNode) {
    * 不论是组件或是元素，都不能销毁，只能简单的 remove，
    * 否则子组件下一次展现它们时，会出问题
    */
-  if (vnode.context !== vnode.parent) {
+  if (vnode.parent && vnode.parent !== vnode.context) {
     return
   }
 
