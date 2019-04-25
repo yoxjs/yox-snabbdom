@@ -58,7 +58,9 @@ function insertBefore(api: API, parentNode: Node, node: Node, referenceNode: Nod
 function createComponent(vnode: VNode, options: YoxOptions | void) {
 
   if (!options) {
-    logger.fatal(`component [${vnode.tag}] is not found.`)
+    if (process.env.NODE_ENV === 'dev') {
+      logger.fatal(`component [${vnode.tag}] is not found.`)
+    }
     return
   }
 
@@ -73,7 +75,9 @@ function createComponent(vnode: VNode, options: YoxOptions | void) {
     vnode.node = node
   }
   else {
-    logger.fatal('子组件没有创建元素，那还玩个毛啊')
+    if (process.env.NODE_ENV === 'dev') {
+      logger.fatal(`the root element of component [${vnode.tag}] is not found.`)
+    }
   }
 
   vnode.data[field.COMPONENT] = child
@@ -591,7 +595,9 @@ export function destroy(api: API, vnode: VNode, isRemove?: boolean) {
       removeVnode(api, parentNode, vnode)
     }
     else {
-      logger.fatal('没有 parentNode 无法销毁 vnode')
+      if (process.env.NODE_ENV === 'dev') {
+        logger.fatal(`destroy vnode is not work without parent node.`)
+      }
     }
   }
   else {
