@@ -286,11 +286,19 @@ function destroyVnode(api: API, vnode: VNode) {
    * 不论是组件或是元素，都不能销毁，只能简单的 remove，
    * 否则子组件下一次展现它们时，会出问题
    */
-  if (vnode.parent && vnode.parent !== vnode.context) {
+
+  const { data, children, parent, context } = vnode
+
+  if (parent
+    // 如果宿主组件正在销毁，$vnode 属性会在调 destroy() 之前被删除
+    // 这里表示的是宿主组件还没被销毁
+    // 如果宿主组件被销毁了，则它的一切都要进行销毁
+    && parent.$vnode
+    // 是从外部传入到组件内的
+    && parent !== vnode.context
+  ) {
     return
   }
-
-  const { data, children } = vnode
 
   if (vnode.isComponent) {
     const component = data[field.COMPONENT]
