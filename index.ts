@@ -178,7 +178,7 @@ function createVnode(api: API, vnode: VNode) {
 }
 
 function addVnodes(api: API, parentNode: Node, vnodes: VNode[], startIndex?: number, endIndex?: number, before?: VNode) {
-  let vnode: VNode, start = startIndex || 0, end = endIndex || vnodes.length - 1
+  let vnode: VNode, start = startIndex || 0, end = isDef(endIndex) ? endIndex : vnodes.length - 1
   while (start <= (end as number)) {
     vnode = vnodes[start]
     createVnode(api, vnode)
@@ -229,7 +229,7 @@ function insertVnode(api: API, parentNode: Node, vnode: VNode, before?: VNode) {
 }
 
 function removeVnodes(api: API, parentNode: Node, vnodes: (VNode | void)[], startIndex?: number, endIndex?: number) {
-  let vnode: VNode | void, start = startIndex || 0, end = endIndex || vnodes.length - 1
+  let vnode: VNode | void, start = startIndex || 0, end = isDef(endIndex) ? endIndex : vnodes.length - 1
   while (start <= end) {
     vnode = vnodes[start]
     if (vnode) {
