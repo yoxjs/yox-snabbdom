@@ -100,7 +100,7 @@ function createData(): Record<string, any> {
 
 function createVnode(api: API, vnode: VNode) {
 
-  let { tag, node, data, isComponent, isComment, isText, children, text, html, context } = vnode
+  let { tag, node, data, isComponent, isComment, isText, isStyle, children, text, html, context } = vnode
 
   if (node && data) {
     return
@@ -164,13 +164,10 @@ function createVnode(api: API, vnode: VNode) {
       addVnodes(api, node, children)
     }
     else if (text) {
-      api.append(
-        node,
-        api.createText(text)
-      )
+      api.text(node as Element, text, isStyle)
     }
     else if (html) {
-      api.html(node as Element, html)
+      api.html(node as Element, html, isStyle)
     }
 
     nativeAttr.update(api, vnode)
@@ -549,7 +546,7 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
   component.update(vnode, oldVnode)
   directive.update(vnode, oldVnode)
 
-  const { text, html, children } = vnode,
+  const { text, html, children, isStyle } = vnode,
 
   oldText = oldVnode.text,
   oldHtml = oldVnode.html,
@@ -557,12 +554,12 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
 
   if (is.string(text)) {
     if (text !== oldText) {
-      api.text(node, text)
+      api.text(node, text, isStyle)
     }
   }
   else if (is.string(html)) {
     if (html !== oldHtml) {
-      api.html(node as Element, html)
+      api.html(node as Element, html, isStyle)
     }
   }
   // 两个都有需要 diff
@@ -574,7 +571,7 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
   // 有新的没旧的 - 新增节点
   else if (children) {
     if (is.string(oldText) || is.string(oldHtml)) {
-      api.text(node, env.EMPTY_STRING)
+      api.text(node, env.EMPTY_STRING, isStyle)
     }
     addVnodes(api, node, children)
   }
@@ -584,7 +581,7 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
   }
   // 有旧的 text 没有新的 text
   else if (is.string(oldText) || is.string(oldHtml)) {
-    api.text(node, env.EMPTY_STRING)
+    api.text(node, env.EMPTY_STRING, isStyle)
   }
 
 }
@@ -608,7 +605,7 @@ export function destroy(api: API, vnode: VNode, isRemove?: boolean) {
     }
     else {
       if (process.env.NODE_ENV === 'dev') {
-        logger.fatal(`destroy vnode is not work without parent node.`)
+        logger.fatal(`destroy vnode can't not work without parent node.`)
       }
     }
   }
