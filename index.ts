@@ -74,10 +74,8 @@ function createComponent(vnode: VNode, options: YoxOptions | void) {
   if (node) {
     vnode.node = node
   }
-  else {
-    if (process.env.NODE_ENV === 'dev') {
-      logger.fatal(`the root element of component [${vnode.tag}] is not found.`)
-    }
+  else if (process.env.NODE_ENV === 'dev') {
+    logger.fatal(`the root element of component [${vnode.tag}] is not found.`)
   }
 
   vnode.data[field.COMPONENT] = child
@@ -603,10 +601,8 @@ export function destroy(api: API, vnode: VNode, isRemove?: boolean) {
     if (parentNode) {
       removeVnode(api, parentNode, vnode)
     }
-    else {
-      if (process.env.NODE_ENV === 'dev') {
-        logger.fatal(`destroy vnode can't not work without parent node.`)
-      }
+    else if (process.env.NODE_ENV === 'dev') {
+      logger.fatal(`destroy vnode can't not work without parent node.`)
     }
   }
   else {
