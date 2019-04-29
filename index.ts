@@ -72,7 +72,7 @@ function createComponent(vnode: VNode, options: YoxOptions | void) {
   node = child.$el as Node
 
   if (node) {
-    vnode.node = node
+    vnode[NODE] = node
   }
   else if (process.env.NODE_ENV === 'dev') {
     logger.fatal(`the root element of component [${vnode.tag}] is not found.`)
@@ -88,7 +88,11 @@ function createComponent(vnode: VNode, options: YoxOptions | void) {
 
 }
 
-let guid = 0
+let guid = 0,
+
+// vnode.node 设置成了 readonly，是为了避免外部修改
+// 但是这里还是要对 vnode.node 进行赋值，只好用变量属性赋值，跳过 ts 的类型检测
+NODE = 'node'
 
 function createData(): Record<string, any> {
   const data = {}
@@ -109,12 +113,12 @@ function createVnode(api: API, vnode: VNode) {
   vnode.data = data
 
   if (isText) {
-    vnode.node = api.createText(text as string)
+    vnode[NODE] = api.createText(text as string)
     return
   }
 
   if (isComment) {
-    vnode.node = api.createComment(text as string)
+    vnode[NODE] = api.createComment(text as string)
     return
   }
 
@@ -149,14 +153,14 @@ function createVnode(api: API, vnode: VNode) {
     )
 
     if (isAsync) {
-      vnode.node = api.createComment(env.RAW_COMPONENT)
+      vnode[NODE] = api.createComment(env.RAW_COMPONENT)
       data[field.LOADING] = env.TRUE
     }
 
   }
   else {
 
-    node = vnode.node = api.createElement(vnode.tag as string)
+    node = vnode[NODE] = api.createElement(vnode.tag as string)
 
     if (children) {
       addVnodes(api, node, children)
@@ -524,7 +528,7 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
     return
   }
 
-  vnode.node = node
+  vnode[NODE] = node
   vnode.data = data
 
   // 组件正在异步加载，更新为最新的 vnode
