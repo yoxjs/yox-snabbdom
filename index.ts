@@ -160,7 +160,7 @@ function createVnode(api: API, vnode: VNode) {
   }
   else {
 
-    node = vnode[NODE] = api.createElement(vnode.tag as string)
+    node = vnode[NODE] = api.createElement(vnode.tag as string, vnode.isSvg)
 
     if (children) {
       addVnodes(api, node, children)
