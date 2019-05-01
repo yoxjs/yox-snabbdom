@@ -1,6 +1,7 @@
 import * as is from 'yox-common/src/util/is'
 import * as env from 'yox-common/src/util/env'
 import * as array from 'yox-common/src/util/array'
+import * as object from 'yox-common/src/util/object'
 import * as logger from 'yox-common/src/util/logger'
 
 import isDef from 'yox-common/src/function/isDef'
@@ -129,7 +130,7 @@ function createVnode(api: API, vnode: VNode) {
     context.component(
       tag as string,
       function (options: any) {
-        if (isDef(data[field.LOADING])) {
+        if (object.has(data, field.LOADING)) {
           // 异步组件
           if (data[field.LOADING]) {
             // 尝试使用最新的 vnode
