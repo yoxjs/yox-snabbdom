@@ -7,6 +7,7 @@ import * as logger from 'yox-common/src/util/logger'
 import isDef from 'yox-common/src/function/isDef'
 import execute from 'yox-common/src/function/execute'
 
+import * as type from 'yox-type/index'
 import API from 'yox-type/src/API'
 import Yox from 'yox-type/src/Yox'
 import VNode from 'yox-type/src/vnode/VNode'
@@ -95,7 +96,7 @@ let guid = 0,
 // 但是这里还是要对 vnode.node 进行赋值，只好用变量属性赋值，跳过 ts 的类型检测
 NODE = 'node'
 
-function createData(): Record<string, any> {
+function createData(): type.data {
   const data = {}
   data[field.ID] = ++guid
   return data
