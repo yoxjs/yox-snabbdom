@@ -7,18 +7,18 @@ import * as logger from 'yox-common/src/util/logger'
 import isDef from 'yox-common/src/function/isDef'
 import execute from 'yox-common/src/function/execute'
 
-import * as type from 'yox-type/index'
-import API from 'yox-type/src/API'
-import Yox from 'yox-type/src/Yox'
+import * as type from 'yox-type/src/type'
+import API from 'yox-type/src/interface/API'
+import Yox from 'yox-type/src/interface/Yox'
 import VNode from 'yox-type/src/vnode/VNode'
 import YoxOptions from 'yox-type/src/options/Yox'
 
-import * as field from './src/field'
+import * as field from './field'
 
-import * as nativeAttr from './src/nativeAttr'
-import * as nativeProp from './src/nativeProp'
-import * as directive from './src/directive'
-import * as component from './src/component'
+import * as nativeAttr from './nativeAttr'
+import * as nativeProp from './nativeProp'
+import * as directive from './directive'
+import * as component from './component'
 
 function isPatchable(vnode: VNode, oldVnode: VNode): boolean {
   return vnode.tag === oldVnode.tag
@@ -57,14 +57,7 @@ function insertBefore(api: API, parentNode: Node, node: Node, referenceNode: Nod
   }
 }
 
-function createComponent(vnode: VNode, options: YoxOptions | void) {
-
-  if (!options) {
-    if (process.env.NODE_ENV === 'dev') {
-      logger.fatal(`component [${vnode.tag}] is not found.`)
-    }
-    return
-  }
+function createComponent(vnode: VNode, options: YoxOptions) {
 
   // 渲染同步加载的组件时，vnode.node 为空
   // 渲染异步加载的组件时，vnode.node 不为空，因为初始化用了占位节点
@@ -74,7 +67,7 @@ function createComponent(vnode: VNode, options: YoxOptions | void) {
   node = child.$el as Node
 
   if (node) {
-    vnode[NODE] = node
+    vnode.node = node
   }
   else if (process.env.NODE_ENV === 'dev') {
     logger.fatal(`the root element of component [${vnode.tag}] is not found.`)
@@ -115,12 +108,12 @@ function createVnode(api: API, vnode: VNode) {
   vnode.data = data
 
   if (isText) {
-    vnode[NODE] = api.createText(text as string)
+    vnode.node = api.createText(text as string)
     return
   }
 
   if (isComment) {
-    vnode[NODE] = api.createComment(text as string)
+    vnode.node = api.createComment(text as string)
     return
   }
 
@@ -130,7 +123,7 @@ function createVnode(api: API, vnode: VNode) {
 
     context.component(
       tag as string,
-      function (options: any) {
+      function (options: YoxOptions) {
         if (object.has(data, field.LOADING)) {
           // 异步组件
           if (data[field.LOADING]) {
@@ -155,14 +148,14 @@ function createVnode(api: API, vnode: VNode) {
     )
 
     if (isAsync) {
-      vnode[NODE] = api.createComment(env.RAW_COMPONENT)
+      vnode.node = api.createComment(env.RAW_COMPONENT)
       data[field.LOADING] = env.TRUE
     }
 
   }
   else {
 
-    node = vnode[NODE] = api.createElement(vnode.tag as string, vnode.isSvg)
+    node = vnode.node = api.createElement(vnode.tag as string, vnode.isSvg)
 
     if (children) {
       addVnodes(api, node, children)
@@ -227,7 +220,7 @@ function insertVnode(api: API, parentNode: Node, vnode: VNode, before?: VNode) {
       // 执行到这时，组件还没有挂载到 DOM 树
       // 如果此时直接触发 enter，外部还需要做多余的工作，比如 setTimeout
       // 索性这里直接等挂载到 DOM 数之后再触发
-      context.nextTick(enter, env.TRUE)
+      context.$observer.nextTask.prepend(enter)
     }
   }
 
@@ -530,7 +523,7 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
     return
   }
 
-  vnode[NODE] = node
+  vnode.node = node
   vnode.data = data
 
   // 组件正在异步加载，更新为最新的 vnode
