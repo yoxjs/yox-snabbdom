@@ -83,11 +83,7 @@ function createComponent(vnode: VNode, options: YoxOptions) {
 
 }
 
-let guid = 0,
-
-// vnode.node 设置成了 readonly，是为了避免外部修改
-// 但是这里还是要对 vnode.node 进行赋值，只好用变量属性赋值，跳过 ts 的类型检测
-NODE = 'node'
+let guid = 0
 
 function createData(): type.data {
   const data = {}
