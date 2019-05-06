@@ -1,6 +1,6 @@
 {
   "name": "yox-snabbdom",
-  "version": "0.19.41",
+  "version": "0.19.42",
   "description": "virtual dom for Yox.js",
   "directories": {
     "src": "src"
@@ -17,8 +17,8 @@
   },
   "homepage": "https://github.com/yoxjs/yox-snabbdom#readme",
   "dependencies": {
-    "yox-common": "^0.18.45",
-    "yox-type": "^0.0.62"
+    "yox-common": "^0.18.46",
+    "yox-type": "^0.0.63"
   },
   "devDependencies": {
     "@types/node": "^11.13.7"
