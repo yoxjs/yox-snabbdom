@@ -4,6 +4,7 @@ import * as array from '../../yox-common/src/util/array'
 import * as object from '../../yox-common/src/util/object'
 import * as logger from '../../yox-common/src/util/logger'
 
+import guid from '../../yox-common/src/function/guid'
 import isDef from '../../yox-common/src/function/isDef'
 import execute from '../../yox-common/src/function/execute'
 
@@ -83,11 +84,9 @@ function createComponent(vnode: VNode, options: YoxOptions) {
 
 }
 
-let guid = 0
-
 function createData(): type.data {
   const data = {}
-  data[field.ID] = ++guid
+  data[field.ID] = guid()
   return data
 }
 
@@ -277,7 +276,7 @@ function destroyVnode(api: API, vnode: VNode) {
    * 否则子组件下一次展现它们时，会出问题
    */
 
-  const { data, children, parent, context } = vnode
+  const { data, children, parent } = vnode
 
   if (parent
     // 如果宿主组件正在销毁，$vnode 属性会在调 destroy() 之前被删除
@@ -331,8 +330,7 @@ function enterVnode(vnode: VNode, component: Yox | void) {
     const { enter } = transition
     if (enter) {
       enter(
-        vnode.node as HTMLElement,
-        env.EMPTY_FUNCTION
+        vnode.node as HTMLElement
       )
       return
     }
