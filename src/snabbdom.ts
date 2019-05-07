@@ -1,18 +1,18 @@
-import * as is from '../../yox-common/src/util/is'
-import * as env from '../../yox-common/src/util/env'
-import * as array from '../../yox-common/src/util/array'
-import * as object from '../../yox-common/src/util/object'
-import * as logger from '../../yox-common/src/util/logger'
+import * as is from 'yox-common/src/util/is'
+import * as env from 'yox-common/src/util/env'
+import * as array from 'yox-common/src/util/array'
+import * as object from 'yox-common/src/util/object'
+import * as logger from 'yox-common/src/util/logger'
 
-import guid from '../../yox-common/src/function/guid'
-import isDef from '../../yox-common/src/function/isDef'
-import execute from '../../yox-common/src/function/execute'
+import guid from 'yox-common/src/function/guid'
+import isDef from 'yox-common/src/function/isDef'
+import execute from 'yox-common/src/function/execute'
 
-import * as type from '../../yox-type/src/type'
-import API from '../../yox-type/src/interface/API'
-import Yox from '../../yox-type/src/interface/Yox'
-import VNode from '../../yox-type/src/vnode/VNode'
-import YoxOptions from '../../yox-type/src/options/Yox'
+import * as type from 'yox-type/src/type'
+import API from 'yox-type/src/interface/API'
+import Yox from 'yox-type/src/interface/Yox'
+import VNode from 'yox-type/src/vnode/VNode'
+import YoxOptions from 'yox-type/src/options/Yox'
 
 import * as field from './field'
 
@@ -71,7 +71,7 @@ function createComponent(vnode: VNode, options: YoxOptions) {
     vnode.node = node
   }
   else if (process.env.NODE_ENV === 'dev') {
-    logger.fatal(`the root element of component [${vnode.tag}] is not found.`)
+    logger.fatal(`The root element of component [${vnode.tag}] is not found.`)
   }
 
   vnode.data[field.COMPONENT] = child
@@ -595,7 +595,7 @@ export function destroy(api: API, vnode: VNode, isRemove?: boolean) {
       removeVnode(api, parentNode, vnode)
     }
     else if (process.env.NODE_ENV === 'dev') {
-      logger.fatal(`destroy vnode can't not work without parent node.`)
+      logger.fatal(`Can't destroy vnode without parent node.`)
     }
   }
   else {
