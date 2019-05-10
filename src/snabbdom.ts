@@ -116,7 +116,7 @@ function createVnode(api: API, vnode: VNode) {
 
     let isAsync = env.TRUE
 
-    context.component(
+    context.loadComponent(
       tag as string,
       function (options: YoxOptions) {
         if (object.has(data, field.LOADING)) {
