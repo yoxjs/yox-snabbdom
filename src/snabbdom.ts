@@ -276,17 +276,20 @@ function destroyVnode(api: API, vnode: VNode) {
    * 否则子组件下一次展现它们时，会出问题
    */
 
-  const { data, children, parent } = vnode
+  const { data, children, parent, slot } = vnode
 
-  if (parent
-    // 如果宿主组件正在销毁，$vnode 属性会在调 destroy() 之前被删除
-    // 这里表示的是宿主组件还没被销毁
-    // 如果宿主组件被销毁了，则它的一切都要进行销毁
-    && parent.$vnode
-    // 是从外部传入到组件内的
-    && parent !== vnode.context
-  ) {
-    return
+  // 销毁插槽组件
+
+  // 如果宿主组件正在销毁，$vnode 属性会在调 destroy() 之前被删除
+  // 这里表示的是宿主组件还没被销毁
+  // 如果宿主组件被销毁了，则它的一切都要进行销毁
+  if (slot && parent && parent.$vnode) {
+    // 如果更新时，父组件没有传入该 slot，则子组件需要销毁该 slot
+    const slots = parent.get(slot)
+    // slots 要么没有，要么是数组，不可能是别的
+    if (slots && array.has(slots, vnode)) {
+      return
+    }
   }
 
   if (vnode.isComponent) {
