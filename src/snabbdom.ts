@@ -62,17 +62,7 @@ function createComponent(vnode: VNode, options: YoxOptions) {
 
   // 渲染同步加载的组件时，vnode.node 为空
   // 渲染异步加载的组件时，vnode.node 不为空，因为初始化用了占位节点
-  const child = (vnode.parent || vnode.context).create(options, vnode, vnode.node),
-
-  // 组件初始化创建的元素
-  node = child.$el as Node
-
-  if (node) {
-    vnode.node = node
-  }
-  else if (process.env.NODE_ENV === 'dev') {
-    logger.fatal(`The root element of component [${vnode.tag}] is not found.`)
-  }
+  const child = (vnode.parent || vnode.context).create(options, vnode, vnode.node)
 
   vnode.data[field.COMPONENT] = child
   vnode.data[field.LOADING] = env.FALSE
