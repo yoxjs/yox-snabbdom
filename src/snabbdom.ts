@@ -60,9 +60,7 @@ function insertBefore(api: API, parentNode: Node, node: Node, referenceNode: Nod
 
 function createComponent(vnode: VNode, options: YoxOptions) {
 
-  // 渲染同步加载的组件时，vnode.node 为空
-  // 渲染异步加载的组件时，vnode.node 不为空，因为初始化用了占位节点
-  const child = (vnode.parent || vnode.context).create(options, vnode, vnode.node)
+  const child = (vnode.parent || vnode.context).create(options, vnode)
 
   vnode.data[field.COMPONENT] = child
   vnode.data[field.LOADING] = env.FALSE
@@ -104,7 +102,7 @@ function createVnode(api: API, vnode: VNode) {
 
   if (isComponent) {
 
-    let isAsync = env.TRUE
+    let componentOptions: YoxOptions | undefined = env.UNDEFINED
 
     context.loadComponent(
       tag as string,
@@ -126,14 +124,18 @@ function createVnode(api: API, vnode: VNode) {
         }
         // 同步组件
         else {
-          createComponent(vnode, options)
-          isAsync = env.FALSE
+          componentOptions = options
         }
       }
     )
 
-    if (isAsync) {
-      vnode.node = api.createComment(env.RAW_COMPONENT)
+    // 不论是同步还是异步组件，都需要一个占位元素
+    vnode.node = api.createComment(env.RAW_COMPONENT)
+
+    if (componentOptions) {
+      createComponent(vnode, componentOptions as YoxOptions)
+    }
+    else {
       data[field.LOADING] = env.TRUE
     }
 
@@ -570,11 +572,10 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
 
 }
 
-export function create(api: API, node: Node, isComment: boolean, context: Yox, keypath: string): VNode {
+export function create(api: API, node: Node, context: Yox, keypath: string): VNode {
   return {
     tag: api.tag(node),
     data: createData(),
-    isComment,
     node,
     context,
     keypath,
