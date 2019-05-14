@@ -187,7 +187,7 @@ function insertVnode(api: API, parentNode: Node, vnode: VNode, before?: VNode) {
   // 普通元素和组件的占位节点都会走到这里
   // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
   if (!hasParent) {
-    let enter: Function | void
+    let enter: Function | void = env.UNDEFINED
     if (vnode.isComponent) {
       const component = data[field.COMPONENT]
       if (component) {
