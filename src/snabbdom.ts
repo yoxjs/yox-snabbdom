@@ -60,7 +60,7 @@ function insertBefore(api: API, parentNode: Node, node: Node, referenceNode: Nod
 
 function createComponent(vnode: VNode, options: YoxOptions) {
 
-  const child = (vnode.parent || vnode.context).create(options, vnode)
+  const child = (vnode.parent || vnode.context).createComponent(options, vnode)
 
   vnode.data[field.COMPONENT] = child
   vnode.data[field.LOADING] = env.FALSE
