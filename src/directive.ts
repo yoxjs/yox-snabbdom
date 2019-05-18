@@ -25,11 +25,12 @@ export function update(vnode: VNode, oldVnode?: VNode) {
     object.each(
       newValue,
       function (directive: Directive, name: string) {
-        const { bind, unbind } = directive.hooks
+        const { once, bind, unbind } = directive.hooks
         if (!oldValue[name]) {
           bind(node, directive, vnode)
         }
-        else if (directive.value !== oldValue[name].value
+        else if (once
+          || directive.value !== oldValue[name].value
           || isKeypathChange
         ) {
           if (unbind) {
