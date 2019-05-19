@@ -28,7 +28,7 @@ export function update(vnode: VNode, oldVnode?: VNode) {
 
       const result = object.merge(props ? node.checkPropTypes(props) : env.UNDEFINED, slots)
       if (result) {
-        node.set(result)
+        node.forceUpdate(result)
       }
     }
   }
