@@ -104,30 +104,33 @@ function createVnode(api: API, vnode: VNode) {
 
     let componentOptions: YoxOptions | undefined = env.UNDEFINED
 
-    context.loadComponent(
-      tag as string,
-      function (options: YoxOptions) {
-        if (object.has(data, field.LOADING)) {
-          // 异步组件
-          if (data[field.LOADING]) {
-            // 尝试使用最新的 vnode
-            if (data[field.VNODE]) {
-              vnode = data[field.VNODE]
-              // 用完就删掉
-              delete data[field.VNODE]
+    // 动态组件，tag 可能为空
+    if (tag) {
+      context.loadComponent(
+        tag,
+        function (options: YoxOptions) {
+          if (object.has(data, field.LOADING)) {
+            // 异步组件
+            if (data[field.LOADING]) {
+              // 尝试使用最新的 vnode
+              if (data[field.VNODE]) {
+                vnode = data[field.VNODE]
+                // 用完就删掉
+                delete data[field.VNODE]
+              }
+              enterVnode(
+                vnode,
+                createComponent(vnode, options)
+              )
             }
-            enterVnode(
-              vnode,
-              createComponent(vnode, options)
-            )
+          }
+          // 同步组件
+          else {
+            componentOptions = options
           }
         }
-        // 同步组件
-        else {
-          componentOptions = options
-        }
-      }
-    )
+      )
+    }
 
     // 不论是同步还是异步组件，都需要一个占位元素
     vnode.node = api.createComment(env.RAW_COMPONENT)
