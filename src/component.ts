@@ -26,7 +26,7 @@ export function update(vnode: VNode, oldVnode?: VNode) {
         props[node.$model] = model
       }
 
-      const result = object.merge(props ? node.checkPropTypes(props) : env.UNDEFINED, slots)
+      const result = object.merge(props ? node.checkProps(props) : env.UNDEFINED, slots)
       if (result) {
         node.forceUpdate(result)
       }
