@@ -80,7 +80,7 @@ function createData(): type.data {
 
 function createVnode(api: API, vnode: VNode) {
 
-  let { tag, node, data, isComponent, isComment, isText, isStyle, children, text, html, context } = vnode
+  let { tag, node, data, isComponent, isComment, isText, isStyle, isOption, children, text, html, context } = vnode
 
   if (node && data) {
     return
@@ -151,10 +151,10 @@ function createVnode(api: API, vnode: VNode) {
       addVnodes(api, node, children)
     }
     else if (text) {
-      api.text(node as Element, text, isStyle)
+      api.text(node as Element, text, isStyle, isOption)
     }
     else if (html) {
-      api.html(node as Element, html, isStyle)
+      api.html(node as Element, html, isStyle, isOption)
     }
 
     nativeAttr.update(api, vnode)
@@ -535,7 +535,7 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
   component.update(vnode, oldVnode)
   directive.update(vnode, oldVnode)
 
-  const { text, html, children, isStyle } = vnode,
+  const { text, html, children, isStyle, isOption } = vnode,
 
   oldText = oldVnode.text,
   oldHtml = oldVnode.html,
@@ -543,12 +543,12 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
 
   if (is.string(text)) {
     if (text !== oldText) {
-      api.text(node, text, isStyle)
+      api.text(node, text, isStyle, isOption)
     }
   }
   else if (is.string(html)) {
     if (html !== oldHtml) {
-      api.html(node as Element, html, isStyle)
+      api.html(node as Element, html, isStyle, isOption)
     }
   }
   // 两个都有需要 diff
