@@ -1,7 +1,6 @@
 import VNode from '../../yox-type/src/vnode/VNode'
 
 import isDef from '../../yox-common/src/function/isDef'
-import * as env from '../../yox-common/src/util/env'
 import * as object from '../../yox-common/src/util/object'
 
 import * as field from './field'
@@ -26,7 +25,11 @@ export function update(vnode: VNode, oldVnode?: VNode) {
         props[node.$model] = model
       }
 
-      const result = object.merge(props ? node.checkProps(props) : env.UNDEFINED, slots)
+      if (props) {
+        node.checkProps(props)
+      }
+
+      const result = object.merge(props, slots)
       if (result) {
         node.forceUpdate(result)
       }
