@@ -1,13 +1,14 @@
+import * as config from '../../yox-config/src/config'
+
 import VNode from '../../yox-type/src/vnode/VNode'
 
-import isDef from '../../yox-common/src/function/isDef'
 import * as object from '../../yox-common/src/util/object'
 
 import * as field from './field'
 
 export function update(vnode: VNode, oldVnode?: VNode) {
 
-  let { data, ref, props, slots, model, context } = vnode, node: any
+  let { data, ref, props, slots, directives, context } = vnode, node: any
 
   if (vnode.isComponent) {
     node = data[field.COMPONENT]
@@ -18,11 +19,12 @@ export function update(vnode: VNode, oldVnode?: VNode) {
       // 更新组件时，如果写了 <Component model="xx"/>
       // 必须把双向绑定的值写到 props 里，否则一旦 propTypes 加了默认值
       // 传下去的数据就错了
-      if (isDef(model)) {
+      const model = directives && directives[config.DIRECTIVE_MODEL]
+      if (model) {
         if (!props) {
           props = {}
         }
-        props[node.$model] = model
+        props[node.$model] = model.value
       }
 
       if (props) {
