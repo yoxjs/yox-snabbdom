@@ -16,9 +16,6 @@ export function update(vnode: VNode, oldVnode?: VNode) {
     // 因为初始化时，所有这些都经过构造函数完成了
     if (oldVnode) {
 
-      // 更新组件时，如果写了 <Component model="xx"/>
-      // 必须把双向绑定的值写到 props 里，否则一旦 propTypes 加了默认值
-      // 传下去的数据就错了
       const model = directives && directives[config.DIRECTIVE_MODEL]
       if (model) {
         if (!props) {
