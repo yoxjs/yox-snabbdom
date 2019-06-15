@@ -1,8 +1,8 @@
-import * as config from '../../yox-config/src/config'
+import * as config from 'yox-config/src/config'
 
-import VNode from '../../yox-type/src/vnode/VNode'
+import VNode from 'yox-type/src/vnode/VNode'
 
-import * as object from '../../yox-common/src/util/object'
+import * as object from 'yox-common/src/util/object'
 
 import * as field from './field'
 
