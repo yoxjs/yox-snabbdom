@@ -9,7 +9,7 @@ import isDef from '../../yox-common/src/function/isDef'
 import execute from '../../yox-common/src/function/execute'
 
 import * as type from '../../yox-type/src/type'
-import API from '../../yox-type/src/interface/API'
+import API from '../../yox-type/src/util/API'
 import Yox from '../../yox-type/src/interface/Yox'
 import VNode from '../../yox-type/src/vnode/VNode'
 import YoxOptions from '../../yox-type/src/options/Yox'
