@@ -1,6 +1,6 @@
 import * as config from '../../yox-config/src/config'
 
-import VNode from '../../yox-type/src/vnode/VNode'
+import { VNode } from '../../yox-type/src/vnode'
 
 import * as object from '../../yox-common/src/util/object'
 

@@ -1,8 +1,10 @@
 import * as env from '../../yox-common/src/util/env'
 import * as object from '../../yox-common/src/util/object'
 
-import VNode from '../../yox-type/src/vnode/VNode'
-import Directive from '../../yox-type/src/vnode/Directive'
+import {
+  VNode,
+  Directive,
+} from '../../yox-type/src/vnode'
 
 import * as field from './field'
 
