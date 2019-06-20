@@ -1,10 +1,10 @@
-import * as env from '../../yox-common/src/util/env'
-import * as object from '../../yox-common/src/util/object'
-
 import {
   VNode,
   Attribute,
-} from '../../yox-type/src/vnode'
+} from '../../yox-type/src/type'
+
+import * as env from '../../yox-common/src/util/env'
+import * as object from '../../yox-common/src/util/object'
 
 export function update(api: any, vnode: VNode, oldVnode?: VNode) {
 

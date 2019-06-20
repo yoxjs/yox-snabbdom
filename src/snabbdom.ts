@@ -1,3 +1,10 @@
+import {
+  data,
+  VNode,
+  Yox,
+  YoxOptions,
+} from '../../yox-type/src/type'
+
 import * as is from '../../yox-common/src/util/is'
 import * as env from '../../yox-common/src/util/env'
 import * as array from '../../yox-common/src/util/array'
@@ -8,17 +15,7 @@ import guid from '../../yox-common/src/function/guid'
 import isDef from '../../yox-common/src/function/isDef'
 import execute from '../../yox-common/src/function/execute'
 
-import * as type from '../../yox-type/src/type'
 import API from '../../yox-type/src/util/API'
-
-import {
-  VNode
-} from '../../yox-type/src/vnode'
-
-import {
-  Yox,
-  YoxOptions,
-} from '../../yox-type/src/class'
 
 import * as field from './field'
 
@@ -78,7 +75,7 @@ function createComponent(vnode: VNode, options: YoxOptions) {
 
 }
 
-function createData(): type.data {
+function createData(): data {
   const data = {}
   data[field.ID] = guid()
   return data
