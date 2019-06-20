@@ -4,11 +4,6 @@ import {
   VNode,
 } from '../../yox-type/src/type'
 
-import {
-  Yox,
-  YoxOptions,
-} from '../../yox-type/src/global'
-
 import * as is from '../../yox-common/src/util/is'
 import * as env from '../../yox-common/src/util/env'
 import * as array from '../../yox-common/src/util/array'
@@ -244,7 +239,7 @@ function removeVnode(api: API, parentNode: Node, vnode: VNode) {
       api.remove(parentNode, node)
     },
 
-    component: Yox | void
+    component: YoxInterface | void
 
     if (vnode.isComponent) {
       component = vnode.data[field.COMPONENT]
@@ -319,7 +314,7 @@ function destroyVnode(api: API, vnode: VNode) {
 /**
  * vnode 触发 enter hook 时，外部一般会做一些淡入动画
  */
-function enterVnode(vnode: VNode, component: Yox | void) {
+function enterVnode(vnode: VNode, component: YoxInterface | void) {
   // 如果组件根元素和组件本身都写了 transition
   // 优先用外面定义的
   // 因为这明确是在覆盖配置
@@ -345,7 +340,7 @@ function enterVnode(vnode: VNode, component: Yox | void) {
  * 动画结束后才能移除节点，否则无法产生动画
  * 这里由外部调用 done 来通知内部动画结束
  */
-function leaveVnode(vnode: VNode, component: Yox | void, done: () => void) {
+function leaveVnode(vnode: VNode, component: YoxInterface | void, done: () => void) {
   // 如果组件根元素和组件本身都写了 transition
   // 优先用外面定义的
   // 因为这明确是在覆盖配置
@@ -580,7 +575,7 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
 
 }
 
-export function create(api: API, node: Node, context: Yox, keypath: string): VNode {
+export function create(api: API, node: Node, context: YoxInterface, keypath: string): VNode {
   return {
     tag: api.tag(node),
     data: createData(),
