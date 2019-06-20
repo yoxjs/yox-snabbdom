@@ -1,9 +1,13 @@
 import {
+  API,
   data,
   VNode,
+} from '../../yox-type/src/type'
+
+import {
   Yox,
   YoxOptions,
-} from '../../yox-type/src/type'
+} from '../../yox-type/src/global'
 
 import * as is from '../../yox-common/src/util/is'
 import * as env from '../../yox-common/src/util/env'
@@ -14,8 +18,6 @@ import * as logger from '../../yox-common/src/util/logger'
 import guid from '../../yox-common/src/function/guid'
 import isDef from '../../yox-common/src/function/isDef'
 import execute from '../../yox-common/src/function/execute'
-
-import API from '../../yox-type/src/util/API'
 
 import * as field from './field'
 
