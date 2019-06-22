@@ -1,5 +1,5 @@
 import {
-  API,
+  DomUtil,
   data,
   VNode,
 } from '../../yox-type/src/type'
@@ -54,7 +54,7 @@ function createKeyToIndex(vnodes: (VNode | void)[], startIndex: number, endIndex
 
 }
 
-function insertBefore(api: API, parentNode: Node, node: Node, referenceNode: Node | void) {
+function insertBefore(api: DomUtil, parentNode: Node, node: Node, referenceNode: Node | void) {
   if (referenceNode) {
     api.before(parentNode, node, referenceNode)
   }
@@ -83,7 +83,7 @@ function createData(): data {
   return data
 }
 
-function createVnode(api: API, vnode: VNode) {
+function createVnode(api: DomUtil, vnode: VNode) {
 
   let { tag, node, data, isComponent, isComment, isText, isStyle, isOption, children, text, html, context } = vnode
 
@@ -170,7 +170,7 @@ function createVnode(api: API, vnode: VNode) {
   }
 }
 
-function addVnodes(api: API, parentNode: Node, vnodes: VNode[], startIndex?: number, endIndex?: number, before?: VNode) {
+function addVnodes(api: DomUtil, parentNode: Node, vnodes: VNode[], startIndex?: number, endIndex?: number, before?: VNode) {
   let vnode: VNode, start = startIndex || 0, end = isDef(endIndex) ? endIndex as number : vnodes.length - 1
   while (start <= end) {
     vnode = vnodes[start]
@@ -180,7 +180,7 @@ function addVnodes(api: API, parentNode: Node, vnodes: VNode[], startIndex?: num
   }
 }
 
-function insertVnode(api: API, parentNode: Node, vnode: VNode, before?: VNode) {
+function insertVnode(api: DomUtil, parentNode: Node, vnode: VNode, before?: VNode) {
 
   const { node, data, context } = vnode,
 
@@ -221,7 +221,7 @@ function insertVnode(api: API, parentNode: Node, vnode: VNode, before?: VNode) {
 
 }
 
-function removeVnodes(api: API, parentNode: Node, vnodes: (VNode | void)[], startIndex?: number, endIndex?: number) {
+function removeVnodes(api: DomUtil, parentNode: Node, vnodes: (VNode | void)[], startIndex?: number, endIndex?: number) {
   let vnode: VNode | void, start = startIndex || 0, end = isDef(endIndex) ? endIndex as number : vnodes.length - 1
   while (start <= end) {
     vnode = vnodes[start]
@@ -232,7 +232,7 @@ function removeVnodes(api: API, parentNode: Node, vnodes: (VNode | void)[], star
   }
 }
 
-function removeVnode(api: API, parentNode: Node, vnode: VNode) {
+function removeVnode(api: DomUtil, parentNode: Node, vnode: VNode) {
   const { node } = vnode
   if (vnode.isStatic || vnode.isText || vnode.isComment) {
     api.remove(parentNode, node)
@@ -260,7 +260,7 @@ function removeVnode(api: API, parentNode: Node, vnode: VNode) {
   }
 }
 
-function destroyVnode(api: API, vnode: VNode) {
+function destroyVnode(api: DomUtil, vnode: VNode) {
 
   /**
    * 如果一个子组件的模板是这样写的：
@@ -373,7 +373,7 @@ function leaveVnode(vnode: VNode, component: YoxInterface | void, done: () => vo
   done()
 }
 
-function updateChildren(api: API, parentNode: Node, children: VNode[], oldChildren: (VNode | void)[]) {
+function updateChildren(api: DomUtil, parentNode: Node, children: VNode[], oldChildren: (VNode | void)[]) {
 
   let startIndex = 0,
   endIndex = children.length - 1,
@@ -498,7 +498,7 @@ function updateChildren(api: API, parentNode: Node, children: VNode[], oldChildr
   }
 }
 
-export function patch(api: API, vnode: VNode, oldVnode: VNode) {
+export function patch(api: DomUtil, vnode: VNode, oldVnode: VNode) {
 
   if (vnode === oldVnode) {
     return
@@ -580,7 +580,7 @@ export function patch(api: API, vnode: VNode, oldVnode: VNode) {
 
 }
 
-export function create(api: API, node: Node, context: YoxInterface, keypath: string): VNode {
+export function create(api: DomUtil, node: Node, context: YoxInterface, keypath: string): VNode {
   return {
     tag: api.tag(node),
     data: createData(),
@@ -590,7 +590,7 @@ export function create(api: API, node: Node, context: YoxInterface, keypath: str
   }
 }
 
-export function destroy(api: API, vnode: VNode, isRemove?: boolean) {
+export function destroy(api: DomUtil, vnode: VNode, isRemove?: boolean) {
   if (isRemove) {
     const parentNode = api.parent(vnode.node)
     if (parentNode) {
