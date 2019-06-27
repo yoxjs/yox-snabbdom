@@ -1,6 +1,6 @@
 import {
   DomUtil,
-  data,
+  Data,
   VNode,
 } from '../../yox-type/src/type'
 
@@ -63,7 +63,7 @@ function insertBefore(api: DomUtil, parentNode: Node, node: Node, referenceNode:
   }
 }
 
-function createComponent(vnode: VNode, options: YoxOptions) {
+function createComponent(vnode: VNode, options: YoxOptions<YoxInterface>) {
 
   const child = (vnode.parent || vnode.context).createComponent(options, vnode)
 
@@ -77,7 +77,7 @@ function createComponent(vnode: VNode, options: YoxOptions) {
 
 }
 
-function createData(): data {
+function createData(): Data {
   const data = {}
   data[field.ID] = guid()
   return data
@@ -107,13 +107,13 @@ function createVnode(api: DomUtil, vnode: VNode) {
 
   if (isComponent) {
 
-    let componentOptions: YoxOptions | undefined = env.UNDEFINED
+    let componentOptions: YoxOptions<YoxInterface> | undefined = env.UNDEFINED
 
     // 动态组件，tag 可能为空
     if (tag) {
       context.loadComponent(
         tag,
-        function (options: YoxOptions) {
+        function (options: YoxOptions<YoxInterface>) {
           if (object.has(data, field.LOADING)) {
             // 异步组件
             if (data[field.LOADING]) {
@@ -141,7 +141,7 @@ function createVnode(api: DomUtil, vnode: VNode) {
     vnode.node = api.createComment(env.RAW_COMPONENT)
 
     if (componentOptions) {
-      createComponent(vnode, componentOptions as YoxOptions)
+      createComponent(vnode, componentOptions as YoxOptions<YoxInterface>)
     }
     else {
       data[field.LOADING] = env.TRUE
