@@ -63,7 +63,7 @@ function insertBefore(api: DomUtil, parentNode: Node, node: Node, referenceNode:
   }
 }
 
-function createComponent(vnode: VNode, options: YoxOptions<YoxInterface>) {
+function createComponent(vnode: VNode, options: YoxOptions<any>) {
 
   const child = (vnode.parent || vnode.context).createComponent(options, vnode)
 
@@ -107,13 +107,13 @@ function createVnode(api: DomUtil, vnode: VNode) {
 
   if (isComponent) {
 
-    let componentOptions: YoxOptions<YoxInterface> | undefined = env.UNDEFINED
+    let componentOptions: YoxOptions<any> | undefined = env.UNDEFINED
 
     // 动态组件，tag 可能为空
     if (tag) {
       context.loadComponent(
         tag,
-        function (options: YoxOptions<YoxInterface>) {
+        function (options: YoxOptions<any>) {
           if (object.has(data, field.LOADING)) {
             // 异步组件
             if (data[field.LOADING]) {
@@ -141,7 +141,7 @@ function createVnode(api: DomUtil, vnode: VNode) {
     vnode.node = api.createComment(env.RAW_COMPONENT)
 
     if (componentOptions) {
-      createComponent(vnode, componentOptions as YoxOptions<YoxInterface>)
+      createComponent(vnode, componentOptions as YoxOptions<any>)
     }
     else {
       data[field.LOADING] = env.TRUE
