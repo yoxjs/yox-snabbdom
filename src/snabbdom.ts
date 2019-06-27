@@ -1,13 +1,22 @@
 import {
-  DomUtil,
   Data,
-  VNode,
 } from '../../yox-type/src/type'
 
 import {
+  DomUtil,
+} from '../../yox-type/src/util'
+
+import {
+  VNode,
+} from '../../yox-type/src/vnode'
+
+import {
   YoxTypedOptions,
+} from '../../yox-type/src/options'
+
+import {
   YoxInterface,
-} from '../../yox-type/src/global'
+} from '../../yox-type/src/yox'
 
 import * as is from '../../yox-common/src/util/is'
 import * as env from '../../yox-common/src/util/env'
