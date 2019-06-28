@@ -3,8 +3,8 @@ import {
 } from '../../yox-type/src/type'
 
 import {
-  DomUtil,
-} from '../../yox-type/src/util'
+  DomApi,
+} from '../../yox-type/src/api'
 
 import {
   VNode,
@@ -63,7 +63,7 @@ function createKeyToIndex(vnodes: (VNode | void)[], startIndex: number, endIndex
 
 }
 
-function insertBefore(api: DomUtil, parentNode: Node, node: Node, referenceNode: Node | void) {
+function insertBefore(api: DomApi, parentNode: Node, node: Node, referenceNode: Node | void) {
   if (referenceNode) {
     api.before(parentNode, node, referenceNode)
   }
@@ -92,7 +92,7 @@ function createData(): Data {
   return data
 }
 
-function createVnode(api: DomUtil, vnode: VNode) {
+function createVnode(api: DomApi, vnode: VNode) {
 
   let { tag, node, data, isComponent, isComment, isText, isStyle, isOption, children, text, html, context } = vnode
 
@@ -179,7 +179,7 @@ function createVnode(api: DomUtil, vnode: VNode) {
   }
 }
 
-function addVnodes(api: DomUtil, parentNode: Node, vnodes: VNode[], startIndex?: number, endIndex?: number, before?: VNode) {
+function addVnodes(api: DomApi, parentNode: Node, vnodes: VNode[], startIndex?: number, endIndex?: number, before?: VNode) {
   let vnode: VNode, start = startIndex || 0, end = isDef(endIndex) ? endIndex as number : vnodes.length - 1
   while (start <= end) {
     vnode = vnodes[start]
@@ -189,7 +189,7 @@ function addVnodes(api: DomUtil, parentNode: Node, vnodes: VNode[], startIndex?:
   }
 }
 
-function insertVnode(api: DomUtil, parentNode: Node, vnode: VNode, before?: VNode) {
+function insertVnode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
 
   const { node, data, context } = vnode,
 
@@ -232,7 +232,7 @@ function insertVnode(api: DomUtil, parentNode: Node, vnode: VNode, before?: VNod
 
 }
 
-function removeVnodes(api: DomUtil, parentNode: Node, vnodes: (VNode | void)[], startIndex?: number, endIndex?: number) {
+function removeVnodes(api: DomApi, parentNode: Node, vnodes: (VNode | void)[], startIndex?: number, endIndex?: number) {
   let vnode: VNode | void, start = startIndex || 0, end = isDef(endIndex) ? endIndex as number : vnodes.length - 1
   while (start <= end) {
     vnode = vnodes[start]
@@ -243,7 +243,7 @@ function removeVnodes(api: DomUtil, parentNode: Node, vnodes: (VNode | void)[], 
   }
 }
 
-function removeVnode(api: DomUtil, parentNode: Node, vnode: VNode) {
+function removeVnode(api: DomApi, parentNode: Node, vnode: VNode) {
   const { node } = vnode
   if (vnode.isStatic || vnode.isText || vnode.isComment) {
     api.remove(parentNode, node)
@@ -271,7 +271,7 @@ function removeVnode(api: DomUtil, parentNode: Node, vnode: VNode) {
   }
 }
 
-function destroyVnode(api: DomUtil, vnode: VNode) {
+function destroyVnode(api: DomApi, vnode: VNode) {
 
   /**
    * 如果一个子组件的模板是这样写的：
@@ -384,7 +384,7 @@ function leaveVnode(vnode: VNode, component: YoxInterface | void, done: () => vo
   done()
 }
 
-function updateChildren(api: DomUtil, parentNode: Node, children: VNode[], oldChildren: (VNode | void)[]) {
+function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChildren: (VNode | void)[]) {
 
   let startIndex = 0,
   endIndex = children.length - 1,
@@ -509,7 +509,7 @@ function updateChildren(api: DomUtil, parentNode: Node, children: VNode[], oldCh
   }
 }
 
-export function patch(api: DomUtil, vnode: VNode, oldVnode: VNode) {
+export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
 
   if (vnode === oldVnode) {
     return
@@ -591,7 +591,7 @@ export function patch(api: DomUtil, vnode: VNode, oldVnode: VNode) {
 
 }
 
-export function create(api: DomUtil, node: Node, context: YoxInterface, keypath: string): VNode {
+export function create(api: DomApi, node: Node, context: YoxInterface, keypath: string): VNode {
   return {
     tag: api.tag(node),
     data: createData(),
@@ -601,7 +601,7 @@ export function create(api: DomUtil, node: Node, context: YoxInterface, keypath:
   }
 }
 
-export function destroy(api: DomUtil, vnode: VNode, isRemove?: boolean) {
+export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
   if (isRemove) {
     const parentNode = api.parent(vnode.node)
     if (parentNode) {
