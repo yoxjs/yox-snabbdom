@@ -11,7 +11,7 @@ import {
 } from '../../yox-type/src/vnode'
 
 import {
-  YoxTypedOptions,
+  TypedComponentOptions,
 } from '../../yox-type/src/options'
 
 import {
@@ -72,7 +72,7 @@ function insertBefore(api: DomApi, parentNode: Node, node: Node, referenceNode: 
   }
 }
 
-function createComponent(vnode: VNode, options: YoxTypedOptions) {
+function createComponent(vnode: VNode, options: TypedComponentOptions) {
 
   const child = (vnode.parent || vnode.context).createComponent(options, vnode)
 
@@ -116,13 +116,13 @@ function createVnode(api: DomApi, vnode: VNode) {
 
   if (isComponent) {
 
-    let componentOptions: YoxTypedOptions | undefined = env.UNDEFINED
+    let componentOptions: TypedComponentOptions | undefined = env.UNDEFINED
 
     // 动态组件，tag 可能为空
     if (tag) {
       context.loadComponent(
         tag,
-        function (options: YoxTypedOptions) {
+        function (options: TypedComponentOptions) {
           if (object.has(data, field.LOADING)) {
             // 异步组件
             if (data[field.LOADING]) {
@@ -150,7 +150,7 @@ function createVnode(api: DomApi, vnode: VNode) {
     vnode.node = api.createComment(env.RAW_COMPONENT)
 
     if (componentOptions) {
-      createComponent(vnode, componentOptions as YoxTypedOptions)
+      createComponent(vnode, componentOptions as TypedComponentOptions)
     }
     else {
       data[field.LOADING] = env.TRUE
