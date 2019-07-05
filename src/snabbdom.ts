@@ -318,7 +318,7 @@ function destroyVnode(api: DomApi, vnode: VNode) {
     if (children) {
       array.each(
         children,
-        function (child: VNode) {
+        function (child) {
           destroyVnode(api, child)
         }
       )
