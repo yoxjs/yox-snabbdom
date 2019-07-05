@@ -2,7 +2,9 @@ import {
   VNode,
 } from '../../yox-type/src/vnode'
 
-import * as config from '../../yox-config/src/config'
+import {
+  DIRECTIVE_MODEL
+} from '../../yox-config/src/config'
 
 import * as object from '../../yox-common/src/util/object'
 
@@ -18,7 +20,7 @@ export function update(vnode: VNode, oldVnode?: VNode) {
     // 因为初始化时，所有这些都经过构造函数完成了
     if (oldVnode) {
 
-      const model = directives && directives[config.DIRECTIVE_MODEL]
+      const model = directives && directives[DIRECTIVE_MODEL]
       if (model) {
         if (!props) {
           props = {}
