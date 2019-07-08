@@ -28,8 +28,15 @@ export function update(vnode: VNode, oldVnode?: VNode) {
         props[node.$model] = model.value
       }
 
-      if (props) {
-        node.checkProps(props)
+      if (process.env.NODE_ENV === 'development') {
+        if (props) {
+          object.each(
+            props,
+            function (value, key) {
+              node.checkProp(key, value)
+            }
+          )
+        }
       }
 
       const result = object.merge(props, slots)
