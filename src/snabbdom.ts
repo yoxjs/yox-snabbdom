@@ -608,7 +608,7 @@ export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
       removeVnode(api, parentNode, vnode)
     }
     else if (process.env.NODE_ENV === 'development') {
-      logger.fatal(`Can't destroy vnode without parent node.`)
+      logger.fatal(`The vnode can't be destroyed without a parent node.`)
     }
   }
   else {
