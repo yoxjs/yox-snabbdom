@@ -1,12 +1,12 @@
 import {
   VNode,
-} from '../../yox-type/src/vnode'
+} from 'yox-type/src/vnode'
 
 import {
   DIRECTIVE_MODEL
-} from '../../yox-config/src/config'
+} from 'yox-config/src/config'
 
-import * as object from '../../yox-common/src/util/object'
+import * as object from 'yox-common/src/util/object'
 
 import * as field from './field'
 

@@ -1,32 +1,32 @@
 import {
   Data,
-} from '../../yox-type/src/type'
+} from 'yox-type/src/type'
 
 import {
   DomApi,
-} from '../../yox-type/src/api'
+} from 'yox-type/src/api'
 
 import {
   VNode,
-} from '../../yox-type/src/vnode'
+} from 'yox-type/src/vnode'
 
 import {
   ComponentOptions,
-} from '../../yox-type/src/options'
+} from 'yox-type/src/options'
 
 import {
   YoxInterface,
-} from '../../yox-type/src/yox'
+} from 'yox-type/src/yox'
 
-import * as is from '../../yox-common/src/util/is'
-import * as env from '../../yox-common/src/util/env'
-import * as array from '../../yox-common/src/util/array'
-import * as object from '../../yox-common/src/util/object'
-import * as logger from '../../yox-common/src/util/logger'
+import * as is from 'yox-common/src/util/is'
+import * as env from 'yox-common/src/util/env'
+import * as array from 'yox-common/src/util/array'
+import * as object from 'yox-common/src/util/object'
+import * as logger from 'yox-common/src/util/logger'
 
-import guid from '../../yox-common/src/function/guid'
-import isDef from '../../yox-common/src/function/isDef'
-import execute from '../../yox-common/src/function/execute'
+import guid from 'yox-common/src/function/guid'
+import isDef from 'yox-common/src/function/isDef'
+import execute from 'yox-common/src/function/execute'
 
 import * as field from './field'
 
