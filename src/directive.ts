@@ -1,9 +1,9 @@
 import {
   VNode,
   Directive,
-} from 'yox-common/src/type/vnode'
+} from 'yox-type/src/vnode'
 
-import * as env from 'yox-common/src/util/env'
+import * as constant from 'yox-type/src/constant'
 import * as object from 'yox-common/src/util/object'
 
 import * as field from './field'
@@ -20,9 +20,9 @@ export function update(vnode: VNode, oldVnode?: VNode) {
 
     isKeypathChange = oldVnode && vnode.keypath !== oldVnode.keypath,
 
-    newValue = directives || env.EMPTY_OBJECT,
+    newValue = directives || constant.EMPTY_OBJECT,
 
-    oldValue = oldDirectives || env.EMPTY_OBJECT
+    oldValue = oldDirectives || constant.EMPTY_OBJECT
 
     object.each(
       newValue,

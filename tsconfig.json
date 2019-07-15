@@ -6,6 +6,12 @@
   "references": [
     {
       "path": "../yox-common"
+    },
+    {
+      "path": "../yox-dom"
+    },
+    {
+      "path": "../yox-type"
     }
   ],
   "include": [

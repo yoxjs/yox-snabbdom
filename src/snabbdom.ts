@@ -1,25 +1,26 @@
 import {
   Data,
-} from 'yox-common/src/type/type'
+} from 'yox-type/src/type'
 
 import {
   DomApi,
-} from 'yox-common/src/type/api'
+} from 'yox-type/src/api'
 
 import {
   VNode,
-} from 'yox-common/src/type/vnode'
+} from 'yox-type/src/vnode'
 
 import {
   ComponentOptions,
-} from 'yox-common/src/type/options'
+} from 'yox-type/src/options'
 
 import {
   YoxInterface,
-} from 'yox-common/src/type/yox'
+} from 'yox-type/src/yox'
+
+import * as constant from 'yox-type/src/constant'
 
 import * as is from 'yox-common/src/util/is'
-import * as env from 'yox-common/src/util/env'
 import * as array from 'yox-common/src/util/array'
 import * as object from 'yox-common/src/util/object'
 import * as logger from 'yox-common/src/util/logger'
@@ -59,7 +60,7 @@ function createKeyToIndex(vnodes: (VNode | void)[], startIndex: number, endIndex
     startIndex++
   }
 
-  return result || env.EMPTY_OBJECT
+  return result || constant.EMPTY_OBJECT
 
 }
 
@@ -77,7 +78,7 @@ function createComponent(vnode: VNode, options: ComponentOptions) {
   const child = (vnode.parent || vnode.context).createComponent(options, vnode)
 
   vnode.data[field.COMPONENT] = child
-  vnode.data[field.LOADING] = env.FALSE
+  vnode.data[field.LOADING] = constant.FALSE
 
   component.update(vnode)
   directive.update(vnode)
@@ -116,7 +117,7 @@ function createVnode(api: DomApi, vnode: VNode) {
 
   if (isComponent) {
 
-    let componentOptions: ComponentOptions | undefined = env.UNDEFINED
+    let componentOptions: ComponentOptions | undefined = constant.UNDEFINED
 
     // 动态组件，tag 可能为空
     if (tag) {
@@ -147,13 +148,13 @@ function createVnode(api: DomApi, vnode: VNode) {
     }
 
     // 不论是同步还是异步组件，都需要一个占位元素
-    vnode.node = api.createComment(env.RAW_COMPONENT)
+    vnode.node = api.createComment(constant.RAW_COMPONENT)
 
     if (componentOptions) {
       createComponent(vnode, componentOptions as ComponentOptions)
     }
     else {
-      data[field.LOADING] = env.TRUE
+      data[field.LOADING] = constant.TRUE
     }
 
   }
@@ -206,7 +207,7 @@ function insertVnode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
   // 普通元素和组件的占位节点都会走到这里
   // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
   if (!hasParent) {
-    let enter: Function | void = env.UNDEFINED
+    let enter: Function | void = constant.UNDEFINED
     if (vnode.isComponent) {
       const component = data[field.COMPONENT]
       if (component) {
@@ -310,7 +311,7 @@ function destroyVnode(api: DomApi, vnode: VNode) {
       component.destroy()
     }
     else [
-      data[field.LOADING] = env.FALSE
+      data[field.LOADING] = constant.FALSE
     ]
   }
   else {
@@ -373,7 +374,7 @@ function leaveVnode(vnode: VNode, component: YoxInterface | void, done: () => vo
         data[field.LEAVING] = function () {
           if (data[field.LEAVING]) {
             done()
-            data[field.LEAVING] = env.UNDEFINED
+            data[field.LEAVING] = constant.UNDEFINED
           }
         }
       )
@@ -469,12 +470,12 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
       // 新节点之前的位置
       oldIndex = startVnode.key
         ? oldKeyToIndex[startVnode.key]
-        : env.UNDEFINED
+        : constant.UNDEFINED
 
       // 移动元素
       if (isDef(oldIndex)) {
         patch(api, startVnode, oldChildren[oldIndex as number] as VNode)
-        oldChildren[oldIndex as number] = env.UNDEFINED
+        oldChildren[oldIndex as number] = constant.UNDEFINED
       }
       // 新元素
       else {
@@ -576,7 +577,7 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
   // 有新的没旧的 - 新增节点
   else if (children) {
     if (is.string(oldText) || is.string(oldHtml)) {
-      api.text(node, env.EMPTY_STRING, isStyle)
+      api.text(node, constant.EMPTY_STRING, isStyle)
     }
     addVnodes(api, node, children)
   }
@@ -586,7 +587,7 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
   }
   // 有旧的 text 没有新的 text
   else if (is.string(oldText) || is.string(oldHtml)) {
-    api.text(node, env.EMPTY_STRING, isStyle)
+    api.text(node, constant.EMPTY_STRING, isStyle)
   }
 
 }

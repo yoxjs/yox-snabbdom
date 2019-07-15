@@ -1,9 +1,9 @@
 import {
   VNode,
   Property
-} from 'yox-common/src/type/vnode'
+} from 'yox-type/src/vnode'
 
-import * as env from 'yox-common/src/util/env'
+import * as constant from 'yox-type/src/constant'
 import * as object from 'yox-common/src/util/object'
 
 export function update(api: any, vnode: VNode, oldVnode?: VNode) {
@@ -14,9 +14,9 @@ export function update(api: any, vnode: VNode, oldVnode?: VNode) {
 
   if (nativeProps || oldNativeProps) {
 
-    const newValue = nativeProps || env.EMPTY_OBJECT,
+    const newValue = nativeProps || constant.EMPTY_OBJECT,
 
-    oldValue = oldNativeProps || env.EMPTY_OBJECT
+    oldValue = oldNativeProps || constant.EMPTY_OBJECT
 
     object.each(
       newValue,
