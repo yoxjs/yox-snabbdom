@@ -1,22 +1,22 @@
 import {
   Data,
-} from 'yox-type/src/type'
+} from 'yox-common/src/type/type'
 
 import {
   DomApi,
-} from 'yox-type/src/api'
+} from 'yox-common/src/type/api'
 
 import {
   VNode,
-} from 'yox-type/src/vnode'
+} from 'yox-common/src/type/vnode'
 
 import {
   ComponentOptions,
-} from 'yox-type/src/options'
+} from 'yox-common/src/type/options'
 
 import {
   YoxInterface,
-} from 'yox-type/src/yox'
+} from 'yox-common/src/type/yox'
 
 import * as is from 'yox-common/src/util/is'
 import * as env from 'yox-common/src/util/env'

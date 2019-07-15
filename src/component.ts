@@ -1,6 +1,6 @@
 import {
   VNode,
-} from 'yox-type/src/vnode'
+} from 'yox-common/src/type/vnode'
 
 import {
   DIRECTIVE_MODEL

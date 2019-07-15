@@ -1,7 +1,7 @@
 import {
   VNode,
   Directive,
-} from 'yox-type/src/vnode'
+} from 'yox-common/src/type/vnode'
 
 import * as env from 'yox-common/src/util/env'
 import * as object from 'yox-common/src/util/object'
