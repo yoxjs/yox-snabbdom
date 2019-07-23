@@ -1,10 +1,8 @@
 import {
   VNode,
-  Directive,
 } from 'yox-type/src/vnode'
 
 import * as constant from 'yox-type/src/constant'
-import * as object from 'yox-common/src/util/object'
 
 import * as field from './field'
 
@@ -24,36 +22,36 @@ export function update(vnode: VNode, oldVnode?: VNode) {
 
     oldValue = oldDirectives || constant.EMPTY_OBJECT
 
-    object.each(
-      newValue,
-      function (directive: Directive, name: string) {
-        const { once, bind, unbind } = directive.hooks
-        if (!oldValue[name]) {
-          bind(node, directive, vnode)
-        }
-        else if (once
-          || directive.value !== oldValue[name].value
-          || isKeypathChange
-        ) {
-          if (unbind) {
-            unbind(node, oldValue[name], oldVnode as VNode)
-          }
-          bind(node, directive, vnode)
-        }
-      }
-    )
 
-    object.each(
-      oldValue,
-      function (directive: Directive, name: string) {
-        if (!newValue[name]) {
-          const { unbind } = directive.hooks
-          if (unbind) {
-            unbind(node, directive, oldVnode as VNode)
-          }
+    for (let name in newValue) {
+
+      const directive = newValue[name],
+
+      { once, bind, unbind } = directive.hooks
+
+      if (!oldValue[name]) {
+        bind(node, directive, vnode)
+      }
+      else if (once
+        || directive.value !== oldValue[name].value
+        || isKeypathChange
+      ) {
+        if (unbind) {
+          unbind(node, oldValue[name], oldVnode as VNode)
+        }
+        bind(node, directive, vnode)
+      }
+
+    }
+
+    for (let name in oldValue) {
+      if (!newValue[name]) {
+        const { unbind } = oldValue[name].hooks
+        if (unbind) {
+          unbind(node, oldValue[name], oldVnode as VNode)
         }
       }
-    )
+    }
 
   }
 
@@ -63,14 +61,11 @@ export function remove(vnode: VNode) {
   const { directives } = vnode
   if (directives) {
     const node = vnode.data[field.COMPONENT] || vnode.node
-    object.each(
-      directives,
-      function (directive: Directive) {
-        const { unbind } = directive.hooks
-        if (unbind) {
-          unbind(node, directive, vnode)
-        }
+    for (let name in directives) {
+      const { unbind } = directives[name].hooks
+      if (unbind) {
+        unbind(node, directives[name], vnode)
       }
-    )
+    }
   }
 }

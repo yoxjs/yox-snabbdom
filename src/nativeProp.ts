@@ -1,10 +1,8 @@
 import {
   VNode,
-  Property
 } from 'yox-type/src/vnode'
 
 import * as constant from 'yox-type/src/constant'
-import * as object from 'yox-common/src/util/object'
 
 export function update(api: any, vnode: VNode, oldVnode?: VNode) {
 
@@ -18,25 +16,19 @@ export function update(api: any, vnode: VNode, oldVnode?: VNode) {
 
     oldValue = oldNativeProps || constant.EMPTY_OBJECT
 
-    object.each(
-      newValue,
-      function (prop: Property, name: string) {
-        if (!oldValue[name]
-          || prop.value !== oldValue[name].value
-        ) {
-          api.prop(node, name, prop.value)
-        }
+    for (let name in newValue) {
+      if (!oldValue[name]
+        || newValue[name] !== oldValue[name]
+      ) {
+        api.prop(node, name, newValue[name])
       }
-    )
+    }
 
-    object.each(
-      oldValue,
-      function (prop: Property, name: string) {
-        if (!newValue[name]) {
-          api.removeProp(node, name, prop.hint)
-        }
+    for (let name in oldValue) {
+      if (!newValue[name]) {
+        api.removeProp(node, name)
       }
-    )
+    }
 
   }
 
