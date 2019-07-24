@@ -541,11 +541,6 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
     return
   }
 
-  // 两棵静态子树就别折腾了
-  if (vnode.isStatic && oldVnode.isStatic) {
-    return
-  }
-
   nativeAttr.update(api, vnode, oldVnode)
   nativeProp.update(api, vnode, oldVnode)
   component.update(vnode, oldVnode)

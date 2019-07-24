@@ -17,7 +17,7 @@ export function update(api: any, vnode: VNode, oldVnode?: VNode) {
     oldValue = oldNativeAttrs || constant.EMPTY_OBJECT
 
     for (let name in newValue) {
-      if (!oldValue[name]
+      if (oldValue[name] === constant.UNDEFINED
         || newValue[name] !== oldValue[name]
       ) {
         api.attr(node, name, newValue[name])
@@ -25,7 +25,7 @@ export function update(api: any, vnode: VNode, oldVnode?: VNode) {
     }
 
     for (let name in oldValue) {
-      if (!newValue[name]) {
+      if (newValue[name] === constant.UNDEFINED) {
         api.removeAttr(node, name)
       }
     }
