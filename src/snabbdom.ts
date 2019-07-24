@@ -25,7 +25,6 @@ import * as logger from 'yox-common/src/util/logger'
 import * as constant from 'yox-common/src/util/constant'
 
 import guid from 'yox-common/src/function/guid'
-import isDef from 'yox-common/src/function/isDef'
 import execute from 'yox-common/src/function/execute'
 
 import * as field from './field'
@@ -180,7 +179,7 @@ function createVnode(api: DomApi, vnode: VNode) {
 }
 
 function addVnodes(api: DomApi, parentNode: Node, vnodes: VNode[], startIndex?: number, endIndex?: number, before?: VNode) {
-  let vnode: VNode, start = startIndex || 0, end = isDef(endIndex) ? endIndex as number : vnodes.length - 1
+  let vnode: VNode, start = startIndex || 0, end = endIndex !== constant.UNDEFINED ? endIndex as number : vnodes.length - 1
   while (start <= end) {
     vnode = vnodes[start]
     createVnode(api, vnode)
@@ -233,7 +232,7 @@ function insertVnode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
 }
 
 function removeVnodes(api: DomApi, parentNode: Node, vnodes: (VNode | void)[], startIndex?: number, endIndex?: number) {
-  let vnode: VNode | void, start = startIndex || 0, end = isDef(endIndex) ? endIndex as number : vnodes.length - 1
+  let vnode: VNode | void, start = startIndex || 0, end = endIndex !== constant.UNDEFINED ? endIndex as number : vnodes.length - 1
   while (start <= end) {
     vnode = vnodes[start]
     if (vnode) {
@@ -472,7 +471,7 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
         : constant.UNDEFINED
 
       // 移动元素
-      if (isDef(oldIndex)) {
+      if (oldIndex !== constant.UNDEFINED) {
         patch(api, startVnode, oldChildren[oldIndex as number] as VNode)
         oldChildren[oldIndex as number] = constant.UNDEFINED
       }
