@@ -24,7 +24,6 @@ import * as object from 'yox-common/src/util/object'
 import * as logger from 'yox-common/src/util/logger'
 import * as constant from 'yox-common/src/util/constant'
 
-import guid from 'yox-common/src/function/guid'
 import execute from 'yox-common/src/function/execute'
 
 import * as field from './field'
@@ -85,9 +84,11 @@ function createComponent(vnode: VNode, options: ComponentOptions) {
 
 }
 
+let guid = 0
+
 function createData(): Data {
   const data = {}
-  data[field.ID] = guid()
+  data[field.ID] = ++guid
   return data
 }
 
