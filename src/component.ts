@@ -3,7 +3,7 @@ import {
 } from 'yox-type/src/vnode'
 
 import {
-  DIRECTIVE_MODEL
+  DIRECTIVE_MODEL,
 } from 'yox-config/src/config'
 
 import * as object from 'yox-common/src/util/object'
