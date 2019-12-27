@@ -77,9 +77,6 @@ function createComponent(vnode: VNode, options: ComponentOptions) {
   vnode.data[field.COMPONENT] = child
   vnode.data[field.LOADING] = constant.FALSE
 
-  // 先处理 directive 再处理 component
-  // 因为组件只是单纯的更新 prop，而 directive 则有可能要销毁
-  // 如果顺序反过来，会导致某些本该销毁的指令先被数据的变化触发执行了
   directive.update(vnode)
   component.update(vnode)
 
@@ -176,10 +173,6 @@ function createVnode(api: DomApi, vnode: VNode) {
 
     nativeAttr.update(api, vnode)
     nativeProp.update(api, vnode)
-
-    // 先处理 directive 再处理 component
-    // 因为组件只是单纯的更新 prop，而 directive 则有可能要销毁
-    // 如果顺序反过来，会导致某些本该销毁的指令先被数据的变化触发执行了
     directive.update(vnode)
     component.update(vnode)
 
@@ -552,7 +545,7 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
   nativeProp.update(api, vnode, oldVnode)
 
   // 先处理 directive 再处理 component
-  // 因为组件只是单纯的更新 prop，而 directive 则有可能要销毁
+  // 因为组件只是单纯的更新 props，而 directive 则有可能要销毁
   // 如果顺序反过来，会导致某些本该销毁的指令先被数据的变化触发执行了
   directive.update(vnode, oldVnode)
   component.update(vnode, oldVnode)
