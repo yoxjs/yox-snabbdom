@@ -9,6 +9,9 @@
     "type": "git",
     "url": "git+https://github.com/yoxjs/yox-snabbdom.git"
   },
+  "scripts": {
+    "tsc": "tsc"
+  },
   "keywords": [],
   "author": "musicode",
   "license": "MIT",
@@ -16,11 +19,9 @@
     "url": "https://github.com/yoxjs/yox-snabbdom/issues"
   },
   "homepage": "https://github.com/yoxjs/yox-snabbdom#readme",
-  "peerDependencies": {
+  "dependencies": {
     "yox-common": "^0.20.0",
+    "yox-config": "^0.3.0",
     "yox-type": "^0.2.0"
-  },
-  "devDependencies": {
-    "@types/node": "^14.11.8"
   }
 }
