@@ -603,12 +603,12 @@ export function create(api: DomApi, node: Node, context: YoxInterface, keypath: 
 export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
   if (isRemove) {
     const parentNode = api.parent(vnode.node)
-    if (parentNode) {
-      removeVnode(api, parentNode, vnode)
+    if (process.env.NODE_ENV === 'development') {
+      if (!parentNode) {
+        logger.fatal(`The vnode can't be destroyed without a parent node.`)
+      }
     }
-    else if (process.env.NODE_ENV === 'development') {
-      logger.fatal(`The vnode can't be destroyed without a parent node.`)
-    }
+    removeVnode(api, parentNode as Node, vnode)
   }
   else {
     destroyVnode(api, vnode)
