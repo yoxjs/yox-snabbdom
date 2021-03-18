@@ -2,9 +2,13 @@ import {
   VNode,
 } from 'yox-type/src/vnode'
 
+import {
+  DomApi,
+} from 'yox-type/src/api'
+
 import * as constant from 'yox-common/src/util/constant'
 
-export function update(api: any, vnode: VNode, oldVnode?: VNode) {
+export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
   const { node, nativeAttrs } = vnode,
 
@@ -16,17 +20,21 @@ export function update(api: any, vnode: VNode, oldVnode?: VNode) {
 
     oldValue = oldNativeAttrs || constant.EMPTY_OBJECT
 
-    for (let name in newValue) {
-      if (oldValue[name] === constant.UNDEFINED
-        || newValue[name] !== oldValue[name]
-      ) {
-        api.attr(node, name, newValue[name])
+    if (nativeAttrs) {
+      for (let name in nativeAttrs) {
+        if (oldValue[name] === constant.UNDEFINED
+          || nativeAttrs[name] !== oldValue[name]
+        ) {
+          api.setAttr(node as HTMLElement, name, nativeAttrs[name])
+        }
       }
     }
 
-    for (let name in oldValue) {
-      if (newValue[name] === constant.UNDEFINED) {
-        api.removeAttr(node, name)
+    if (oldNativeAttrs) {
+      for (let name in oldNativeAttrs) {
+        if (newValue[name] === constant.UNDEFINED) {
+          api.removeAttr(node as HTMLElement, name)
+        }
       }
     }
 

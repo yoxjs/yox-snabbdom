@@ -30,6 +30,7 @@ import * as field from './field'
 
 import * as nativeAttr from './nativeAttr'
 import * as nativeProp from './nativeProp'
+import * as event from './event'
 import * as directive from './directive'
 import * as component from './component'
 
@@ -70,15 +71,16 @@ function insertBefore(api: DomApi, parentNode: Node, node: Node, referenceNode: 
   }
 }
 
-function createComponent(vnode: VNode, options: ComponentOptions) {
+function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 
   const child = (vnode.parent || vnode.context).createComponent(options, vnode)
 
   vnode.data[field.COMPONENT] = child
   vnode.data[field.LOADING] = constant.FALSE
 
-  directive.update(vnode)
-  component.update(vnode)
+  event.update(api, vnode)
+  directive.update(api, vnode)
+  component.update(api, vnode)
 
   return child
 
@@ -134,7 +136,7 @@ function createVnode(api: DomApi, vnode: VNode) {
               }
               enterVnode(
                 vnode,
-                createComponent(vnode, options)
+                createComponent(api, vnode, options)
               )
             }
           }
@@ -150,7 +152,7 @@ function createVnode(api: DomApi, vnode: VNode) {
     vnode.node = api.createComment(constant.RAW_COMPONENT)
 
     if (componentOptions) {
-      createComponent(vnode, componentOptions as ComponentOptions)
+      createComponent(api, vnode, componentOptions as ComponentOptions)
     }
     else {
       data[field.LOADING] = constant.TRUE
@@ -165,16 +167,17 @@ function createVnode(api: DomApi, vnode: VNode) {
       addVnodes(api, node, children)
     }
     else if (text) {
-      api.text(node as Element, text, isStyle, isOption)
+      api.setText(node as Element, text, isStyle, isOption)
     }
     else if (html) {
-      api.html(node as Element, html, isStyle, isOption)
+      api.setHtml(node as Element, html, isStyle, isOption)
     }
 
     nativeAttr.update(api, vnode)
     nativeProp.update(api, vnode)
-    directive.update(vnode)
-    component.update(vnode)
+    event.update(api, vnode)
+    directive.update(api, vnode)
+    component.update(api, vnode)
 
   }
 }
@@ -306,7 +309,8 @@ function destroyVnode(api: DomApi, vnode: VNode) {
   if (vnode.isComponent) {
     const component = data[field.COMPONENT]
     if (component) {
-      directive.remove(vnode)
+      event.remove(api, vnode)
+      directive.remove(api, vnode)
       component.destroy()
     }
     else [
@@ -314,7 +318,8 @@ function destroyVnode(api: DomApi, vnode: VNode) {
     ]
   }
   else {
-    directive.remove(vnode)
+    event.remove(api, vnode)
+    directive.remove(api, vnode)
     if (children) {
       array.each(
         children,
@@ -547,8 +552,9 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
   // 先处理 directive 再处理 component
   // 因为组件只是单纯的更新 props，而 directive 则有可能要销毁
   // 如果顺序反过来，会导致某些本该销毁的指令先被数据的变化触发执行了
-  directive.update(vnode, oldVnode)
-  component.update(vnode, oldVnode)
+  event.update(api, vnode, oldVnode)
+  directive.update(api, vnode, oldVnode)
+  component.update(api, vnode, oldVnode)
 
   const { text, html, children, isStyle, isOption } = vnode,
 
@@ -558,12 +564,12 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
 
   if (is.string(text)) {
     if (text !== oldText) {
-      api.text(node, text, isStyle, isOption)
+      api.setText(node, text as string, isStyle, isOption)
     }
   }
   else if (is.string(html)) {
     if (html !== oldHtml) {
-      api.html(node as Element, html, isStyle, isOption)
+      api.setHtml(node as Element, html as string, isStyle, isOption)
     }
   }
   // 两个都有需要 diff
@@ -575,7 +581,7 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
   // 有新的没旧的 - 新增节点
   else if (children) {
     if (is.string(oldText) || is.string(oldHtml)) {
-      api.text(node, constant.EMPTY_STRING, isStyle)
+      api.setText(node, constant.EMPTY_STRING, isStyle)
     }
     addVnodes(api, node, children)
   }
@@ -585,7 +591,7 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
   }
   // 有旧的 text 没有新的 text
   else if (is.string(oldText) || is.string(oldHtml)) {
-    api.text(node, constant.EMPTY_STRING, isStyle)
+    api.setText(node, constant.EMPTY_STRING, isStyle)
   }
 
 }

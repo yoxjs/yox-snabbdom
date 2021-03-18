@@ -2,9 +2,13 @@ import {
   VNode,
 } from 'yox-type/src/vnode'
 
+import {
+  DomApi,
+} from 'yox-type/src/api'
+
 import * as constant from 'yox-common/src/util/constant'
 
-export function update(api: any, vnode: VNode, oldVnode?: VNode) {
+export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
   const { node, nativeProps } = vnode,
 
@@ -16,17 +20,21 @@ export function update(api: any, vnode: VNode, oldVnode?: VNode) {
 
     oldValue = oldNativeProps || constant.EMPTY_OBJECT
 
-    for (let name in newValue) {
-      if (oldValue[name] === constant.UNDEFINED
-        || newValue[name] !== oldValue[name]
-      ) {
-        api.prop(node, name, newValue[name])
+    if (nativeProps) {
+      for (let name in nativeProps) {
+        if (oldValue[name] === constant.UNDEFINED
+          || nativeProps[name] !== oldValue[name]
+        ) {
+          api.setProp(node as HTMLElement, name, nativeProps[name])
+        }
       }
     }
 
-    for (let name in oldValue) {
-      if (newValue[name] === constant.UNDEFINED) {
-        api.removeProp(node, name)
+    if (oldNativeProps) {
+      for (let name in oldNativeProps) {
+        if (newValue[name] === constant.UNDEFINED) {
+          api.removeProp(node as HTMLElement, name)
+        }
       }
     }
 

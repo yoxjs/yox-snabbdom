@@ -2,11 +2,15 @@ import {
   VNode,
 } from 'yox-type/src/vnode'
 
+import {
+  DomApi,
+} from 'yox-type/src/api'
+
 import * as constant from 'yox-common/src/util/constant'
 
 import * as field from './field'
 
-export function update(vnode: VNode, oldVnode?: VNode) {
+export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
   const { data, directives } = vnode,
 
@@ -23,32 +27,36 @@ export function update(vnode: VNode, oldVnode?: VNode) {
     oldValue = oldDirectives || constant.EMPTY_OBJECT
 
 
-    for (let name in newValue) {
+    if (directives) {
+      for (let name in directives) {
 
-      const directive = newValue[name],
+        const directive = directives[name],
 
-      { once, bind, unbind } = directive.hooks
+        { once, bind, unbind } = directive.hooks
 
-      if (!oldValue[name]) {
-        bind(node, directive, vnode)
-      }
-      else if (once
-        || directive.value !== oldValue[name].value
-        || isKeypathChange
-      ) {
-        if (unbind) {
-          unbind(node, oldValue[name], oldVnode as VNode)
+        if (!oldValue[name]) {
+          bind(node, directive, vnode)
         }
-        bind(node, directive, vnode)
-      }
+        else if (once
+          || directive.value !== oldValue[name].value
+          || isKeypathChange
+        ) {
+          if (unbind) {
+            unbind(node, oldValue[name], oldVnode as VNode)
+          }
+          bind(node, directive, vnode)
+        }
 
+      }
     }
 
-    for (let name in oldValue) {
-      if (!newValue[name]) {
-        const { unbind } = oldValue[name].hooks
-        if (unbind) {
-          unbind(node, oldValue[name], oldVnode as VNode)
+    if (oldDirectives) {
+      for (let name in oldDirectives) {
+        if (!newValue[name]) {
+          const { unbind } = oldDirectives[name].hooks
+          if (unbind) {
+            unbind(node, oldDirectives[name], oldVnode as VNode)
+          }
         }
       }
     }
@@ -57,7 +65,7 @@ export function update(vnode: VNode, oldVnode?: VNode) {
 
 }
 
-export function remove(vnode: VNode) {
+export function remove(api: DomApi, vnode: VNode) {
   const { directives } = vnode
   if (directives) {
     const node = vnode.data[field.COMPONENT] || vnode.node
