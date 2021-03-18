@@ -8,7 +8,6 @@ import {
 
 import {
   YoxInterface,
-  CustomEventInterface,
 } from 'yox-type/src/yox'
 
 import {
@@ -21,7 +20,6 @@ import {
 } from 'yox-type/src/api'
 
 import debounce from 'yox-common/src/function/debounce'
-import CustomEvent from 'yox-common/src/util/CustomEvent'
 
 import * as constant from 'yox-common/src/util/constant'
 
@@ -29,7 +27,7 @@ import * as field from './field'
 
 function addEvent(api: DomApi, element: HTMLElement | void, component: YoxInterface | void, lazy: Record<string, LazyValue> | void, event: EventValue) {
 
-  let { ns, name, listener, isNative } = event
+  let { name, listener } = event
 
   if (lazy) {
 
@@ -52,7 +50,7 @@ function addEvent(api: DomApi, element: HTMLElement | void, component: YoxInterf
 
   if (component) {
 
-    if (isNative) {
+    if (event.isNative) {
       const target = component.$el as HTMLElement
       api.on(target, name, listener)
       return function () {
@@ -60,18 +58,10 @@ function addEvent(api: DomApi, element: HTMLElement | void, component: YoxInterf
       }
     }
 
-    const options: ThisListenerOptions = {
-      ns: ns || constant.EMPTY_STRING,
-      listener(event: CustomEventInterface, data: any) {
-        // 监听组件事件不用处理父组件传下来的事件
-        if (event.phase !== CustomEvent.PHASE_DOWNWARD) {
-          return listener(event, data)
-        }
-      },
-    }
-    component.on(name, options)
+    // event 有 ns 和 listener 两个字段，满足 ThisListenerOptions 的要求
+    component.on(name, event as ThisListenerOptions)
     return function () {
-      component.off(name, options)
+      component.off(name, event as ThisListenerOptions)
     }
 
   }
@@ -103,14 +93,14 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
     oldValue = oldEvents || constant.EMPTY_OBJECT
 
     if (events) {
-      for (let name in events) {
+      for (let key in events) {
 
-        const event = events[name], { key } = event
+        const event = events[key]
 
-        if (!oldValue[name]) {
+        if (!oldValue[key]) {
           listeners[key] = addEvent(api, element, component, lazy, event)
         }
-        else if (event.value !== oldValue[name].value || isKeypathChange) {
+        else if (event.value !== oldValue[key].value || isKeypathChange) {
           listeners[key]()
           listeners[key] = addEvent(api, element, component, lazy, event)
         }
@@ -119,9 +109,8 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
     }
 
     if (oldEvents) {
-      for (let name in oldEvents) {
-        if (!newValue[name]) {
-          const { key } = oldEvents[name]
+      for (let key in oldEvents) {
+        if (!newValue[key]) {
           listeners[key]()
           delete listeners[key]
         }
@@ -135,8 +124,7 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 export function remove(api: DomApi, vnode: VNode) {
   const { data, events } = vnode, listeners = data[field.EVENT]
   if (events && listeners) {
-    for (let name in events) {
-      const { key } = events[name]
+    for (let key in events) {
       listeners[key]()
       delete listeners[key]
     }
