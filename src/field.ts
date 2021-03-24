@@ -8,6 +8,8 @@ export const LOADING = '$loading'
 
 export const COMPONENT = '$component'
 
+export const MODEL = '$model'
+
 export const EVENT = '$event'
 
 export const LEAVING = '$leaving'

@@ -8,7 +8,7 @@ import {
 
 import * as constant from 'yox-common/src/util/constant'
 
-import * as field from './field'
+import * as field from '../field'
 
 export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 

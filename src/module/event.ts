@@ -23,7 +23,7 @@ import debounce from 'yox-common/src/function/debounce'
 
 import * as constant from 'yox-common/src/util/constant'
 
-import * as field from './field'
+import * as field from '../field'
 
 function addEvent(api: DomApi, element: HTMLElement | void, component: YoxInterface | void, lazy: Record<string, LazyValue> | void, event: EventValue) {
 

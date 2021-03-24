@@ -3,20 +3,16 @@ import {
 } from 'yox-type/src/vnode'
 
 import {
-  DIRECTIVE_MODEL,
-} from 'yox-config/src/config'
-
-import {
   DomApi,
 } from 'yox-type/src/api'
 
 import * as object from 'yox-common/src/util/object'
 
-import * as field from './field'
+import * as field from '../field'
 
 export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
-  let { data, ref, props, slots, directives, context } = vnode, node: any
+  let { data, ref, props, slots, model, context } = vnode, node: any
 
   if (vnode.isComponent) {
     node = data[field.COMPONENT]
@@ -24,7 +20,6 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
     // 因为初始化时，所有这些都经过构造函数完成了
     if (oldVnode) {
 
-      const model = directives && directives[DIRECTIVE_MODEL]
       if (model) {
         if (!props) {
           props = {}

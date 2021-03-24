@@ -28,11 +28,12 @@ import execute from 'yox-common/src/function/execute'
 
 import * as field from './field'
 
-import * as nativeAttr from './nativeAttr'
-import * as nativeProp from './nativeProp'
-import * as event from './event'
-import * as directive from './directive'
-import * as component from './component'
+import * as nativeAttr from './module/nativeAttr'
+import * as nativeProp from './module/nativeProp'
+import * as event from './module/event'
+import * as model from './module/model'
+import * as directive from './module/directive'
+import * as component from './module/component'
 
 function isPatchable(vnode: VNode, oldVnode: VNode): boolean {
   return vnode.tag === oldVnode.tag
@@ -79,6 +80,7 @@ function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
   vnode.data[field.LOADING] = constant.FALSE
 
   event.update(api, vnode)
+  model.update(api, vnode)
   directive.update(api, vnode)
   component.update(api, vnode)
 
@@ -176,6 +178,7 @@ function createVnode(api: DomApi, vnode: VNode) {
     nativeAttr.update(api, vnode)
     nativeProp.update(api, vnode)
     event.update(api, vnode)
+    model.update(api, vnode)
     directive.update(api, vnode)
     component.update(api, vnode)
 
@@ -310,6 +313,7 @@ function destroyVnode(api: DomApi, vnode: VNode) {
     const component = data[field.COMPONENT]
     if (component) {
       event.remove(api, vnode)
+      model.remove(api, vnode)
       directive.remove(api, vnode)
       component.destroy()
     }
@@ -319,6 +323,7 @@ function destroyVnode(api: DomApi, vnode: VNode) {
   }
   else {
     event.remove(api, vnode)
+    model.remove(api, vnode)
     directive.remove(api, vnode)
     if (children) {
       array.each(
@@ -553,6 +558,7 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
   // 因为组件只是单纯的更新 props，而 directive 则有可能要销毁
   // 如果顺序反过来，会导致某些本该销毁的指令先被数据的变化触发执行了
   event.update(api, vnode, oldVnode)
+  model.update(api, vnode, oldVnode)
   directive.update(api, vnode, oldVnode)
   component.update(api, vnode, oldVnode)
 
