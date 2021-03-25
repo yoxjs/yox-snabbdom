@@ -279,35 +279,7 @@ function removeVnode(api: DomApi, parentNode: Node, vnode: VNode) {
 
 function destroyVnode(api: DomApi, vnode: VNode) {
 
-  /**
-   * 如果一个子组件的模板是这样写的：
-   *
-   * <div>
-   *   {{#if visible}}
-   *      <slot name="children"/>
-   *   {{/if}}
-   * </div>
-   *
-   * 当 visible 从 true 变为 false 时，不能销毁 slot 导入的任何 vnode
-   * 不论是组件或是元素，都不能销毁，只能简单的 remove，
-   * 否则子组件下一次展现它们时，会出问题
-   */
-
-  const { data, children, parent, slot } = vnode
-
-  // 销毁插槽组件
-
-  // 如果宿主组件正在销毁，$vnode 属性会在调 destroy() 之前被删除
-  // 这里表示的是宿主组件还没被销毁
-  // 如果宿主组件被销毁了，则它的一切都要进行销毁
-  if (slot && parent && parent.$vnode) {
-    // 如果更新时，父组件没有传入该 slot，则子组件需要销毁该 slot
-    const slots = parent.get(slot)
-    // slots 要么没有，要么是数组，不可能是别的
-    if (slots && array.has(slots, vnode)) {
-      return
-    }
-  }
+  const { data, children } = vnode
 
   if (vnode.isComponent) {
     const component = data[field.COMPONENT]
@@ -602,13 +574,12 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
 
 }
 
-export function create(api: DomApi, node: Node, context: YoxInterface, keypath: string): VNode {
+export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
   return {
     tag: api.tag(node),
     data: createData(),
     node,
     context,
-    keypath,
   }
 }
 

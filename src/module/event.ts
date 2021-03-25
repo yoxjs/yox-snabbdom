@@ -86,8 +86,6 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
     listeners = data[field.EVENT] || (data[field.EVENT] = {}),
 
-    isKeypathChange = oldVnode && vnode.keypath !== oldVnode.keypath,
-
     newValue = events || constant.EMPTY_OBJECT,
 
     oldValue = oldEvents || constant.EMPTY_OBJECT
@@ -100,7 +98,7 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
         if (!oldValue[key]) {
           listeners[key] = addEvent(api, element, component, lazy, event)
         }
-        else if (event.value !== oldValue[key].value || isKeypathChange) {
+        else if (event.value !== oldValue[key].value) {
           listeners[key]()
           listeners[key] = addEvent(api, element, component, lazy, event)
         }

@@ -53,7 +53,7 @@ const inputControl: NativeControl = {
   sync(node: HTMLInputElement, keypath: string, context: YoxInterface) {
     context.set(keypath, node.value)
   },
-  name: constant.RAW_VALUE
+  name: 'value'
 },
 
 radioControl: NativeControl = {
@@ -134,10 +134,8 @@ selectControl: NativeControl = {
       )
     }
   },
-  name: constant.RAW_VALUE
+  name: 'value'
 }
-
-export const once = constant.TRUE
 
 export function addModel(api: DomApi, element: HTMLElement | void, component: YoxInterface | void, vnode: VNode) {
 

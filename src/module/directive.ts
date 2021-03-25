@@ -20,27 +20,21 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
     const node = data[field.COMPONENT] || vnode.node,
 
-    isKeypathChange = oldVnode && vnode.keypath !== oldVnode.keypath,
-
     newValue = directives || constant.EMPTY_OBJECT,
 
     oldValue = oldDirectives || constant.EMPTY_OBJECT
-
 
     if (directives) {
       for (let name in directives) {
 
         const directive = directives[name],
 
-        { once, bind, unbind } = directive.hooks
+        { bind, unbind } = directive.hooks
 
         if (!oldValue[name]) {
           bind(node, directive, vnode)
         }
-        else if (once
-          || directive.value !== oldValue[name].value
-          || isKeypathChange
-        ) {
+        else if (directive.value !== oldValue[name].value) {
           if (unbind) {
             unbind(node, oldValue[name], oldVnode as VNode)
           }
