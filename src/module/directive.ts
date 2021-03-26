@@ -6,6 +6,7 @@ import {
   DomApi,
 } from 'yox-type/src/api'
 
+import * as object from 'yox-common/src/util/object'
 import * as constant from 'yox-common/src/util/constant'
 
 import * as field from '../field'
@@ -29,16 +30,22 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
         const directive = directives[name],
 
+        oldDirective = oldValue[name],
+
         { bind, unbind } = directive.hooks
 
-        if (!oldValue[name]) {
+        if (!oldDirective) {
           bind(node, directive, vnode)
         }
-        else if (directive.value !== oldValue[name].value) {
+        else if (directive.value !== oldDirective.value) {
           if (unbind) {
-            unbind(node, oldValue[name], oldVnode as VNode)
+            unbind(node, oldDirective, oldVnode as VNode)
           }
           bind(node, directive, vnode)
+        }
+        else if (oldDirective.runtime && directive.runtime) {
+          object.extend(oldDirective.runtime, directive.runtime)
+          directive.runtime = oldDirective.runtime
         }
 
       }
@@ -60,9 +67,9 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 }
 
 export function remove(api: DomApi, vnode: VNode) {
-  const { directives } = vnode
+  const { data, directives } = vnode
   if (directives) {
-    const node = vnode.data[field.COMPONENT] || vnode.node
+    const node = data[field.COMPONENT] || vnode.node
     for (let name in directives) {
       const { unbind } = directives[name].hooks
       if (unbind) {

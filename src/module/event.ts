@@ -21,6 +21,7 @@ import {
 
 import debounce from 'yox-common/src/function/debounce'
 
+import * as object from 'yox-common/src/util/object'
 import * as constant from 'yox-common/src/util/constant'
 
 import * as field from '../field'
@@ -84,7 +85,7 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
     component = data[field.COMPONENT],
 
-    listeners = data[field.EVENT] || (data[field.EVENT] = {}),
+    destroy = data[field.EVENT] || (data[field.EVENT] = { }),
 
     newValue = events || constant.EMPTY_OBJECT,
 
@@ -93,14 +94,18 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
     if (events) {
       for (let key in events) {
 
-        const event = events[key]
+        const event = events[key], oldEvent = oldValue[key]
 
-        if (!oldValue[key]) {
-          listeners[key] = addEvent(api, element, component, lazy, event)
+        if (!oldEvent) {
+          destroy[key] = addEvent(api, element, component, lazy, event)
         }
-        else if (event.value !== oldValue[key].value) {
-          listeners[key]()
-          listeners[key] = addEvent(api, element, component, lazy, event)
+        else if (event.value !== oldEvent.value) {
+          destroy[key]()
+          destroy[key] = addEvent(api, element, component, lazy, event)
+        }
+        else if (oldEvent.runtime && event.runtime) {
+          object.extend(oldEvent.runtime, event.runtime)
+          event.runtime = oldEvent.runtime
         }
 
       }
@@ -109,8 +114,8 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
     if (oldEvents) {
       for (let key in oldEvents) {
         if (!newValue[key]) {
-          listeners[key]()
-          delete listeners[key]
+          destroy[key]()
+          delete destroy[key]
         }
       }
     }
@@ -120,11 +125,11 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 }
 
 export function remove(api: DomApi, vnode: VNode) {
-  const { data, events } = vnode, listeners = data[field.EVENT]
-  if (events && listeners) {
+  const { data, events } = vnode, destroy = data[field.EVENT]
+  if (events && destroy) {
     for (let key in events) {
-      listeners[key]()
-      delete listeners[key]
+      destroy[key]()
+      delete destroy[key]
     }
   }
 }
