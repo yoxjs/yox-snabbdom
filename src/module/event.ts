@@ -105,6 +105,7 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
         }
         else if (oldEvent.runtime && event.runtime) {
           object.extend(oldEvent.runtime, event.runtime)
+          // 在当前节点传递 oldEvent.runtime 的引用
           event.runtime = oldEvent.runtime
         }
 

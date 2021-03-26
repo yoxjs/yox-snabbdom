@@ -45,6 +45,7 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
         }
         else if (oldDirective.runtime && directive.runtime) {
           object.extend(oldDirective.runtime, directive.runtime)
+          // 在当前节点传递 oldDirective.runtime 的引用
           directive.runtime = oldDirective.runtime
         }
 
