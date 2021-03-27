@@ -30,6 +30,7 @@ import * as field from './field'
 
 import * as nativeAttr from './module/nativeAttr'
 import * as nativeProp from './module/nativeProp'
+import * as ref from './module/ref'
 import * as event from './module/event'
 import * as model from './module/model'
 import * as directive from './module/directive'
@@ -84,6 +85,7 @@ function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 
   vnode.data[field.LOADING] = constant.FALSE
 
+  ref.update(api, vnode)
   event.update(api, vnode)
   model.update(api, vnode)
   directive.update(api, vnode)
@@ -178,10 +180,10 @@ function createVnode(api: DomApi, vnode: VNode) {
 
     nativeAttr.update(api, vnode)
     nativeProp.update(api, vnode)
+    ref.update(api, vnode)
     event.update(api, vnode)
     model.update(api, vnode)
     directive.update(api, vnode)
-    component.update(api, vnode)
 
   }
 }
@@ -272,20 +274,22 @@ function removeVnode(api: DomApi, parentNode: Node, vnode: VNode) {
 
 function destroyVnode(api: DomApi, vnode: VNode) {
 
-  const { data, component, children } = vnode
+  const { data, children } = vnode
 
   if (vnode.isComponent) {
-    if (component) {
+    if (vnode.component) {
+      ref.remove(api, vnode)
       event.remove(api, vnode)
       model.remove(api, vnode)
       directive.remove(api, vnode)
-      component.destroy()
+      component.remove(api, vnode)
     }
     else [
       data[field.LOADING] = constant.FALSE
     ]
   }
   else {
+    ref.remove(api, vnode)
     event.remove(api, vnode)
     model.remove(api, vnode)
     directive.remove(api, vnode)
@@ -489,7 +493,7 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
     return
   }
 
-  const { data, node } = oldVnode
+  const { data, node, isComponent } = oldVnode
 
   // 如果不能 patch，则删除重建
   if (!isPatchable(vnode, oldVnode)) {
@@ -516,16 +520,22 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
     return
   }
 
-  nativeAttr.update(api, vnode, oldVnode)
-  nativeProp.update(api, vnode, oldVnode)
+  if (!isComponent) {
+    nativeAttr.update(api, vnode, oldVnode)
+    nativeProp.update(api, vnode, oldVnode)
+  }
 
   // 先处理 directive 再处理 component
   // 因为组件只是单纯的更新 props，而 directive 则有可能要销毁
   // 如果顺序反过来，会导致某些本该销毁的指令先被数据的变化触发执行了
+  ref.update(api, vnode, oldVnode)
   event.update(api, vnode, oldVnode)
   model.update(api, vnode, oldVnode)
   directive.update(api, vnode, oldVnode)
-  component.update(api, vnode, oldVnode)
+
+  if (isComponent) {
+    component.update(api, vnode, oldVnode)
+  }
 
   const { text, html, children, isStyle, isOption } = vnode,
 

@@ -85,13 +85,10 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
     component = vnode.component,
 
-    destroy = data[field.EVENT] || (data[field.EVENT] = { }),
-
-    newValue = events || constant.EMPTY_OBJECT,
-
-    oldValue = oldEvents || constant.EMPTY_OBJECT
+    destroy = data[field.EVENT] || (data[field.EVENT] = { })
 
     if (events) {
+      const oldValue = oldEvents || constant.EMPTY_OBJECT
       for (let key in events) {
 
         const event = events[key], oldEvent = oldValue[key]
@@ -113,6 +110,7 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
     }
 
     if (oldEvents) {
+      const newValue = events || constant.EMPTY_OBJECT
       for (let key in oldEvents) {
         if (!newValue[key]) {
           destroy[key]()

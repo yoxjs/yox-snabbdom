@@ -17,13 +17,10 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
   if (directives || oldDirectives) {
 
-    const node = vnode.component || vnode.node as HTMLElement,
-
-    newValue = directives || constant.EMPTY_OBJECT,
-
-    oldValue = oldDirectives || constant.EMPTY_OBJECT
+    const node = vnode.component || vnode.node as HTMLElement
 
     if (directives) {
+      const oldValue = oldDirectives || constant.EMPTY_OBJECT
       for (let name in directives) {
 
         const directive = directives[name],
@@ -51,6 +48,7 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
     }
 
     if (oldDirectives) {
+      const newValue = directives || constant.EMPTY_OBJECT
       for (let name in oldDirectives) {
         if (!newValue[name]) {
           const { unbind } = oldDirectives[name].hooks

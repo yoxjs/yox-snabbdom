@@ -16,11 +16,8 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
   if (nativeProps || oldNativeProps) {
 
-    const newValue = nativeProps || constant.EMPTY_OBJECT,
-
-    oldValue = oldNativeProps || constant.EMPTY_OBJECT
-
     if (nativeProps) {
+      const oldValue = oldNativeProps || constant.EMPTY_OBJECT
       for (let name in nativeProps) {
         if (oldValue[name] === constant.UNDEFINED
           || nativeProps[name] !== oldValue[name]
@@ -31,6 +28,7 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
     }
 
     if (oldNativeProps) {
+      const newValue = nativeProps || constant.EMPTY_OBJECT
       for (let name in oldNativeProps) {
         if (newValue[name] === constant.UNDEFINED) {
           api.removeProp(node as HTMLElement, name)
