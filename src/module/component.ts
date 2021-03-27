@@ -8,14 +8,12 @@ import {
 
 import * as object from 'yox-common/src/util/object'
 
-import * as field from '../field'
-
 export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
-  let { data, ref, props, slots, model, context } = vnode, node: any
+  let { ref, props, slots, model, context } = vnode, node: any
 
   if (vnode.isComponent) {
-    node = data[field.COMPONENT]
+    node = vnode.component
     // 更新时才要 set
     // 因为初始化时，所有这些都经过构造函数完成了
     if (oldVnode) {

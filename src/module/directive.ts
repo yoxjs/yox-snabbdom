@@ -9,17 +9,15 @@ import {
 import * as object from 'yox-common/src/util/object'
 import * as constant from 'yox-common/src/util/constant'
 
-import * as field from '../field'
-
 export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
-  const { data, directives } = vnode,
+  const { directives } = vnode,
 
   oldDirectives = oldVnode && oldVnode.directives
 
   if (directives || oldDirectives) {
 
-    const node = data[field.COMPONENT] || vnode.node,
+    const node = vnode.component || vnode.node as HTMLElement,
 
     newValue = directives || constant.EMPTY_OBJECT,
 
@@ -68,9 +66,9 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 }
 
 export function remove(api: DomApi, vnode: VNode) {
-  const { data, directives } = vnode
+  const { directives } = vnode
   if (directives) {
-    const node = data[field.COMPONENT] || vnode.node
+    const node = vnode.component || vnode.node as HTMLElement
     for (let name in directives) {
       const { unbind } = directives[name].hooks
       if (unbind) {

@@ -83,7 +83,7 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
     const element = vnode.node as HTMLElement,
 
-    component = data[field.COMPONENT],
+    component = vnode.component,
 
     destroy = data[field.EVENT] || (data[field.EVENT] = { }),
 

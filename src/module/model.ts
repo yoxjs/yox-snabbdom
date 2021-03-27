@@ -235,21 +235,17 @@ export function addModel(api: DomApi, element: HTMLElement | void, component: Yo
 
 export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
 
-  const { data, model } = vnode,
+  const { data, node, component, model } = vnode,
 
   oldModel = oldVnode && oldVnode.model
 
   if (model) {
-    const element = vnode.node as HTMLElement,
-
-    component = data[field.COMPONENT]
-
     if (!oldModel) {
-      data[field.MODEL] = addModel(api, element, component, vnode)
+      data[field.MODEL] = addModel(api, node as HTMLElement, component, vnode)
     }
     else if (model.keypath !== oldModel.keypath) {
       data[field.MODEL]()
-      data[field.MODEL] = addModel(api, element, component, vnode)
+      data[field.MODEL] = addModel(api, node as HTMLElement, component, vnode)
     }
   }
   else if (oldModel) {

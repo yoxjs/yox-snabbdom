@@ -76,7 +76,8 @@ function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 
   const child = (vnode.parent || vnode.context).createComponent(options, vnode)
 
-  vnode.data[field.COMPONENT] = child
+  vnode.component = child
+
   vnode.data[field.LOADING] = constant.FALSE
 
   event.update(api, vnode)
@@ -197,7 +198,7 @@ function addVnodes(api: DomApi, parentNode: Node, vnodes: VNode[], startIndex?: 
 
 function insertVnode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
 
-  const { node, data, context } = vnode,
+  const { node, component, context } = vnode,
 
   hasParent = api.parent(node)
 
@@ -213,12 +214,9 @@ function insertVnode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
   // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
   if (!hasParent) {
     let enter: Function | void = constant.UNDEFINED
-    if (vnode.isComponent) {
-      const component = data[field.COMPONENT]
-      if (component) {
-        enter = function () {
-          enterVnode(vnode, component)
-        }
+    if (vnode.isComponent && component) {
+      enter = function () {
+        enterVnode(vnode, component)
       }
     }
     else if (!vnode.isStatic && !vnode.isText && !vnode.isComment) {
@@ -250,26 +248,21 @@ function removeVnodes(api: DomApi, parentNode: Node, vnodes: (VNode | void)[], s
 }
 
 function removeVnode(api: DomApi, parentNode: Node, vnode: VNode) {
-  const { node } = vnode
+  const { node, component } = vnode
   if (vnode.isStatic || vnode.isText || vnode.isComment) {
     api.remove(parentNode, node)
   }
   else {
 
-    let done = function () {
+    const done = function () {
       destroyVnode(api, vnode)
       api.remove(parentNode, node)
-    },
+    }
 
-    component: YoxInterface | void
-
-    if (vnode.isComponent) {
-      component = vnode.data[field.COMPONENT]
-      // 异步组件，还没加载成功就被删除了
-      if (!component) {
-        done()
-        return
-      }
+    // 异步组件，还没加载成功就被删除了
+    if (vnode.isComponent && !component) {
+      done()
+      return
     }
 
     leaveVnode(vnode, component, done)
@@ -279,10 +272,9 @@ function removeVnode(api: DomApi, parentNode: Node, vnode: VNode) {
 
 function destroyVnode(api: DomApi, vnode: VNode) {
 
-  const { data, children } = vnode
+  const { data, component, children } = vnode
 
   if (vnode.isComponent) {
-    const component = data[field.COMPONENT]
     if (component) {
       event.remove(api, vnode)
       model.remove(api, vnode)
@@ -497,7 +489,7 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
     return
   }
 
-  const { node, data } = oldVnode
+  const { data, node } = oldVnode
 
   // 如果不能 patch，则删除重建
   if (!isPatchable(vnode, oldVnode)) {
@@ -513,8 +505,9 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
     return
   }
 
-  vnode.node = node
   vnode.data = data
+  vnode.node = node
+  vnode.component = oldVnode.component
 
   // 组件正在异步加载，更新为最新的 vnode
   // 当异步加载完成时才能用上最新的 vnode
