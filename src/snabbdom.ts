@@ -36,8 +36,12 @@ import * as directive from './module/directive'
 import * as component from './module/component'
 
 function isPatchable(vnode: VNode, oldVnode: VNode): boolean {
-  return vnode.tag === oldVnode.tag
-    && vnode.key === oldVnode.key
+  return vnode.isText && oldVnode.isText
+    || vnode.isComment && oldVnode.isComment
+    || (
+      vnode.tag === oldVnode.tag
+      && vnode.key === oldVnode.key
+    )
 }
 
 function createKeyToIndex(vnodes: (VNode | void)[], startIndex: number, endIndex: number): Record<string, number> {
@@ -89,12 +93,8 @@ function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 
 }
 
-let guid = 0
-
 function createData(): Data {
-  const data = {}
-  data[field.ID] = ++guid
-  return data
+  return {}
 }
 
 function createVnode(api: DomApi, vnode: VNode) {
@@ -568,12 +568,25 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
 }
 
 export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
-  return {
-    tag: api.tag(node),
+  const vnode: any = {
     data: createData(),
     node,
     context,
   }
+  switch (node.nodeType) {
+    case 1:
+      vnode.tag = api.tag(node)
+      break
+    case 3:
+      vnode.isText = constant.TRUE
+      vnode.text = node.nodeValue
+      break
+    case 8:
+      vnode.isComment = constant.TRUE
+      vnode.text = node.nodeValue
+      break
+  }
+  return vnode
 }
 
 export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
