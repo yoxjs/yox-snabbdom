@@ -251,7 +251,11 @@ function removeVnodes(api: DomApi, parentNode: Node, vnodes: (VNode | void)[], s
 
 function removeVnode(api: DomApi, parentNode: Node, vnode: VNode) {
   const { node, component } = vnode
-  if (vnode.isStatic || vnode.isText || vnode.isComment) {
+  if (vnode.isStatic) {
+    destroyStaticVnode(api, vnode)
+    api.remove(parentNode, node)
+  }
+  else if (vnode.isText || vnode.isComment) {
     api.remove(parentNode, node)
   }
   else {
@@ -270,6 +274,24 @@ function removeVnode(api: DomApi, parentNode: Node, vnode: VNode) {
     leaveVnode(vnode, component, done)
 
   }
+}
+
+function destroyStaticVnode(api: DomApi, vnode: any) {
+
+  const { children } = vnode
+
+  vnode.data =
+  vnode.node = constant.UNDEFINED
+
+  if (children) {
+    array.each(
+      children,
+      function (child) {
+        destroyStaticVnode(api, child)
+      }
+    )
+  }
+
 }
 
 function destroyVnode(api: DomApi, vnode: VNode) {
@@ -608,6 +630,9 @@ export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
       }
     }
     removeVnode(api, parentNode as Node, vnode)
+  }
+  else if (vnode.isStatic) {
+    destroyStaticVnode(api, vnode)
   }
   else {
     destroyVnode(api, vnode)
