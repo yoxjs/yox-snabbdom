@@ -95,37 +95,33 @@ function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 
 }
 
-function createData(): Data {
-  return {}
-}
-
 function createVnode(api: DomApi, vnode: VNode) {
 
-  let { tag, node, isComponent, isComment, isText, isStyle, isOption, children, text, html, context } = vnode
+  let { tag, node, children, text, html } = vnode
 
   if (node) {
     return
   }
 
-  if (isText) {
+  if (vnode.isText) {
     vnode.node = api.createText(text as string)
     return
   }
 
-  if (isComment) {
+  if (vnode.isComment) {
     vnode.node = api.createComment(text as string)
     return
   }
 
-  if (isComponent) {
+  if (vnode.isComponent) {
 
-    const data = vnode.data = createData()
+    const data = vnode.data = { }
 
     let componentOptions: ComponentOptions | undefined = constant.UNDEFINED
 
     // 动态组件，tag 可能为空
     if (tag) {
-      context.loadComponent(
+      vnode.context.loadComponent(
         tag,
         function (options: ComponentOptions) {
           if (object.has(data, field.LOADING)) {
@@ -164,7 +160,7 @@ function createVnode(api: DomApi, vnode: VNode) {
   }
   else {
 
-    vnode.data = createData()
+    vnode.data = { }
 
     node = vnode.node = api.createElement(vnode.tag as string, vnode.isSvg)
 
@@ -172,10 +168,10 @@ function createVnode(api: DomApi, vnode: VNode) {
       addVnodes(api, node, children)
     }
     else if (text) {
-      api.setText(node as Element, text, isStyle, isOption)
+      api.setText(node as Element, text, vnode.isStyle, vnode.isOption)
     }
     else if (html) {
-      api.setHtml(node as Element, html, isStyle, isOption)
+      api.setHtml(node as Element, html, vnode.isStyle, vnode.isOption)
     }
 
     nativeAttr.update(api, vnode)
@@ -221,7 +217,7 @@ function insertVnode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
         enterVnode(vnode, component)
       }
     }
-    else if (!vnode.isStatic && !vnode.isText && !vnode.isComment) {
+    else if (!vnode.isPure) {
       enter = function () {
         enterVnode(vnode)
       }
@@ -251,7 +247,7 @@ function removeVnodes(api: DomApi, parentNode: Node, vnodes: (VNode | void)[], s
 
 function removeVnode(api: DomApi, parentNode: Node, vnode: VNode) {
   const { node, component } = vnode
-  if (vnode.isStatic || vnode.isText || vnode.isComment) {
+  if (vnode.isPure) {
     api.remove(parentNode, node)
   }
   else {
@@ -290,7 +286,7 @@ function destroyVnode(api: DomApi, vnode: VNode) {
   }
   else {
 
-    if (vnode.isStatic || vnode.isText || vnode.isComment) {
+    if (vnode.isPure) {
       return
     }
 
@@ -500,7 +496,7 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
     return
   }
 
-  const { data, node, isComponent, isStatic, isText, isComment } = oldVnode
+  const { data, node, isComponent, isPure } = oldVnode
 
   // 如果不能 patch，则删除重建
   if (!isPatchable(vnode, oldVnode)) {
@@ -535,7 +531,7 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
   // 先处理 directive 再处理 component
   // 因为组件只是单纯的更新 props，而 directive 则有可能要销毁
   // 如果顺序反过来，会导致某些本该销毁的指令先被数据的变化触发执行了
-  if (!isStatic && !isText && !isComment) {
+  if (!isPure) {
     ref.update(api, vnode, oldVnode)
     event.update(api, vnode, oldVnode)
     model.update(api, vnode, oldVnode)
@@ -593,14 +589,16 @@ export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
   }
   switch (node.nodeType) {
     case 1:
-      vnode.data = createData()
+      vnode.data = { }
       vnode.tag = api.tag(node)
       break
     case 3:
+      vnode.isPure =
       vnode.isText = constant.TRUE
       vnode.text = node.nodeValue
       break
     case 8:
+      vnode.isPure =
       vnode.isComment = constant.TRUE
       vnode.text = node.nodeValue
       break
