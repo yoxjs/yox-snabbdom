@@ -1,8 +1,4 @@
 import {
-  Data,
-} from 'yox-type/src/type'
-
-import {
   DomApi,
 } from 'yox-type/src/api'
 
