@@ -36,7 +36,7 @@ import * as model from './module/model'
 import * as directive from './module/directive'
 import * as component from './module/component'
 
-function isPatchable(vnode: VNode, oldVnode: VNode): boolean {
+function isPatchable(vnode: VNode, oldVnode: VNode) {
   return vnode.isText && oldVnode.isText
     || vnode.isComment && oldVnode.isComment
     || (
@@ -101,15 +101,11 @@ function createData(): Data {
 
 function createVnode(api: DomApi, vnode: VNode) {
 
-  let { tag, node, data, isComponent, isComment, isText, isStyle, isOption, children, text, html, context } = vnode
+  let { tag, node, isComponent, isComment, isText, isStyle, isOption, children, text, html, context } = vnode
 
-  if (node && data) {
+  if (node) {
     return
   }
-
-  data = createData()
-
-  vnode.data = data
 
   if (isText) {
     vnode.node = api.createText(text as string)
@@ -122,6 +118,8 @@ function createVnode(api: DomApi, vnode: VNode) {
   }
 
   if (isComponent) {
+
+    const data = vnode.data = createData()
 
     let componentOptions: ComponentOptions | undefined = constant.UNDEFINED
 
@@ -165,6 +163,8 @@ function createVnode(api: DomApi, vnode: VNode) {
 
   }
   else {
+
+    vnode.data = createData()
 
     node = vnode.node = api.createElement(vnode.tag as string, vnode.isSvg)
 
@@ -274,9 +274,8 @@ function removeVnode(api: DomApi, parentNode: Node, vnode: VNode) {
 
 function destroyVnode(api: DomApi, vnode: VNode) {
 
-  const { data, children } = vnode
-
   if (vnode.isComponent) {
+
     if (vnode.component) {
       ref.remove(api, vnode)
       event.remove(api, vnode)
@@ -284,23 +283,31 @@ function destroyVnode(api: DomApi, vnode: VNode) {
       directive.remove(api, vnode)
       component.remove(api, vnode)
     }
-    else [
-      data[field.LOADING] = constant.FALSE
-    ]
+    else {
+      vnode.data[field.LOADING] = constant.FALSE
+    }
+
   }
   else {
+
+    if (vnode.isStatic || vnode.isText || vnode.isComment) {
+      return
+    }
+
     ref.remove(api, vnode)
     event.remove(api, vnode)
     model.remove(api, vnode)
     directive.remove(api, vnode)
-    if (children) {
+
+    if (vnode.children) {
       array.each(
-        children,
+        vnode.children,
         function (child) {
           destroyVnode(api, child)
         }
       )
     }
+
   }
 
 }
@@ -493,7 +500,7 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
     return
   }
 
-  const { data, node, isComponent } = oldVnode
+  const { data, node, isComponent, isStatic, isText, isComment } = oldVnode
 
   // 如果不能 patch，则删除重建
   if (!isPatchable(vnode, oldVnode)) {
@@ -528,10 +535,12 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
   // 先处理 directive 再处理 component
   // 因为组件只是单纯的更新 props，而 directive 则有可能要销毁
   // 如果顺序反过来，会导致某些本该销毁的指令先被数据的变化触发执行了
-  ref.update(api, vnode, oldVnode)
-  event.update(api, vnode, oldVnode)
-  model.update(api, vnode, oldVnode)
-  directive.update(api, vnode, oldVnode)
+  if (!isStatic && !isText && !isComment) {
+    ref.update(api, vnode, oldVnode)
+    event.update(api, vnode, oldVnode)
+    model.update(api, vnode, oldVnode)
+    directive.update(api, vnode, oldVnode)
+  }
 
   if (isComponent) {
     component.update(api, vnode, oldVnode)
@@ -579,12 +588,12 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
 
 export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
   const vnode: any = {
-    data: createData(),
     node,
     context,
   }
   switch (node.nodeType) {
     case 1:
+      vnode.data = createData()
       vnode.tag = api.tag(node)
       break
     case 3:
