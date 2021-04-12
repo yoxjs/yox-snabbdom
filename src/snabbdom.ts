@@ -521,7 +521,7 @@ export function patch(api: DomApi, vnode: VNode, oldVnode: VNode) {
 
   // 组件正在异步加载，更新为最新的 vnode
   // 当异步加载完成时才能用上最新的 vnode
-  if (oldVnode.isComponent && data[field.LOADING]) {
+  if (isComponent && data[field.LOADING]) {
     data[field.VNODE] = vnode
     return
   }
