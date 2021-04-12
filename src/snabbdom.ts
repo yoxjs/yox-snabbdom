@@ -160,8 +160,6 @@ function createVnode(api: DomApi, vnode: VNode) {
   }
   else {
 
-    vnode.data = { }
-
     node = vnode.node = api.createElement(vnode.tag as string, vnode.isSvg)
 
     if (children) {
@@ -176,10 +174,15 @@ function createVnode(api: DomApi, vnode: VNode) {
 
     nativeAttr.update(api, vnode)
     nativeProp.update(api, vnode)
-    ref.update(api, vnode)
-    event.update(api, vnode)
-    model.update(api, vnode)
-    directive.update(api, vnode)
+
+    if (!vnode.isPure) {
+      vnode.data = { }
+
+      ref.update(api, vnode)
+      event.update(api, vnode)
+      model.update(api, vnode)
+      directive.update(api, vnode)
+    }
 
   }
 }
