@@ -20,8 +20,6 @@ import * as object from 'yox-common/src/util/object'
 import * as logger from 'yox-common/src/util/logger'
 import * as constant from 'yox-common/src/util/constant'
 
-import execute from 'yox-common/src/function/execute'
-
 import * as field from './field'
 
 import * as nativeAttr from './module/nativeAttr'
@@ -319,7 +317,10 @@ function enterVnode(vnode: VNode, component: YoxInterface | void) {
     // 再看组件根元素是否有 transition
     transition = (component.$vnode as VNode).transition
   }
-  execute(data[field.LEAVING])
+  const leaving = data[field.LEAVING]
+  if (leaving) {
+    leaving()
+  }
   if (transition) {
     const { enter } = transition
     if (enter) {
