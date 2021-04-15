@@ -79,7 +79,7 @@ export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
   oldEvents = oldVNode && oldVNode.events
 
-  if (events || oldEvents) {
+  if (events !== oldEvents) {
 
     const element = vnode.node as HTMLElement,
 

@@ -14,7 +14,7 @@ export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
   oldNativeProps = oldVNode && oldVNode.nativeProps
 
-  if (nativeProps || oldNativeProps) {
+  if (nativeProps !== oldNativeProps) {
 
     if (nativeProps) {
       const oldValue = oldNativeProps || constant.EMPTY_OBJECT

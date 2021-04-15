@@ -170,11 +170,17 @@ updateMap[VNODE_TYPE_ELEMENT] = function (api: DomApi, vnode: VNode, oldVNode: V
   oldChildren = oldVNode.children
 
   if (is.string(text)) {
+    if (oldChildren) {
+      removeVNodes(api, node, oldChildren)
+    }
     if (text !== oldText) {
       api.setText(node, text as string, isStyle, isOption)
     }
   }
   else if (is.string(html)) {
+    if (oldChildren) {
+      removeVNodes(api, node, oldChildren)
+    }
     if (html !== oldHtml) {
       api.setHtml(node as Element, html as string, isStyle, isOption)
     }
@@ -451,7 +457,6 @@ function enterVNode(vnode: VNode, component: YoxInterface | void) {
       enter(
         vnode.node as HTMLElement
       )
-      return
     }
   }
 }

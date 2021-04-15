@@ -15,7 +15,7 @@ export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
   oldDirectives = oldVNode && oldVNode.directives
 
-  if (directives || oldDirectives) {
+  if (directives !== oldDirectives) {
 
     const node = vnode.component || vnode.node as HTMLElement
 
