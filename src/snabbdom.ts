@@ -52,6 +52,8 @@ createMap[VNODE_TYPE_ELEMENT] = function (api: DomApi, vnode: VNode) {
 
   const node = vnode.node = api.createElement(vnode.tag as string, vnode.isSvg)
 
+  vnode.data = { }
+
   if (vnode.children) {
     addVNodes(api, node, vnode.children)
   }
@@ -66,8 +68,6 @@ createMap[VNODE_TYPE_ELEMENT] = function (api: DomApi, vnode: VNode) {
   nativeProp.update(api, vnode)
 
   if (!vnode.isPure) {
-    vnode.data = { }
-
     ref.update(api, vnode)
     event.update(api, vnode)
     model.update(api, vnode)
@@ -155,18 +155,13 @@ updateMap[VNODE_TYPE_ELEMENT] = function (api: DomApi, vnode: VNode, oldVNode: V
   vnode.data = oldVNode.data
   vnode.node = node
 
-  // 静态元素，在创建时就设置好了属性
-  if (!vnode.isStatic) {
-    nativeAttr.update(api, vnode, oldVNode)
-    nativeProp.update(api, vnode, oldVNode)
-  }
+  nativeAttr.update(api, vnode, oldVNode)
+  nativeProp.update(api, vnode, oldVNode)
 
-  if (!vnode.isPure) {
-    ref.update(api, vnode, oldVNode)
-    event.update(api, vnode, oldVNode)
-    model.update(api, vnode, oldVNode)
-    directive.update(api, vnode, oldVNode)
-  }
+  ref.update(api, vnode, oldVNode)
+  event.update(api, vnode, oldVNode)
+  model.update(api, vnode, oldVNode)
+  directive.update(api, vnode, oldVNode)
 
   const { text, html, children, isStyle, isOption } = vnode,
 
@@ -210,10 +205,10 @@ updateMap[VNODE_TYPE_ELEMENT] = function (api: DomApi, vnode: VNode, oldVNode: V
 
 updateMap[VNODE_TYPE_COMPONENT] = function (api: DomApi, vnode: VNode, oldVNode: VNode) {
 
-  const { data, node, isPure } = oldVNode
+  const { data } = oldVNode
 
   vnode.data = data
-  vnode.node = node
+  vnode.node = oldVNode.node
   vnode.component = oldVNode.component
 
   // 组件正在异步加载，更新为最新的 vnode
@@ -226,12 +221,10 @@ updateMap[VNODE_TYPE_COMPONENT] = function (api: DomApi, vnode: VNode, oldVNode:
   // 先处理 directive 再处理 component
   // 因为组件只是单纯的更新 props，而 directive 则有可能要销毁
   // 如果顺序反过来，会导致某些本该销毁的指令先被数据的变化触发执行了
-  if (!isPure) {
-    ref.update(api, vnode, oldVNode)
-    event.update(api, vnode, oldVNode)
-    model.update(api, vnode, oldVNode)
-    directive.update(api, vnode, oldVNode)
-  }
+  ref.update(api, vnode, oldVNode)
+  event.update(api, vnode, oldVNode)
+  model.update(api, vnode, oldVNode)
+  directive.update(api, vnode, oldVNode)
 
   component.update(api, vnode, oldVNode)
 
@@ -283,7 +276,7 @@ function isPatchable(vnode: VNode, oldVNode: VNode) {
   if (vnode.type !== oldVNode.type) {
     return constant.FALSE
   }
-  if (vnode.type === VNODE_TYPE_ELEMENT) {
+  if (vnode.type === VNODE_TYPE_ELEMENT || vnode.type === VNODE_TYPE_COMPONENT) {
     return vnode.tag === oldVNode.tag
       && vnode.key === oldVNode.key
   }
