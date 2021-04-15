@@ -9,11 +9,11 @@ import {
 import * as object from 'yox-common/src/util/object'
 import * as constant from 'yox-common/src/util/constant'
 
-export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
+export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
   const { directives } = vnode,
 
-  oldDirectives = oldVnode && oldVnode.directives
+  oldDirectives = oldVNode && oldVNode.directives
 
   if (directives || oldDirectives) {
 
@@ -34,7 +34,7 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
         }
         else if (directive.value !== oldDirective.value) {
           if (unbind) {
-            unbind(node, oldDirective, oldVnode as VNode)
+            unbind(node, oldDirective, oldVNode as VNode)
           }
           bind(node, directive, vnode)
         }
@@ -53,7 +53,7 @@ export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
         if (!newValue[name]) {
           const { unbind } = oldDirectives[name].hooks
           if (unbind) {
-            unbind(node, oldDirectives[name], oldVnode as VNode)
+            unbind(node, oldDirectives[name], oldVNode as VNode)
           }
         }
       }

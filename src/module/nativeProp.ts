@@ -8,11 +8,11 @@ import {
 
 import * as constant from 'yox-common/src/util/constant'
 
-export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
+export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
   const { node, nativeProps } = vnode,
 
-  oldNativeProps = oldVnode && oldVnode.nativeProps
+  oldNativeProps = oldVNode && oldVNode.nativeProps
 
   if (nativeProps || oldNativeProps) {
 

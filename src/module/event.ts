@@ -73,11 +73,11 @@ function addEvent(api: DomApi, element: HTMLElement | void, component: YoxInterf
   }
 }
 
-export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
+export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
   const { data, lazy, events } = vnode,
 
-  oldEvents = oldVnode && oldVnode.events
+  oldEvents = oldVNode && oldVNode.events
 
   if (events || oldEvents) {
 

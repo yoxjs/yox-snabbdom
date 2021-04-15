@@ -9,11 +9,11 @@ import {
 // 删除 ref 的时候，要确保是相同的节点
 // 因为模板中可能出现同一个 ref 名字，出现在不同的地方，
 // 这样就可能出现一种特殊情况，即前面刚创建了 ref1，后面又把这个这个新创建的 ref1 删除了
-export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
+export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
   const { context, ref } = vnode,
 
-  oldRef = oldVnode && oldVnode.ref
+  oldRef = oldVNode && oldVNode.ref
 
   if (ref || oldRef) {
 

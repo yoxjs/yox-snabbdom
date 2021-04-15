@@ -233,11 +233,11 @@ export function addModel(api: DomApi, element: HTMLElement | void, component: Yo
 }
 
 
-export function update(api: DomApi, vnode: VNode, oldVnode?: VNode) {
+export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
   const { data, node, component, model } = vnode,
 
-  oldModel = oldVnode && oldVnode.model
+  oldModel = oldVNode && oldVNode.model
 
   if (model) {
     if (!oldModel) {
