@@ -185,25 +185,27 @@ updateMap[VNODE_TYPE_ELEMENT] = function (api: DomApi, vnode: VNode, oldVNode: V
       api.setHtml(node as Element, html as string, isStyle, isOption)
     }
   }
-  // 两个都有需要 diff
-  else if (children && oldChildren) {
-    if (children !== oldChildren) {
-      updateChildren(api, node, children, oldChildren)
-    }
-  }
-  // 有新的没旧的 - 新增节点
   else if (children) {
-    if (is.string(oldText) || is.string(oldHtml)) {
-      api.setText(node, constant.EMPTY_STRING, isStyle)
+    // 两个都有需要 diff
+    if (oldChildren) {
+      if (children !== oldChildren) {
+        updateChildren(api, node, children, oldChildren)
+      }
     }
-    addVNodes(api, node, children)
+    // 有新的没旧的 - 新增节点
+    else {
+      if (oldText || oldHtml) {
+        api.setText(node, constant.EMPTY_STRING, isStyle)
+      }
+      addVNodes(api, node, children)
+    }
   }
   // 有旧的没新的 - 删除节点
   else if (oldChildren) {
     removeVNodes(api, node, oldChildren)
   }
   // 有旧的 text 没有新的 text
-  else if (is.string(oldText) || is.string(oldHtml)) {
+  else if (oldText || oldHtml) {
     api.setText(node, constant.EMPTY_STRING, isStyle)
   }
 
