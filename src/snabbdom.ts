@@ -281,14 +281,9 @@ destroyMap[VNODE_TYPE_COMPONENT] = function (api: DomApi, vnode: VNode) {
 }
 
 function isPatchable(vnode: VNode, oldVNode: VNode) {
-  if (vnode.type !== oldVNode.type) {
-    return constant.FALSE
-  }
-  if (vnode.type === VNODE_TYPE_ELEMENT || vnode.type === VNODE_TYPE_COMPONENT) {
-    return vnode.tag === oldVNode.tag
-      && vnode.key === oldVNode.key
-  }
-  return constant.TRUE
+  return vnode.type === oldVNode.type
+    && vnode.tag === oldVNode.tag
+    && vnode.key === oldVNode.key
 }
 
 function createKeyToIndex(vnodes: (VNode | void)[], startIndex: number, endIndex: number): Record<string, number> {
