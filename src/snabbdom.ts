@@ -31,6 +31,7 @@ import * as field from './field'
 
 import * as nativeAttr from './module/nativeAttr'
 import * as nativeProp from './module/nativeProp'
+import * as nativeStyle from './module/nativeStyle'
 import * as ref from './module/ref'
 import * as event from './module/event'
 import * as model from './module/model'
@@ -66,6 +67,7 @@ createMap[VNODE_TYPE_ELEMENT] = function (api: DomApi, vnode: VNode) {
 
   nativeAttr.update(api, vnode)
   nativeProp.update(api, vnode)
+  nativeStyle.update(api, vnode)
 
   if (!vnode.isPure) {
     ref.update(api, vnode)
@@ -157,6 +159,7 @@ updateMap[VNODE_TYPE_ELEMENT] = function (api: DomApi, vnode: VNode, oldVNode: V
 
   nativeAttr.update(api, vnode, oldVNode)
   nativeProp.update(api, vnode, oldVNode)
+  nativeStyle.update(api, vnode, oldVNode)
 
   ref.update(api, vnode, oldVNode)
   event.update(api, vnode, oldVNode)
