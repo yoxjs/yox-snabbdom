@@ -35,6 +35,5 @@ export function remove(api: DomApi, vnode: VNode) {
   const { component } = vnode
   if (component) {
     component.destroy()
-    delete vnode.component
   }
 }

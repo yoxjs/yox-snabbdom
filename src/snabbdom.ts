@@ -136,7 +136,6 @@ createMap[VNODE_TYPE_FRAGMENT] = function (api: DomApi, vnode: VNode) {
   )
 
   vnode.node = getFragmentHostNode(vnode)
-  vnode.fragment = children
 
 }
 
@@ -271,7 +270,6 @@ updateMap[VNODE_TYPE_FRAGMENT] = function (api: DomApi, vnode: VNode, oldVNode: 
   const { node } = oldVNode
 
   vnode.node = node
-  vnode.fragment = oldVNode.fragment
 
   updateChildren(
     api,
@@ -491,10 +489,15 @@ function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
 }
 
 function operateVNodeNatively(operator: Function, parentNode: Node, vnode: VNode, extra?: any) {
-  const { fragment } = vnode
-  if (fragment) {
-    for (let i = 0, len = fragment.length; i < len; i++) {
-      operateVNodeNatively(operator, parentNode, fragment[i], extra)
+  const { type } = vnode
+  if (type === VNODE_TYPE_COMPONENT) {
+    const component = vnode.component as YoxInterface
+    operateVNodeNatively(operator, parentNode, component.$vnode as VNode, extra)
+  }
+  else if (type === VNODE_TYPE_FRAGMENT) {
+    const children = vnode.children as VNode[]
+    for (let i = 0, len = children.length; i < len; i++) {
+      operateVNodeNatively(operator, parentNode, children[i], extra)
     }
   }
   else {
