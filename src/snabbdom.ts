@@ -3,6 +3,7 @@ import {
   VNODE_TYPE_COMMENT,
   VNODE_TYPE_ELEMENT,
   VNODE_TYPE_COMPONENT,
+  VNODE_TYPE_FRAGMENT,
 } from 'yox-config/src/config'
 
 import {
@@ -123,7 +124,30 @@ createMap[VNODE_TYPE_COMPONENT] = function (api: DomApi, vnode: VNode) {
 
 }
 
+createMap[VNODE_TYPE_FRAGMENT] = function (api: DomApi, vnode: VNode) {
 
+  const children = vnode.children as VNode[]
+
+  array.each(
+    children,
+    function (child) {
+      createMap[child.type](api, child)
+    }
+  )
+
+  vnode.node = getFragmentHostNode(vnode)
+  vnode.fragment = children
+
+}
+
+function getFragmentHostNode(vnode: VNode): Node {
+  if (vnode.type === VNODE_TYPE_FRAGMENT) {
+    return getFragmentHostNode(
+      (vnode.children as VNode[])[0]
+    )
+  }
+  return vnode.node as Node
+}
 
 
 updateMap[VNODE_TYPE_TEXT] = function (api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -220,6 +244,7 @@ updateMap[VNODE_TYPE_COMPONENT] = function (api: DomApi, vnode: VNode, oldVNode:
 
   vnode.data = data
   vnode.node = oldVNode.node
+  vnode.fragment = oldVNode.fragment
   vnode.component = oldVNode.component
 
   // 组件正在异步加载，更新为最新的 vnode
@@ -240,6 +265,23 @@ updateMap[VNODE_TYPE_COMPONENT] = function (api: DomApi, vnode: VNode, oldVNode:
   component.update(api, vnode, oldVNode)
 
 }
+
+updateMap[VNODE_TYPE_FRAGMENT] = function (api: DomApi, vnode: VNode, oldVNode: VNode) {
+
+  const { node } = oldVNode
+
+  vnode.node = node
+  vnode.fragment = oldVNode.fragment
+
+  updateChildren(
+    api,
+    api.parent(node) as Node,
+    vnode.children as VNode[],
+    oldVNode ? oldVNode.children as VNode[] : constant.EMPTY_ARRAY as any
+  )
+
+}
+
 
 
 
@@ -282,6 +324,20 @@ destroyMap[VNODE_TYPE_COMPONENT] = function (api: DomApi, vnode: VNode) {
   }
 
 }
+
+destroyMap[VNODE_TYPE_FRAGMENT] = function (api: DomApi, vnode: VNode) {
+
+  array.each(
+    vnode.children as VNode[],
+    function (child) {
+      destroyMap[child.type](api, child)
+    }
+  )
+
+}
+
+
+
 
 function isPatchable(vnode: VNode, oldVNode: VNode) {
   return vnode.type === oldVNode.type
@@ -359,16 +415,18 @@ function addVNodes(api: DomApi, parentNode: Node, vnodes: VNode[], startIndex?: 
 
 function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
 
-  const { node, component, context } = vnode,
+  const component = vnode.component,
 
-  hasParent = api.parent(node)
+  context = vnode.context,
+
+  hasParent = api.parent(vnode.node)
 
   // 这里不调用 insertBefore，避免判断两次
   if (before) {
-    api.before(parentNode, node, before.node)
+    operateVNodeNatively(api.before, parentNode, vnode, before.node)
   }
   else {
-    api.append(parentNode, node)
+    operateVNodeNatively(api.append, parentNode, vnode)
   }
 
   // 普通元素和组件的占位节点都会走到这里
@@ -409,15 +467,16 @@ function removeVNodes(api: DomApi, parentNode: Node, vnodes: (VNode | void)[], s
 }
 
 function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
-  const { node, component } = vnode
+  const component = vnode.component
+
   if (vnode.isPure) {
-    api.remove(parentNode, node)
+    operateVNodeNatively(api.remove, parentNode, vnode)
   }
   else {
 
     const done = function () {
       destroyVNode(api, vnode)
-      api.remove(parentNode, node)
+      operateVNodeNatively(api.remove, parentNode, vnode)
     }
 
     // 异步组件，还没加载成功就被删除了
@@ -428,6 +487,18 @@ function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
 
     leaveVNode(vnode, component, done)
 
+  }
+}
+
+function operateVNodeNatively(operator: Function, parentNode: Node, vnode: VNode, extra?: any) {
+  const { fragment } = vnode
+  if (fragment) {
+    for (let i = 0, len = fragment.length; i < len; i++) {
+      operateVNodeNatively(operator, parentNode, fragment[i], extra)
+    }
+  }
+  else {
+    operator(parentNode, vnode.node, extra)
   }
 }
 
@@ -494,7 +565,7 @@ function leaveVNode(vnode: VNode, component: YoxInterface | void, done: () => vo
   done()
 }
 
-function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChildren: (VNode | void)[]) {
+function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChildren: (VNode | undefined)[]) {
 
   let startIndex = 0,
   endIndex = children.length - 1,
