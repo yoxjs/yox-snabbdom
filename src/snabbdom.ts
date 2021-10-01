@@ -235,7 +235,7 @@ const elementVNodeMethods = {
       array.each(
         vnode.children,
         function (child) {
-          destroyVNode(api, child)
+          vnodeMethodsMap[child.type].destroy(api, child)
         }
       )
     }
@@ -336,7 +336,10 @@ const componentVNodeMethods = {
     const componentVNode = (vnode.component as YoxInterface).$vnode as VNode
     vnodeMethodsMap[componentVNode.type].insert(api, parentNode, componentVNode, before)
   },
-  remove: removeVNodeNatively,
+  remove(api: DomApi, parentNode: Node, vnode: VNode) {
+    const componentVNode = (vnode.component as YoxInterface).$vnode as VNode
+    vnodeMethodsMap[componentVNode.type].remove(api, parentNode, componentVNode)
+  },
 }
 
 const fragmentVNodeMethods = {
@@ -423,6 +426,7 @@ const portalVNodeMethods = {
       vnode.children as VNode[],
       function (child) {
         vnodeMethodsMap[child.type].create(api, child)
+        api.append(parentNode as Node, child.node)
       }
     )
 
@@ -457,22 +461,6 @@ const portalVNodeMethods = {
       }
     )
 
-  },
-  insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
-
-    insertVNodeNatively(api, parentNode, vnode, before)
-
-    insertVNodesNatively(
-      api,
-      vnode.parentNode as Node,
-      vnode.children as VNode[]
-    )
-
-  },
-  remove(api: DomApi, parentNode: Node, vnode: VNode) {
-
-    removeVNodeNatively(api, parentNode, vnode)
-
     removeVNodesNatively(
       api,
       vnode.parentNode as Node,
@@ -480,6 +468,8 @@ const portalVNodeMethods = {
     )
 
   },
+  insert: insertVNodeNatively,
+  remove: removeVNodeNatively,
 }
 
 const vnodeMethodsMap = { }
@@ -621,8 +611,9 @@ function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
   else {
 
     const done = function () {
-      destroyVNode(api, vnode)
-      vnodeMethodsMap[vnode.type].remove(api, parentNode, vnode)
+      const methods = vnodeMethodsMap[vnode.type]
+      methods.destroy(api, vnode)
+      methods.remove(api, parentNode, vnode)
     }
 
     // 异步组件，还没加载成功就被删除了
@@ -634,10 +625,6 @@ function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
     leaveVNode(vnode, component, done)
 
   }
-}
-
-function destroyVNode(api: DomApi, vnode: VNode) {
-  vnodeMethodsMap[vnode.type].destroy(api, vnode)
 }
 
 /**
@@ -892,6 +879,6 @@ export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
     removeVNode(api, parentNode as Node, vnode)
   }
   else {
-    destroyVNode(api, vnode)
+    vnodeMethodsMap[vnode.type].destroy(api, vnode)
   }
 }
