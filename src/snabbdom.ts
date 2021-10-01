@@ -2,9 +2,6 @@ import {
   VNODE_TYPE_TEXT,
   VNODE_TYPE_COMMENT,
   VNODE_TYPE_ELEMENT,
-  VNODE_TYPE_COMPONENT,
-  VNODE_TYPE_FRAGMENT,
-  VNODE_TYPE_PORTAL,
 } from 'yox-config/src/config'
 
 import {
@@ -13,6 +10,7 @@ import {
 
 import {
   VNode,
+  VNodeOperator,
 } from 'yox-type/src/vnode'
 
 import {
@@ -96,7 +94,7 @@ function removeVNodesNatively(api: DomApi, parentNode: Node, vnodes: VNode[], be
 
 }
 
-const textVNodeMethods = {
+export const textVNodeOperator: VNodeOperator = {
   create(api: DomApi, vnode: VNode) {
     vnode.node = api.createText(vnode.text as string)
   },
@@ -112,7 +110,7 @@ const textVNodeMethods = {
   remove: removeVNodeNatively,
 }
 
-const commentVNodeMethods = {
+export const commentVNodeOperator: VNodeOperator = {
   create(api: DomApi, vnode: VNode) {
     vnode.node = api.createComment(vnode.text as string)
   },
@@ -128,7 +126,7 @@ const commentVNodeMethods = {
   remove: removeVNodeNatively,
 }
 
-const elementVNodeMethods = {
+export const elementVNodeOperator: VNodeOperator = {
   create(api: DomApi, vnode: VNode) {
 
     const node = vnode.node = api.createElement(vnode.tag as string, vnode.isSvg)
@@ -235,7 +233,7 @@ const elementVNodeMethods = {
       array.each(
         vnode.children,
         function (child) {
-          vnodeMethodsMap[child.type].destroy(api, child)
+          child.operator.destroy(api, child)
         }
       )
     }
@@ -245,7 +243,7 @@ const elementVNodeMethods = {
   remove: removeVNodeNatively,
 }
 
-const componentVNodeMethods = {
+export const componentVNodeOperator: VNodeOperator = {
   create(api: DomApi, vnode: VNode) {
 
     const data = vnode.data = { }
@@ -334,21 +332,21 @@ const componentVNodeMethods = {
   },
   insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
     const componentVNode = (vnode.component as YoxInterface).$vnode as VNode
-    vnodeMethodsMap[componentVNode.type].insert(api, parentNode, componentVNode, before)
+    componentVNode.operator.insert(api, parentNode, componentVNode, before)
   },
   remove(api: DomApi, parentNode: Node, vnode: VNode) {
     const componentVNode = (vnode.component as YoxInterface).$vnode as VNode
-    vnodeMethodsMap[componentVNode.type].remove(api, parentNode, componentVNode)
+    componentVNode.operator.remove(api, parentNode, componentVNode)
   },
 }
 
-const fragmentVNodeMethods = {
+export const fragmentVNodeOperator: VNodeOperator = {
   create(api: DomApi, vnode: VNode) {
 
     array.each(
       vnode.children as VNode[],
       function (child) {
-        vnodeMethodsMap[child.type].create(api, child)
+        child.operator.create(api, child)
       }
     )
 
@@ -375,7 +373,7 @@ const fragmentVNodeMethods = {
     array.each(
       vnode.children as VNode[],
       function (child) {
-        vnodeMethodsMap[child.type].destroy(api, child)
+        child.operator.destroy(api, child)
       }
     )
 
@@ -401,7 +399,7 @@ const fragmentVNodeMethods = {
   },
 }
 
-const portalVNodeMethods = {
+export const portalVNodeOperator: VNodeOperator = {
   create(api: DomApi, vnode: VNode) {
 
     let parentNode: Element | void = constant.UNDEFINED
@@ -425,7 +423,7 @@ const portalVNodeMethods = {
     array.each(
       vnode.children as VNode[],
       function (child) {
-        vnodeMethodsMap[child.type].create(api, child)
+        child.operator.create(api, child)
         api.append(parentNode as Node, child.node)
       }
     )
@@ -457,7 +455,7 @@ const portalVNodeMethods = {
     array.each(
       vnode.children as VNode[],
       function (child) {
-        vnodeMethodsMap[child.type].destroy(api, child)
+        child.operator.destroy(api, child)
       }
     )
 
@@ -471,14 +469,6 @@ const portalVNodeMethods = {
   insert: insertVNodeNatively,
   remove: removeVNodeNatively,
 }
-
-const vnodeMethodsMap = { }
-vnodeMethodsMap[VNODE_TYPE_TEXT] = textVNodeMethods
-vnodeMethodsMap[VNODE_TYPE_COMMENT] = commentVNodeMethods
-vnodeMethodsMap[VNODE_TYPE_ELEMENT] = elementVNodeMethods
-vnodeMethodsMap[VNODE_TYPE_COMPONENT] = componentVNodeMethods
-vnodeMethodsMap[VNODE_TYPE_FRAGMENT] = fragmentVNodeMethods
-vnodeMethodsMap[VNODE_TYPE_PORTAL] = portalVNodeMethods
 
 function getFragmentHostNode(vnode: VNode): Node {
   if (vnode.isFragment) {
@@ -540,7 +530,7 @@ function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 function createVNode(api: DomApi, vnode: VNode) {
 
   if (!vnode.node) {
-    vnodeMethodsMap[vnode.type].create(api, vnode)
+    vnode.operator.create(api, vnode)
   }
 
 }
@@ -563,7 +553,7 @@ function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
 
   hasParent = api.parent(vnode.node)
 
-  vnodeMethodsMap[vnode.type].insert(api, parentNode, vnode, before)
+  vnode.operator.insert(api, parentNode, vnode, before)
 
   // 普通元素和组件的占位节点都会走到这里
   // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
@@ -606,14 +596,14 @@ function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
   const component = vnode.component
 
   if (vnode.isPure) {
-    vnodeMethodsMap[vnode.type].remove(api, parentNode, vnode)
+    vnode.operator.remove(api, parentNode, vnode)
   }
   else {
 
     const done = function () {
-      const methods = vnodeMethodsMap[vnode.type]
-      methods.destroy(api, vnode)
-      methods.remove(api, parentNode, vnode)
+      const operator = vnode.operator
+      operator.destroy(api, vnode)
+      operator.remove(api, parentNode, vnode)
     }
 
     // 异步组件，还没加载成功就被删除了
@@ -813,7 +803,7 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
 
 function updateVNode(api: DomApi, vnode: VNode, oldVNode: VNode) {
   if (vnode !== oldVNode) {
-    vnodeMethodsMap[vnode.type].update(api, vnode, oldVNode)
+    vnode.operator.update(api, vnode, oldVNode)
   }
 }
 
@@ -851,18 +841,21 @@ export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
       vnode.data = { }
       vnode.tag = api.tag(node)
       vnode.type = VNODE_TYPE_ELEMENT
+      vnode.operator = elementVNodeOperator
       break
     case 3:
       vnode.isPure =
       vnode.isText = constant.TRUE
       vnode.text = node.nodeValue
       vnode.type = VNODE_TYPE_TEXT
+      vnode.operator = textVNodeOperator
       break
     case 8:
       vnode.isPure =
       vnode.isComment = constant.TRUE
       vnode.text = node.nodeValue
       vnode.type = VNODE_TYPE_COMMENT
+      vnode.operator = commentVNodeOperator
       break
   }
   return vnode
@@ -879,6 +872,6 @@ export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
     removeVNode(api, parentNode as Node, vnode)
   }
   else {
-    vnodeMethodsMap[vnode.type].destroy(api, vnode)
+    vnode.operator.destroy(api, vnode)
   }
 }
