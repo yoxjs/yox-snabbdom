@@ -4,6 +4,7 @@ import {
   VNODE_TYPE_ELEMENT,
   VNODE_TYPE_COMPONENT,
   VNODE_TYPE_FRAGMENT,
+  VNODE_TYPE_PORTAL,
 } from 'yox-config/src/config'
 
 import {
@@ -39,302 +40,464 @@ import * as model from './module/model'
 import * as directive from './module/directive'
 import * as component from './module/component'
 
-
-const createMap = { }, updateMap = { }, destroyMap = { }
-
-createMap[VNODE_TYPE_TEXT] = function (api: DomApi, vnode: VNode) {
-  vnode.node = api.createText(vnode.text as string)
-}
-
-createMap[VNODE_TYPE_COMMENT] = function (api: DomApi, vnode: VNode) {
-  vnode.node = api.createComment(vnode.text as string)
-}
-
-createMap[VNODE_TYPE_ELEMENT] = function (api: DomApi, vnode: VNode) {
-
-  const node = vnode.node = api.createElement(vnode.tag as string, vnode.isSvg)
-
-  vnode.data = { }
-
-  if (vnode.children) {
-    addVNodes(api, node, vnode.children)
+function insertNodeNatively(api: DomApi, parentNode: Node, node: Node, referenceNode: Node | void) {
+  if (referenceNode) {
+    api.before(parentNode, node, referenceNode)
   }
-  else if (vnode.text) {
-    api.setText(node as Element, vnode.text, vnode.isStyle, vnode.isOption)
-  }
-  else if (vnode.html) {
-    api.setHtml(node as Element, vnode.html, vnode.isStyle, vnode.isOption)
-  }
-
-  nativeAttr.update(api, vnode)
-  nativeProp.update(api, vnode)
-  nativeStyle.update(api, vnode)
-
-  if (!vnode.isPure) {
-    ref.update(api, vnode)
-    event.update(api, vnode)
-    model.update(api, vnode)
-    directive.update(api, vnode)
+  else {
+    api.append(parentNode, node)
   }
 }
 
-createMap[VNODE_TYPE_COMPONENT] = function (api: DomApi, vnode: VNode) {
+function insertVNodeNatively(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
+  // 这里不调用 insertNodeNatively，避免判断两次
+  if (before) {
+    api.before(parentNode, vnode.node, before.node)
+  }
+  else {
+    api.append(parentNode, vnode.node)
+  }
+}
 
-  const data = vnode.data = { }
+function insertVNodesNatively(api: DomApi, parentNode: Node, vnodes: VNode[], before?: VNode) {
 
-  let componentOptions: ComponentOptions | undefined = constant.UNDEFINED
-
-  // 动态组件，tag 可能为空
-  if (vnode.tag) {
-    vnode.context.loadComponent(
-      vnode.tag,
-      function (options: ComponentOptions) {
-        if (object.has(data, field.LOADING)) {
-          // 异步组件
-          if (data[field.LOADING]) {
-            // 尝试使用最新的 vnode
-            if (data[field.VNODE]) {
-              vnode = data[field.VNODE]
-              // 用完就删掉
-              delete data[field.VNODE]
-            }
-            enterVNode(
-              vnode,
-              createComponent(api, vnode, options)
-            )
-          }
-        }
-        // 同步组件
-        else {
-          componentOptions = options
-        }
+  // 这里不调用 insertNodeNatively，避免判断两次
+  if (before) {
+    array.each(
+      vnodes,
+      function (vnode) {
+        api.before(parentNode, vnode.node, before.node)
+      }
+    )
+  }
+  else {
+    array.each(
+      vnodes,
+      function (vnode) {
+        api.append(parentNode, vnode.node)
       }
     )
   }
 
-  // 不论是同步还是异步组件，都需要一个占位元素
-  vnode.node = api.createComment(constant.RAW_COMPONENT)
-
-  if (componentOptions) {
-    createComponent(api, vnode, componentOptions as ComponentOptions)
-  }
-  else {
-    data[field.LOADING] = constant.TRUE
-  }
-
 }
 
-createMap[VNODE_TYPE_FRAGMENT] = function (api: DomApi, vnode: VNode) {
+function removeVNodeNatively(api: DomApi, parentNode: Node, vnode: VNode) {
+  api.remove(parentNode, vnode.node)
+}
 
-  const children = vnode.children as VNode[]
+function removeVNodesNatively(api: DomApi, parentNode: Node, vnodes: VNode[], before?: VNode) {
 
   array.each(
-    children,
-    function (child) {
-      createMap[child.type](api, child)
+    vnodes,
+    function (vnode) {
+      api.remove(parentNode, vnode.node)
     }
   )
 
-  vnode.node = getFragmentHostNode(vnode)
-
 }
 
+const textVNodeMethods = {
+  create(api: DomApi, vnode: VNode) {
+    vnode.node = api.createText(vnode.text as string)
+  },
+  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
+    const { node } = oldVNode
+    vnode.node = node
+    if (vnode.text !== oldVNode.text) {
+      api.setText(node, vnode.text as string, vnode.isStyle, vnode.isOption)
+    }
+  },
+  destroy: constant.EMPTY_FUNCTION,
+  insert: insertVNodeNatively,
+  remove: removeVNodeNatively,
+}
+
+const commentVNodeMethods = {
+  create(api: DomApi, vnode: VNode) {
+    vnode.node = api.createComment(vnode.text as string)
+  },
+  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
+    const { node } = oldVNode
+    vnode.node = node
+    if (vnode.text !== oldVNode.text) {
+      api.setText(node, vnode.text as string)
+    }
+  },
+  destroy: constant.EMPTY_FUNCTION,
+  insert: insertVNodeNatively,
+  remove: removeVNodeNatively,
+}
+
+const elementVNodeMethods = {
+  create(api: DomApi, vnode: VNode) {
+
+    const node = vnode.node = api.createElement(vnode.tag as string, vnode.isSvg)
+
+    vnode.data = { }
+
+    if (vnode.children) {
+      addVNodes(api, node, vnode.children)
+    }
+    else if (vnode.text) {
+      api.setText(node as Element, vnode.text, vnode.isStyle, vnode.isOption)
+    }
+    else if (vnode.html) {
+      api.setHtml(node as Element, vnode.html, vnode.isStyle, vnode.isOption)
+    }
+
+    nativeAttr.update(api, vnode)
+    nativeProp.update(api, vnode)
+    nativeStyle.update(api, vnode)
+
+    if (!vnode.isPure) {
+      ref.update(api, vnode)
+      event.update(api, vnode)
+      model.update(api, vnode)
+      directive.update(api, vnode)
+    }
+
+  },
+  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
+
+    const { node } = oldVNode
+
+    vnode.data = oldVNode.data
+    vnode.node = node
+
+    nativeAttr.update(api, vnode, oldVNode)
+    nativeProp.update(api, vnode, oldVNode)
+    nativeStyle.update(api, vnode, oldVNode)
+
+    ref.update(api, vnode, oldVNode)
+    event.update(api, vnode, oldVNode)
+    model.update(api, vnode, oldVNode)
+    directive.update(api, vnode, oldVNode)
+
+    const { text, html, children, isStyle, isOption } = vnode,
+
+    oldText = oldVNode.text,
+    oldHtml = oldVNode.html,
+    oldChildren = oldVNode.children
+
+    if (is.string(text)) {
+      if (oldChildren) {
+        removeVNodes(api, node, oldChildren)
+      }
+      if (text !== oldText) {
+        api.setText(node, text as string, isStyle, isOption)
+      }
+    }
+    else if (is.string(html)) {
+      if (oldChildren) {
+        removeVNodes(api, node, oldChildren)
+      }
+      if (html !== oldHtml) {
+        api.setHtml(node as Element, html as string, isStyle, isOption)
+      }
+    }
+    else if (children) {
+      // 两个都有需要 diff
+      if (oldChildren) {
+        if (children !== oldChildren) {
+          updateChildren(api, node, children, oldChildren)
+        }
+      }
+      // 有新的没旧的 - 新增节点
+      else {
+        if (oldText || oldHtml) {
+          api.setText(node, constant.EMPTY_STRING, isStyle)
+        }
+        addVNodes(api, node, children)
+      }
+    }
+    // 有旧的没新的 - 删除节点
+    else if (oldChildren) {
+      removeVNodes(api, node, oldChildren)
+    }
+    // 有旧的 text 没有新的 text
+    else if (oldText || oldHtml) {
+      api.setText(node, constant.EMPTY_STRING, isStyle)
+    }
+
+  },
+  destroy(api: DomApi, vnode: VNode) {
+
+    if (vnode.isPure) {
+      return
+    }
+
+    ref.remove(api, vnode)
+    event.remove(api, vnode)
+    model.remove(api, vnode)
+    directive.remove(api, vnode)
+
+    if (vnode.children) {
+      array.each(
+        vnode.children,
+        function (child) {
+          destroyVNode(api, child)
+        }
+      )
+    }
+
+  },
+  insert: insertVNodeNatively,
+  remove: removeVNodeNatively,
+}
+
+const componentVNodeMethods = {
+  create(api: DomApi, vnode: VNode) {
+
+    const data = vnode.data = { }
+
+    let componentOptions: ComponentOptions | undefined = constant.UNDEFINED
+
+    // 动态组件，tag 可能为空
+    if (vnode.tag) {
+      vnode.context.loadComponent(
+        vnode.tag,
+        function (options: ComponentOptions) {
+          if (object.has(data, field.LOADING)) {
+            // 异步组件
+            if (data[field.LOADING]) {
+              // 尝试使用最新的 vnode
+              if (data[field.VNODE]) {
+                vnode = data[field.VNODE]
+                // 用完就删掉
+                delete data[field.VNODE]
+              }
+              enterVNode(
+                vnode,
+                createComponent(api, vnode, options)
+              )
+            }
+          }
+          // 同步组件
+          else {
+            componentOptions = options
+          }
+        }
+      )
+    }
+
+    // 不论是同步还是异步组件，都需要一个占位元素
+    vnode.node = api.createComment(constant.RAW_COMPONENT)
+
+    if (componentOptions) {
+      createComponent(api, vnode, componentOptions as ComponentOptions)
+    }
+    else {
+      data[field.LOADING] = constant.TRUE
+    }
+
+  },
+  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
+
+    const { data } = oldVNode
+
+    vnode.data = data
+    vnode.node = oldVNode.node
+    vnode.fragment = oldVNode.fragment
+    vnode.component = oldVNode.component
+
+    // 组件正在异步加载，更新为最新的 vnode
+    // 当异步加载完成时才能用上最新的 vnode
+    if (data[field.LOADING]) {
+      data[field.VNODE] = vnode
+      return
+    }
+
+    // 先处理 directive 再处理 component
+    // 因为组件只是单纯的更新 props，而 directive 则有可能要销毁
+    // 如果顺序反过来，会导致某些本该销毁的指令先被数据的变化触发执行了
+    ref.update(api, vnode, oldVNode)
+    event.update(api, vnode, oldVNode)
+    model.update(api, vnode, oldVNode)
+    directive.update(api, vnode, oldVNode)
+
+    component.update(api, vnode, oldVNode)
+
+  },
+  destroy(api: DomApi, vnode: VNode) {
+
+    if (vnode.component) {
+      ref.remove(api, vnode)
+      event.remove(api, vnode)
+      model.remove(api, vnode)
+      directive.remove(api, vnode)
+      component.remove(api, vnode)
+    }
+    else {
+      vnode.data[field.LOADING] = constant.FALSE
+    }
+
+  },
+  insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
+    const componentVNode = (vnode.component as YoxInterface).$vnode as VNode
+    vnodeMethodsMap[componentVNode.type].insert(api, parentNode, componentVNode, before)
+  },
+  remove: removeVNodeNatively,
+}
+
+const fragmentVNodeMethods = {
+  create(api: DomApi, vnode: VNode) {
+
+    array.each(
+      vnode.children as VNode[],
+      function (child) {
+        vnodeMethodsMap[child.type].create(api, child)
+      }
+    )
+
+    vnode.data = { }
+    vnode.node = getFragmentHostNode(vnode)
+
+  },
+  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
+
+    const { node } = oldVNode
+
+    vnode.node = node
+
+    updateChildren(
+      api,
+      api.parent(node) as Node,
+      vnode.children as VNode[],
+      oldVNode ? oldVNode.children as VNode[] : constant.EMPTY_ARRAY as any
+    )
+
+  },
+  destroy(api: DomApi, vnode: VNode) {
+
+    array.each(
+      vnode.children as VNode[],
+      function (child) {
+        vnodeMethodsMap[child.type].destroy(api, child)
+      }
+    )
+
+  },
+  insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
+
+    insertVNodesNatively(
+      api,
+      parentNode,
+      vnode.children as VNode[],
+      before
+    )
+
+  },
+  remove(api: DomApi, parentNode: Node, vnode: VNode) {
+
+    removeVNodesNatively(
+      api,
+      parentNode,
+      vnode.children as VNode[]
+    )
+
+  },
+}
+
+const portalVNodeMethods = {
+  create(api: DomApi, vnode: VNode) {
+
+    let parentNode: Element | void = constant.UNDEFINED
+
+    if (vnode.to) {
+      parentNode = api.find(vnode.to)
+      if (process.env.NODE_ENV === 'development') {
+        if (!parentNode) {
+          logger.fatal(`Failed to locate portal target with selector "${vnode.to}".`)
+        }
+      }
+    }
+
+    // 用 body 元素兜底
+    if (!parentNode) {
+      parentNode = api.getBodyElement()
+    }
+
+    vnode.parentNode = parentNode as Node
+
+    array.each(
+      vnode.children as VNode[],
+      function (child) {
+        vnodeMethodsMap[child.type].create(api, child)
+      }
+    )
+
+    vnode.data = { }
+
+    // 用注释占用节点在模板里的位置
+    // 这样删除或替换节点，才有找到它应该在的位置
+    vnode.node = api.createComment('portal')
+
+  },
+  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
+
+    const { node, parentNode } = oldVNode
+
+    vnode.node = node
+    vnode.parentNode = parentNode
+
+    updateChildren(
+      api,
+      parentNode as Node,
+      vnode.children as VNode[],
+      oldVNode ? oldVNode.children as VNode[] : constant.EMPTY_ARRAY as any
+    )
+
+  },
+  destroy(api: DomApi, vnode: VNode) {
+
+    array.each(
+      vnode.children as VNode[],
+      function (child) {
+        vnodeMethodsMap[child.type].destroy(api, child)
+      }
+    )
+
+  },
+  insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
+
+    insertVNodeNatively(api, parentNode, vnode, before)
+
+    insertVNodesNatively(
+      api,
+      vnode.parentNode as Node,
+      vnode.children as VNode[]
+    )
+
+  },
+  remove(api: DomApi, parentNode: Node, vnode: VNode) {
+
+    removeVNodeNatively(api, parentNode, vnode)
+
+    removeVNodesNatively(
+      api,
+      vnode.parentNode as Node,
+      vnode.children as VNode[]
+    )
+
+  },
+}
+
+const vnodeMethodsMap = { }
+vnodeMethodsMap[VNODE_TYPE_TEXT] = textVNodeMethods
+vnodeMethodsMap[VNODE_TYPE_COMMENT] = commentVNodeMethods
+vnodeMethodsMap[VNODE_TYPE_ELEMENT] = elementVNodeMethods
+vnodeMethodsMap[VNODE_TYPE_COMPONENT] = componentVNodeMethods
+vnodeMethodsMap[VNODE_TYPE_FRAGMENT] = fragmentVNodeMethods
+vnodeMethodsMap[VNODE_TYPE_PORTAL] = portalVNodeMethods
+
 function getFragmentHostNode(vnode: VNode): Node {
-  if (vnode.type === VNODE_TYPE_FRAGMENT) {
+  if (vnode.isFragment) {
     return getFragmentHostNode(
       (vnode.children as VNode[])[0]
     )
   }
   return vnode.node as Node
 }
-
-
-updateMap[VNODE_TYPE_TEXT] = function (api: DomApi, vnode: VNode, oldVNode: VNode) {
-
-  const { node } = oldVNode
-
-  vnode.node = node
-
-  if (vnode.text !== oldVNode.text) {
-    api.setText(node, vnode.text as string, vnode.isStyle, vnode.isOption)
-  }
-
-}
-
-updateMap[VNODE_TYPE_COMMENT] = function (api: DomApi, vnode: VNode, oldVNode: VNode) {
-
-  const { node } = oldVNode
-
-  vnode.node = node
-
-  if (vnode.text !== oldVNode.text) {
-    api.setText(node, vnode.text as string)
-  }
-
-}
-
-updateMap[VNODE_TYPE_ELEMENT] = function (api: DomApi, vnode: VNode, oldVNode: VNode) {
-
-  const { node } = oldVNode
-
-  vnode.data = oldVNode.data
-  vnode.node = node
-
-  nativeAttr.update(api, vnode, oldVNode)
-  nativeProp.update(api, vnode, oldVNode)
-  nativeStyle.update(api, vnode, oldVNode)
-
-  ref.update(api, vnode, oldVNode)
-  event.update(api, vnode, oldVNode)
-  model.update(api, vnode, oldVNode)
-  directive.update(api, vnode, oldVNode)
-
-  const { text, html, children, isStyle, isOption } = vnode,
-
-  oldText = oldVNode.text,
-  oldHtml = oldVNode.html,
-  oldChildren = oldVNode.children
-
-  if (is.string(text)) {
-    if (oldChildren) {
-      removeVNodes(api, node, oldChildren)
-    }
-    if (text !== oldText) {
-      api.setText(node, text as string, isStyle, isOption)
-    }
-  }
-  else if (is.string(html)) {
-    if (oldChildren) {
-      removeVNodes(api, node, oldChildren)
-    }
-    if (html !== oldHtml) {
-      api.setHtml(node as Element, html as string, isStyle, isOption)
-    }
-  }
-  else if (children) {
-    // 两个都有需要 diff
-    if (oldChildren) {
-      if (children !== oldChildren) {
-        updateChildren(api, node, children, oldChildren)
-      }
-    }
-    // 有新的没旧的 - 新增节点
-    else {
-      if (oldText || oldHtml) {
-        api.setText(node, constant.EMPTY_STRING, isStyle)
-      }
-      addVNodes(api, node, children)
-    }
-  }
-  // 有旧的没新的 - 删除节点
-  else if (oldChildren) {
-    removeVNodes(api, node, oldChildren)
-  }
-  // 有旧的 text 没有新的 text
-  else if (oldText || oldHtml) {
-    api.setText(node, constant.EMPTY_STRING, isStyle)
-  }
-
-}
-
-updateMap[VNODE_TYPE_COMPONENT] = function (api: DomApi, vnode: VNode, oldVNode: VNode) {
-
-  const { data } = oldVNode
-
-  vnode.data = data
-  vnode.node = oldVNode.node
-  vnode.fragment = oldVNode.fragment
-  vnode.component = oldVNode.component
-
-  // 组件正在异步加载，更新为最新的 vnode
-  // 当异步加载完成时才能用上最新的 vnode
-  if (data[field.LOADING]) {
-    data[field.VNODE] = vnode
-    return
-  }
-
-  // 先处理 directive 再处理 component
-  // 因为组件只是单纯的更新 props，而 directive 则有可能要销毁
-  // 如果顺序反过来，会导致某些本该销毁的指令先被数据的变化触发执行了
-  ref.update(api, vnode, oldVNode)
-  event.update(api, vnode, oldVNode)
-  model.update(api, vnode, oldVNode)
-  directive.update(api, vnode, oldVNode)
-
-  component.update(api, vnode, oldVNode)
-
-}
-
-updateMap[VNODE_TYPE_FRAGMENT] = function (api: DomApi, vnode: VNode, oldVNode: VNode) {
-
-  const { node } = oldVNode
-
-  vnode.node = node
-
-  updateChildren(
-    api,
-    api.parent(node) as Node,
-    vnode.children as VNode[],
-    oldVNode ? oldVNode.children as VNode[] : constant.EMPTY_ARRAY as any
-  )
-
-}
-
-
-
-
-destroyMap[VNODE_TYPE_TEXT] =
-destroyMap[VNODE_TYPE_COMMENT] = constant.EMPTY_FUNCTION
-
-destroyMap[VNODE_TYPE_ELEMENT] = function (api: DomApi, vnode: VNode) {
-
-  if (vnode.isPure) {
-    return
-  }
-
-  ref.remove(api, vnode)
-  event.remove(api, vnode)
-  model.remove(api, vnode)
-  directive.remove(api, vnode)
-
-  if (vnode.children) {
-    array.each(
-      vnode.children,
-      function (child) {
-        destroyVNode(api, child)
-      }
-    )
-  }
-
-}
-
-destroyMap[VNODE_TYPE_COMPONENT] = function (api: DomApi, vnode: VNode) {
-
-  if (vnode.component) {
-    ref.remove(api, vnode)
-    event.remove(api, vnode)
-    model.remove(api, vnode)
-    directive.remove(api, vnode)
-    component.remove(api, vnode)
-  }
-  else {
-    vnode.data[field.LOADING] = constant.FALSE
-  }
-
-}
-
-destroyMap[VNODE_TYPE_FRAGMENT] = function (api: DomApi, vnode: VNode) {
-
-  array.each(
-    vnode.children as VNode[],
-    function (child) {
-      destroyMap[child.type](api, child)
-    }
-  )
-
-}
-
-
 
 
 function isPatchable(vnode: VNode, oldVNode: VNode) {
@@ -366,15 +529,6 @@ function createKeyToIndex(vnodes: (VNode | void)[], startIndex: number, endIndex
 
 }
 
-function insertBefore(api: DomApi, parentNode: Node, node: Node, referenceNode: Node | void) {
-  if (referenceNode) {
-    api.before(parentNode, node, referenceNode)
-  }
-  else {
-    api.append(parentNode, node)
-  }
-}
-
 function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 
   const child = (vnode.parent || vnode.context).createComponent(options, vnode)
@@ -396,7 +550,7 @@ function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 function createVNode(api: DomApi, vnode: VNode) {
 
   if (!vnode.node) {
-    createMap[vnode.type](api, vnode)
+    vnodeMethodsMap[vnode.type].create(api, vnode)
   }
 
 }
@@ -419,13 +573,7 @@ function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
 
   hasParent = api.parent(vnode.node)
 
-  // 这里不调用 insertBefore，避免判断两次
-  if (before) {
-    operateVNodeNatively(api.before, parentNode, vnode, before.node)
-  }
-  else {
-    operateVNodeNatively(api.append, parentNode, vnode)
-  }
+  vnodeMethodsMap[vnode.type].insert(api, parentNode, vnode, before)
 
   // 普通元素和组件的占位节点都会走到这里
   // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
@@ -468,13 +616,13 @@ function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
   const component = vnode.component
 
   if (vnode.isPure) {
-    operateVNodeNatively(api.remove, parentNode, vnode)
+    vnodeMethodsMap[vnode.type].remove(api, parentNode, vnode)
   }
   else {
 
     const done = function () {
       destroyVNode(api, vnode)
-      operateVNodeNatively(api.remove, parentNode, vnode)
+      vnodeMethodsMap[vnode.type].remove(api, parentNode, vnode)
     }
 
     // 异步组件，还没加载成功就被删除了
@@ -488,25 +636,8 @@ function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
   }
 }
 
-function operateVNodeNatively(operator: Function, parentNode: Node, vnode: VNode, extra?: any) {
-  const { type } = vnode
-  if (type === VNODE_TYPE_COMPONENT) {
-    const component = vnode.component as YoxInterface
-    operateVNodeNatively(operator, parentNode, component.$vnode as VNode, extra)
-  }
-  else if (type === VNODE_TYPE_FRAGMENT) {
-    const children = vnode.children as VNode[]
-    for (let i = 0, len = children.length; i < len; i++) {
-      operateVNodeNatively(operator, parentNode, children[i], extra)
-    }
-  }
-  else {
-    operator(parentNode, vnode.node, extra)
-  }
-}
-
 function destroyVNode(api: DomApi, vnode: VNode) {
-  destroyMap[vnode.type](api, vnode)
+  vnodeMethodsMap[vnode.type].destroy(api, vnode)
 }
 
 /**
@@ -619,7 +750,7 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
     // 说明元素被移到右边了
     else if (isPatchable(endVNode, oldStartVNode)) {
       updateVNode(api, endVNode, oldStartVNode)
-      insertBefore(
+      insertNodeNatively(
         api,
         parentNode,
         oldStartVNode.node,
@@ -633,7 +764,7 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
     // 说明元素被移到左边了
     else if (isPatchable(startVNode, oldEndVNode)) {
       updateVNode(api, startVNode, oldEndVNode)
-      insertBefore(
+      insertNodeNatively(
         api,
         parentNode,
         oldEndVNode.node,
@@ -695,7 +826,7 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
 
 function updateVNode(api: DomApi, vnode: VNode, oldVNode: VNode) {
   if (vnode !== oldVNode) {
-    updateMap[vnode.type](api, vnode, oldVNode)
+    vnodeMethodsMap[vnode.type].update(api, vnode, oldVNode)
   }
 }
 
@@ -710,7 +841,7 @@ export function patch(api: DomApi, vnode: VNode, oldVNode: VNode) {
     // 同步加载的组件，初始化时不会传入占位节点
     // 它内部会自动生成一个注释节点，当它的根 vnode 和注释节点对比时，必然无法 patch
     // 于是走进此分支，为新组件创建一个 DOM 节点，然后继续 createComponent 后面的流程
-    const parentNode = api.parent(oldVNode.node)
+    const parentNode = oldVNode.parentNode || api.parent(oldVNode.node)
     createVNode(api, vnode)
     if (parentNode) {
       insertVNode(api, parentNode, vnode, oldVNode)
@@ -752,7 +883,7 @@ export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
 
 export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
   if (isRemove) {
-    const parentNode = api.parent(vnode.node)
+    const parentNode = vnode.parentNode || api.parent(vnode.node)
     if (process.env.NODE_ENV === 'development') {
       if (!parentNode) {
         logger.fatal(`The vnode can't be destroyed without a parent node.`)
