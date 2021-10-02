@@ -201,7 +201,7 @@ export const elementVNodeOperator: VNodeOperator = {
       array.each(
         vnode.children,
         function (child) {
-          child.operator.destroy(api, child)
+          destroyVNode(api, child)
         }
       )
     }
@@ -313,7 +313,7 @@ export const fragmentVNodeOperator: VNodeOperator = {
     array.each(
       vnode.children as VNode[],
       function (child) {
-        child.operator.create(api, child)
+        createVNode(api, child)
       }
     )
 
@@ -339,7 +339,7 @@ export const fragmentVNodeOperator: VNodeOperator = {
     array.each(
       vnode.children as VNode[],
       function (child) {
-        child.operator.destroy(api, child)
+        destroyVNode(api, child)
       }
     )
 
@@ -390,7 +390,7 @@ export const portalVNodeOperator: VNodeOperator = {
     array.each(
       vnode.children as VNode[],
       function (child) {
-        child.operator.create(api, child)
+        createVNode(api, child)
       }
     )
 
@@ -419,7 +419,7 @@ export const portalVNodeOperator: VNodeOperator = {
     array.each(
       vnode.children as VNode[],
       function (child) {
-        child.operator.destroy(api, child)
+        destroyVNode(api, child)
       }
     )
 
@@ -530,31 +530,23 @@ function addVNodes(api: DomApi, parentNode: Node, vnodes: VNode[], startIndex?: 
 
 function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
 
-  const component = vnode.component,
-
-  context = vnode.context as any,
-
-  isEnterable = vnode.data && !api.parent(vnode.node)
+  const isEnterable = vnode.data && !api.parent(vnode.node)
 
   vnode.operator.insert(api, parentNode, vnode, before)
 
   // 普通元素和组件的占位节点都会走到这里
   // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
   if (isEnterable) {
-    const callback = vnode.isComponent && component
-      ? function () {
-          enterVNode(vnode, component)
-        }
-      : function () {
-          enterVNode(vnode)
-        }
-
     // 执行到这时，组件还没有挂载到 DOM 树
     // 如果此时直接触发 enter，外部还需要做多余的工作，比如 setTimeout
     // 索性这里直接等挂载到 DOM 数之后再触发
     // 注意：YoxInterface 没有声明 $nextTask，因为不想让外部访问，
     // 但是这里要用一次，所以加了 as any
-    context.$nextTask.prepend(callback)
+    (vnode.context as any).$nextTask.prepend(
+      function () {
+        enterVNode(vnode, vnode.component)
+      }
+    )
   }
 
 }
@@ -564,37 +556,35 @@ function removeVNodes(api: DomApi, parentNode: Node, vnodes: (VNode | void)[], s
   while (start <= end) {
     vnode = vnodes[start]
     if (vnode) {
+      destroyVNode(api, vnode)
       removeVNode(api, parentNode, vnode)
     }
     start++
   }
 }
 
+function destroyVNode(api: DomApi, vnode: VNode) {
+  vnode.operator.destroy(api, vnode)
+}
+
 function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
-  const component = vnode.component
 
-  if (vnode.isPure) {
-    vnode.operator.remove(api, parentNode, vnode)
+  const { component, operator } = vnode,
+
+  done = function () {
+    operator.remove(api, parentNode, vnode)
   }
-  else {
 
-    const done = function () {
-      const operator = vnode.operator
-      operator.destroy(api, vnode)
-      operator.remove(api, parentNode, vnode)
-    }
-
-    if (!vnode.data
-      // 异步组件，还没加载成功就被删除了
-      || (vnode.isComponent && !component)
-    ) {
-      done()
-      return
-    }
-
-    leaveVNode(vnode, component, done)
-
+  if (!vnode.data
+    // 异步组件，还没加载成功就被删除了
+    || (vnode.isComponent && !component)
+  ) {
+    done()
+    return
   }
+
+  leaveVNode(vnode, component, done)
+
 }
 
 /**
@@ -804,6 +794,7 @@ export function patch(api: DomApi, vnode: VNode, oldVNode: VNode) {
     createVNode(api, vnode)
     if (parentNode) {
       insertVNode(api, parentNode, vnode, oldVNode)
+      destroyVNode(api, oldVNode)
       removeVNode(api, parentNode, oldVNode)
     }
     return
@@ -844,6 +835,7 @@ export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
 }
 
 export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
+  destroyVNode(api, vnode)
   if (isRemove) {
     const parentNode = api.parent(vnode.node)
     if (process.env.NODE_ENV === 'development') {
@@ -852,8 +844,5 @@ export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
       }
     }
     removeVNode(api, parentNode as Node, vnode)
-  }
-  else {
-    vnode.operator.destroy(api, vnode)
   }
 }
