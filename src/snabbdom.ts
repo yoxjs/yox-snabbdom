@@ -299,11 +299,11 @@ export const componentVNodeOperator: VNodeOperator = {
   },
   insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
     const componentVNode = (vnode.component as YoxInterface).$vnode as VNode
-    componentVNode.operator.insert(api, parentNode, componentVNode, before)
+    insertVNode(api, parentNode, componentVNode, before)
   },
   remove(api: DomApi, parentNode: Node, vnode: VNode) {
     const componentVNode = (vnode.component as YoxInterface).$vnode as VNode
-    componentVNode.operator.remove(api, parentNode, componentVNode)
+    removeVNode(api, parentNode, componentVNode)
   },
 }
 
@@ -346,33 +346,20 @@ export const fragmentVNodeOperator: VNodeOperator = {
   },
   insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
 
-    const children = vnode.children as VNode[]
-
-    // 这里不调用 insertNodeNatively，避免判断两次
-    if (before) {
-      array.each(
-        children,
-        function (vnode) {
-          api.before(parentNode, vnode.node, before.node)
-        }
-      )
-    }
-    else {
-      array.each(
-        children,
-        function (vnode) {
-          api.append(parentNode, vnode.node)
-        }
-      )
-    }
+    array.each(
+      vnode.children as VNode[],
+      function (child) {
+        insertVNode(api, parentNode, child, before)
+      }
+    )
 
   },
   remove(api: DomApi, parentNode: Node, vnode: VNode) {
 
     array.each(
       vnode.children as VNode[],
-      function (vnode) {
-        api.remove(parentNode, vnode.node)
+      function (child) {
+        removeVNode(api, parentNode, child)
       }
     )
 
@@ -403,9 +390,7 @@ export const portalVNodeOperator: VNodeOperator = {
     array.each(
       vnode.children as VNode[],
       function (child) {
-        const operator = child.operator
-        operator.create(api, child)
-        operator.insert(api, parentNode as Node, child)
+        child.operator.create(api, child)
       }
     )
 
@@ -431,20 +416,42 @@ export const portalVNodeOperator: VNodeOperator = {
   },
   destroy(api: DomApi, vnode: VNode) {
 
-    const parentNode = vnode.parentNode as Node
-
     array.each(
       vnode.children as VNode[],
       function (child) {
-        const operator = child.operator
-        operator.destroy(api, child)
-        operator.remove(api, parentNode, child)
+        child.operator.destroy(api, child)
       }
     )
 
   },
-  insert: insertVNodeNatively,
-  remove: removeVNodeNatively,
+  insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
+
+    insertVNodeNatively(api, parentNode, vnode)
+
+    const actualParentNode = vnode.parentNode as Node
+
+    array.each(
+      vnode.children as VNode[],
+      function (child) {
+        insertVNode(api, actualParentNode, child)
+      }
+    )
+
+  },
+  remove(api: DomApi, parentNode: Node, vnode: VNode) {
+
+    removeVNodeNatively(api, parentNode, vnode)
+
+    const actualParentNode = vnode.parentNode as Node
+
+    array.each(
+      vnode.children as VNode[],
+      function (child) {
+        removeVNode(api, actualParentNode, child)
+      }
+    )
+
+  }
 }
 
 function getFragmentHostNode(vnode: VNode): Node {
@@ -609,7 +616,8 @@ function enterVNode(vnode: VNode, component: YoxInterface | void) {
   if (transition) {
     const { enter } = transition
     if (enter) {
-      enter(
+      enter.call(
+        vnode.context,
         vnode.node as HTMLElement
       )
     }
@@ -633,7 +641,8 @@ function leaveVNode(vnode: VNode, component: YoxInterface | void, done: () => vo
   if (transition) {
     const { leave } = transition
     if (leave) {
-      leave(
+      leave.call(
+        vnode.context,
         vnode.node as HTMLElement,
         data[field.LEAVING] = function () {
           if (data[field.LEAVING]) {
@@ -791,7 +800,7 @@ export function patch(api: DomApi, vnode: VNode, oldVNode: VNode) {
     // 同步加载的组件，初始化时不会传入占位节点
     // 它内部会自动生成一个注释节点，当它的根 vnode 和注释节点对比时，必然无法 patch
     // 于是走进此分支，为新组件创建一个 DOM 节点，然后继续 createComponent 后面的流程
-    const parentNode = oldVNode.parentNode || api.parent(oldVNode.node)
+    const parentNode = api.parent(oldVNode.node)
     createVNode(api, vnode)
     if (parentNode) {
       insertVNode(api, parentNode, vnode, oldVNode)
@@ -836,7 +845,7 @@ export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
 
 export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
   if (isRemove) {
-    const parentNode = vnode.parentNode || api.parent(vnode.node)
+    const parentNode = api.parent(vnode.node)
     if (process.env.NODE_ENV === 'development') {
       if (!parentNode) {
         logger.fatal(`The vnode can't be destroyed without a parent node.`)
