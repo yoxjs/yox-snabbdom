@@ -57,41 +57,8 @@ function insertVNodeNatively(api: DomApi, parentNode: Node, vnode: VNode, before
   }
 }
 
-function insertVNodesNatively(api: DomApi, parentNode: Node, vnodes: VNode[], before?: VNode) {
-
-  // 这里不调用 insertNodeNatively，避免判断两次
-  if (before) {
-    array.each(
-      vnodes,
-      function (vnode) {
-        api.before(parentNode, vnode.node, before.node)
-      }
-    )
-  }
-  else {
-    array.each(
-      vnodes,
-      function (vnode) {
-        api.append(parentNode, vnode.node)
-      }
-    )
-  }
-
-}
-
 function removeVNodeNatively(api: DomApi, parentNode: Node, vnode: VNode) {
   api.remove(parentNode, vnode.node)
-}
-
-function removeVNodesNatively(api: DomApi, parentNode: Node, vnodes: VNode[], before?: VNode) {
-
-  array.each(
-    vnodes,
-    function (vnode) {
-      api.remove(parentNode, vnode.node)
-    }
-  )
-
 }
 
 export const textVNodeOperator: VNodeOperator = {
@@ -131,8 +98,6 @@ export const elementVNodeOperator: VNodeOperator = {
 
     const node = vnode.node = api.createElement(vnode.tag as string, vnode.isSvg)
 
-    vnode.data = { }
-
     if (vnode.children) {
       addVNodes(api, node, vnode.children)
     }
@@ -148,6 +113,7 @@ export const elementVNodeOperator: VNodeOperator = {
     nativeStyle.update(api, vnode)
 
     if (!vnode.isPure) {
+      vnode.data = { }
       ref.update(api, vnode)
       event.update(api, vnode)
       model.update(api, vnode)
@@ -166,10 +132,12 @@ export const elementVNodeOperator: VNodeOperator = {
     nativeProp.update(api, vnode, oldVNode)
     nativeStyle.update(api, vnode, oldVNode)
 
-    ref.update(api, vnode, oldVNode)
-    event.update(api, vnode, oldVNode)
-    model.update(api, vnode, oldVNode)
-    directive.update(api, vnode, oldVNode)
+    if (!vnode.isPure) {
+      ref.update(api, vnode, oldVNode)
+      event.update(api, vnode, oldVNode)
+      model.update(api, vnode, oldVNode)
+      directive.update(api, vnode, oldVNode)
+    }
 
     const { text, html, children, isStyle, isOption } = vnode,
 
@@ -295,7 +263,6 @@ export const componentVNodeOperator: VNodeOperator = {
 
     vnode.data = data
     vnode.node = oldVNode.node
-    vnode.fragment = oldVNode.fragment
     vnode.component = oldVNode.component
 
     // 组件正在异步加载，更新为最新的 vnode
@@ -350,7 +317,6 @@ export const fragmentVNodeOperator: VNodeOperator = {
       }
     )
 
-    vnode.data = { }
     vnode.node = getFragmentHostNode(vnode)
 
   },
@@ -380,20 +346,34 @@ export const fragmentVNodeOperator: VNodeOperator = {
   },
   insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
 
-    insertVNodesNatively(
-      api,
-      parentNode,
-      vnode.children as VNode[],
-      before
-    )
+    const children = vnode.children as VNode[]
+
+    // 这里不调用 insertNodeNatively，避免判断两次
+    if (before) {
+      array.each(
+        children,
+        function (vnode) {
+          api.before(parentNode, vnode.node, before.node)
+        }
+      )
+    }
+    else {
+      array.each(
+        children,
+        function (vnode) {
+          api.append(parentNode, vnode.node)
+        }
+      )
+    }
 
   },
   remove(api: DomApi, parentNode: Node, vnode: VNode) {
 
-    removeVNodesNatively(
-      api,
-      parentNode,
-      vnode.children as VNode[]
+    array.each(
+      vnode.children as VNode[],
+      function (vnode) {
+        api.remove(parentNode, vnode.node)
+      }
     )
 
   },
@@ -423,12 +403,11 @@ export const portalVNodeOperator: VNodeOperator = {
     array.each(
       vnode.children as VNode[],
       function (child) {
-        child.operator.create(api, child)
-        api.append(parentNode as Node, child.node)
+        const operator = child.operator
+        operator.create(api, child)
+        operator.insert(api, parentNode as Node, child)
       }
     )
-
-    vnode.data = { }
 
     // 用注释占用节点在模板里的位置
     // 这样删除或替换节点，才有找到它应该在的位置
@@ -452,17 +431,15 @@ export const portalVNodeOperator: VNodeOperator = {
   },
   destroy(api: DomApi, vnode: VNode) {
 
+    const parentNode = vnode.parentNode as Node
+
     array.each(
       vnode.children as VNode[],
       function (child) {
-        child.operator.destroy(api, child)
+        const operator = child.operator
+        operator.destroy(api, child)
+        operator.remove(api, parentNode, child)
       }
-    )
-
-    removeVNodesNatively(
-      api,
-      vnode.parentNode as Node,
-      vnode.children as VNode[]
     )
 
   },
@@ -471,12 +448,11 @@ export const portalVNodeOperator: VNodeOperator = {
 }
 
 function getFragmentHostNode(vnode: VNode): Node {
-  if (vnode.isFragment) {
-    return getFragmentHostNode(
-      (vnode.children as VNode[])[0]
-    )
-  }
-  return vnode.node as Node
+  return vnode.isFragment
+    ? getFragmentHostNode(
+        (vnode.children as VNode[])[0]
+      )
+    : vnode.node as Node
 }
 
 
@@ -549,34 +525,29 @@ function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
 
   const component = vnode.component,
 
-  context = vnode.context,
+  context = vnode.context as any,
 
-  hasParent = api.parent(vnode.node)
+  isEnterable = vnode.data && !api.parent(vnode.node)
 
   vnode.operator.insert(api, parentNode, vnode, before)
 
   // 普通元素和组件的占位节点都会走到这里
   // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
-  if (!hasParent) {
-    let enter: Function | void = constant.UNDEFINED
-    if (vnode.isComponent && component) {
-      enter = function () {
-        enterVNode(vnode, component)
-      }
-    }
-    else if (!vnode.isPure) {
-      enter = function () {
-        enterVNode(vnode)
-      }
-    }
-    if (enter) {
-      // 执行到这时，组件还没有挂载到 DOM 树
-      // 如果此时直接触发 enter，外部还需要做多余的工作，比如 setTimeout
-      // 索性这里直接等挂载到 DOM 数之后再触发
-      // 注意：YoxInterface 没有声明 $nextTask，因为不想让外部访问，
-      // 但是这里要用一次，所以加了 as any
-      (context as any).$nextTask.prepend(enter)
-    }
+  if (isEnterable) {
+    const callback = vnode.isComponent && component
+      ? function () {
+          enterVNode(vnode, component)
+        }
+      : function () {
+          enterVNode(vnode)
+        }
+
+    // 执行到这时，组件还没有挂载到 DOM 树
+    // 如果此时直接触发 enter，外部还需要做多余的工作，比如 setTimeout
+    // 索性这里直接等挂载到 DOM 数之后再触发
+    // 注意：YoxInterface 没有声明 $nextTask，因为不想让外部访问，
+    // 但是这里要用一次，所以加了 as any
+    context.$nextTask.prepend(callback)
   }
 
 }
@@ -606,8 +577,10 @@ function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
       operator.remove(api, parentNode, vnode)
     }
 
-    // 异步组件，还没加载成功就被删除了
-    if (vnode.isComponent && !component) {
+    if (!vnode.data
+      // 异步组件，还没加载成功就被删除了
+      || (vnode.isComponent && !component)
+    ) {
       done()
       return
     }
