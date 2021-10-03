@@ -5,6 +5,10 @@ import {
 } from 'yox-config/src/config'
 
 import {
+  Data,
+} from 'yox-type/src/type'
+
+import {
   DomApi,
 } from 'yox-type/src/api'
 
@@ -16,6 +20,10 @@ import {
 import {
   ComponentOptions,
 } from 'yox-type/src/options'
+
+import {
+  TransitionHooks,
+} from 'yox-type/src/hooks'
 
 import {
   YoxInterface,
@@ -38,6 +46,22 @@ import * as model from './module/model'
 import * as directive from './module/directive'
 import * as component from './module/component'
 
+
+function getComponentHostVNode(vnode: VNode) {
+  const { component } = vnode
+  return component
+    ? component.$vnode as VNode
+    : vnode
+}
+
+function getFragmentHostVNode(vnode: VNode): VNode {
+  return vnode.isFragment
+    ? getFragmentHostVNode(
+        (vnode.children as VNode[])[0]
+      )
+    : vnode
+}
+
 function insertNodeNatively(api: DomApi, parentNode: Node, node: Node, referenceNode: Node | void) {
   if (referenceNode) {
     api.before(parentNode, node, referenceNode)
@@ -47,7 +71,54 @@ function insertNodeNatively(api: DomApi, parentNode: Node, node: Node, reference
   }
 }
 
-function insertVNodeNatively(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
+function enterVNode(vnode: VNode, node: Node) {
+  const { data, transition } = vnode, leaving = data[field.LEAVING]
+  if (leaving) {
+    leaving()
+  }
+  if (transition) {
+    const { enter } = transition
+    if (enter) {
+      enter.call(
+        vnode.context,
+        node as HTMLElement
+      )
+    }
+  }
+}
+
+function leaveVNode(vnode: VNode, node: Node, done: Function) {
+  const { data, transition } = vnode, leaving = data[field.LEAVING]
+  if (leaving) {
+    leaving()
+  }
+  if (transition) {
+    const { leave } = transition
+    if (leave) {
+      leave.call(
+        vnode.context,
+        node as HTMLElement,
+        data[field.LEAVING] = function () {
+          if (data[field.LEAVING]) {
+            done()
+            data[field.LEAVING] = constant.UNDEFINED
+          }
+        }
+      )
+      return constant.TRUE
+    }
+  }
+}
+
+function textVNodeUpdateOperator(api: DomApi, vnode: VNode, oldVNode: VNode) {
+  const { node } = oldVNode
+  vnode.node = node
+  if (vnode.text !== oldVNode.text) {
+    api.setText(node, vnode.text as string, vnode.isStyle, vnode.isOption)
+  }
+}
+
+function vnodeInsertOperator(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
   // 这里不调用 insertNodeNatively，避免判断两次
   if (before) {
     api.before(parentNode, vnode.node, before.node)
@@ -57,40 +128,40 @@ function insertVNodeNatively(api: DomApi, parentNode: Node, vnode: VNode, before
   }
 }
 
-function removeVNodeNatively(api: DomApi, parentNode: Node, vnode: VNode) {
+function vnodeRemoveOperator(api: DomApi, parentNode: Node, vnode: VNode) {
   api.remove(parentNode, vnode.node)
+}
+
+function vnodeEnterOperator() {
+
+}
+
+function vnodeLeaveOperator(node: VNode, done: Function) {
+  done()
 }
 
 export const textVNodeOperator: VNodeOperator = {
   create(api: DomApi, vnode: VNode) {
     vnode.node = api.createText(vnode.text as string)
   },
-  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
-    const { node } = oldVNode
-    vnode.node = node
-    if (vnode.text !== oldVNode.text) {
-      api.setText(node, vnode.text as string, vnode.isStyle, vnode.isOption)
-    }
-  },
+  update: textVNodeUpdateOperator,
   destroy: constant.EMPTY_FUNCTION,
-  insert: insertVNodeNatively,
-  remove: removeVNodeNatively,
+  insert: vnodeInsertOperator,
+  remove: vnodeRemoveOperator,
+  enter: vnodeEnterOperator,
+  leave: vnodeLeaveOperator,
 }
 
 export const commentVNodeOperator: VNodeOperator = {
   create(api: DomApi, vnode: VNode) {
     vnode.node = api.createComment(vnode.text as string)
   },
-  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
-    const { node } = oldVNode
-    vnode.node = node
-    if (vnode.text !== oldVNode.text) {
-      api.setText(node, vnode.text as string)
-    }
-  },
+  update: textVNodeUpdateOperator,
   destroy: constant.EMPTY_FUNCTION,
-  insert: insertVNodeNatively,
-  remove: removeVNodeNatively,
+  insert: vnodeInsertOperator,
+  remove: vnodeRemoveOperator,
+  enter: vnodeEnterOperator,
+  leave: vnodeLeaveOperator,
 }
 
 export const elementVNodeOperator: VNodeOperator = {
@@ -207,8 +278,21 @@ export const elementVNodeOperator: VNodeOperator = {
     }
 
   },
-  insert: insertVNodeNatively,
-  remove: removeVNodeNatively,
+  insert: vnodeInsertOperator,
+  remove: vnodeRemoveOperator,
+  enter(vnode) {
+    if (vnode.data) {
+      enterVNode(vnode, vnode.node)
+    }
+  },
+  leave(vnode, done) {
+    if (vnode.data
+      && leaveVNode(vnode, vnode.node, done)
+    ) {
+      return
+    }
+    done()
+  },
 }
 
 export const componentVNodeOperator: VNodeOperator = {
@@ -232,10 +316,8 @@ export const componentVNodeOperator: VNodeOperator = {
                 // 用完就删掉
                 delete data[field.VNODE]
               }
-              enterVNode(
-                vnode,
-                createComponent(api, vnode, options)
-              )
+              createComponent(api, vnode, options)
+              vnode.operator.enter(vnode)
             }
           }
           // 同步组件
@@ -298,12 +380,36 @@ export const componentVNodeOperator: VNodeOperator = {
 
   },
   insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
-    const componentVNode = (vnode.component as YoxInterface).$vnode as VNode
-    insertVNode(api, parentNode, componentVNode, before)
+    insertVNode(api, parentNode, getComponentHostVNode(vnode), before)
   },
   remove(api: DomApi, parentNode: Node, vnode: VNode) {
-    const componentVNode = (vnode.component as YoxInterface).$vnode as VNode
-    removeVNode(api, parentNode, componentVNode)
+    removeVNode(api, parentNode, getComponentHostVNode(vnode))
+  },
+  enter(vnode) {
+    if (vnode.component) {
+      const hostVNode = getComponentHostVNode(vnode)
+      if (vnode.transition) {
+        enterVNode(vnode, hostVNode.node)
+      }
+      else {
+        hostVNode.operator.enter(hostVNode)
+      }
+    }
+  },
+  leave(vnode, done) {
+    if (vnode.component) {
+      const hostVNode = getComponentHostVNode(vnode)
+      if (vnode.transition) {
+        if (leaveVNode(vnode, hostVNode.node, done)) {
+          return
+        }
+      }
+      else {
+        hostVNode.operator.leave(hostVNode, done)
+        return
+      }
+    }
+    done()
   },
 }
 
@@ -317,7 +423,7 @@ export const fragmentVNodeOperator: VNodeOperator = {
       }
     )
 
-    vnode.node = getFragmentHostNode(vnode)
+    vnode.node = getFragmentHostVNode(vnode).node
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -364,6 +470,8 @@ export const fragmentVNodeOperator: VNodeOperator = {
     )
 
   },
+  enter: vnodeEnterOperator,
+  leave: vnodeLeaveOperator,
 }
 
 export const portalVNodeOperator: VNodeOperator = {
@@ -396,7 +504,7 @@ export const portalVNodeOperator: VNodeOperator = {
 
     // 用注释占用节点在模板里的位置
     // 这样删除或替换节点，才有找到它应该在的位置
-    vnode.node = api.createComment('portal')
+    vnode.node = api.createComment(constant.EMPTY_STRING)
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -426,7 +534,7 @@ export const portalVNodeOperator: VNodeOperator = {
   },
   insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
 
-    insertVNodeNatively(api, parentNode, vnode)
+    vnodeInsertOperator(api, parentNode, vnode)
 
     const actualParentNode = vnode.parentNode as Node
 
@@ -440,7 +548,7 @@ export const portalVNodeOperator: VNodeOperator = {
   },
   remove(api: DomApi, parentNode: Node, vnode: VNode) {
 
-    removeVNodeNatively(api, parentNode, vnode)
+    vnodeRemoveOperator(api, parentNode, vnode)
 
     const actualParentNode = vnode.parentNode as Node
 
@@ -451,15 +559,9 @@ export const portalVNodeOperator: VNodeOperator = {
       }
     )
 
-  }
-}
-
-function getFragmentHostNode(vnode: VNode): Node {
-  return vnode.isFragment
-    ? getFragmentHostNode(
-        (vnode.children as VNode[])[0]
-      )
-    : vnode.node as Node
+  },
+  enter: vnodeEnterOperator,
+  leave: vnodeLeaveOperator,
 }
 
 
@@ -530,13 +632,13 @@ function addVNodes(api: DomApi, parentNode: Node, vnodes: VNode[], startIndex?: 
 
 function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
 
-  const isEnterable = vnode.data && !api.parent(vnode.node)
+  const { operator } = vnode
 
-  vnode.operator.insert(api, parentNode, vnode, before)
+  operator.insert(api, parentNode, vnode, before)
 
   // 普通元素和组件的占位节点都会走到这里
   // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
-  if (isEnterable) {
+  if (operator.enter !== vnodeEnterOperator) {
     // 执行到这时，组件还没有挂载到 DOM 树
     // 如果此时直接触发 enter，外部还需要做多余的工作，比如 setTimeout
     // 索性这里直接等挂载到 DOM 数之后再触发
@@ -544,7 +646,7 @@ function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
     // 但是这里要用一次，所以加了 as any
     (vnode.context as any).$nextTask.prepend(
       function () {
-        enterVNode(vnode, vnode.component)
+        operator.enter(vnode)
       }
     )
   }
@@ -569,83 +671,15 @@ function destroyVNode(api: DomApi, vnode: VNode) {
 
 function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
 
-  const { component, operator } = vnode,
+  const { operator } = vnode
 
-  done = function () {
-    operator.remove(api, parentNode, vnode)
-  }
-
-  if (!vnode.data
-    // 异步组件，还没加载成功就被删除了
-    || (vnode.isComponent && !component)
-  ) {
-    done()
-    return
-  }
-
-  leaveVNode(vnode, component, done)
-
-}
-
-/**
- * vnode 触发 enter hook 时，外部一般会做一些淡入动画
- */
-function enterVNode(vnode: VNode, component: YoxInterface | void) {
-  // 如果组件根元素和组件本身都写了 transition
-  // 优先用外面定义的
-  // 因为这明确是在覆盖配置
-  let { data, transition } = vnode
-  if (component && !transition) {
-    // 再看组件根元素是否有 transition
-    transition = (component.$vnode as VNode).transition
-  }
-  const leaving = data[field.LEAVING]
-  if (leaving) {
-    leaving()
-  }
-  if (transition) {
-    const { enter } = transition
-    if (enter) {
-      enter.call(
-        vnode.context,
-        vnode.node as HTMLElement
-      )
+  operator.leave(
+    vnode,
+    function () {
+      operator.remove(api, parentNode, vnode)
     }
-  }
-}
+  )
 
-/**
- * vnode 触发 leave hook 时，外部一般会做一些淡出动画
- * 动画结束后才能移除节点，否则无法产生动画
- * 这里由外部调用 done 来通知内部动画结束
- */
-function leaveVNode(vnode: VNode, component: YoxInterface | void, done: () => void) {
-  // 如果组件根元素和组件本身都写了 transition
-  // 优先用外面定义的
-  // 因为这明确是在覆盖配置
-  let { data, transition } = vnode
-  if (component && !transition) {
-    // 再看组件根元素是否有 transition
-    transition = (component.$vnode as VNode).transition
-  }
-  if (transition) {
-    const { leave } = transition
-    if (leave) {
-      leave.call(
-        vnode.context,
-        vnode.node as HTMLElement,
-        data[field.LEAVING] = function () {
-          if (data[field.LEAVING]) {
-            done()
-            data[field.LEAVING] = constant.UNDEFINED
-          }
-        }
-      )
-      return
-    }
-  }
-  // 如果没有淡出动画，直接结束
-  done()
 }
 
 function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChildren: (VNode | undefined)[]) {
