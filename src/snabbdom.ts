@@ -5,10 +5,6 @@ import {
 } from 'yox-config/src/config'
 
 import {
-  Data,
-} from 'yox-type/src/type'
-
-import {
   DomApi,
 } from 'yox-type/src/api'
 
@@ -20,10 +16,6 @@ import {
 import {
   ComponentOptions,
 } from 'yox-type/src/options'
-
-import {
-  TransitionHooks,
-} from 'yox-type/src/hooks'
 
 import {
   YoxInterface,
@@ -54,12 +46,14 @@ function getComponentHostVNode(vnode: VNode) {
     : vnode
 }
 
-function getFragmentHostVNode(vnode: VNode): VNode {
-  return vnode.isFragment
-    ? getFragmentHostVNode(
-        (vnode.children as VNode[])[0]
-      )
-    : vnode
+function getFragmentHostNode(api: DomApi, vnode: VNode): Node {
+  if (vnode.isFragment || vnode.isSlot) {
+    const child = (vnode.children as VNode[])[0]
+    return child
+      ? getFragmentHostNode(api, child)
+      : api.createComment(constant.EMPTY_STRING)
+  }
+  return vnode.node
 }
 
 function insertNodeNatively(api: DomApi, parentNode: Node, node: Node, referenceNode: Node | void) {
@@ -138,6 +132,61 @@ function vnodeEnterOperator() {
 
 function vnodeLeaveOperator(node: VNode, done: Function) {
   done()
+}
+
+function vnodeCreateChildrenOperator(api: DomApi, vnode: VNode) {
+
+  array.each(
+    vnode.children as VNode[],
+    function (child) {
+      createVNode(api, child)
+    }
+  )
+
+}
+
+function vnodeUpdateChildrenOperator(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
+
+  updateChildren(
+    api,
+    parentNode,
+    vnode.children as VNode[],
+    oldVNode.children || constant.EMPTY_ARRAY as any
+  )
+
+}
+
+function vnodeDestroyChildrenOperator(api: DomApi, vnode: VNode) {
+
+  array.each(
+    vnode.children as VNode[],
+    function (child) {
+      destroyVNode(api, child)
+    }
+  )
+
+}
+
+function vnodeInsertChildrenOperator(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
+
+  array.each(
+    vnode.children as VNode[],
+    function (child) {
+      insertVNode(api, parentNode, child, before)
+    }
+  )
+
+}
+
+function vnodeRemoveChildrenOperator(api: DomApi, parentNode: Node, vnode: VNode) {
+
+  array.each(
+    vnode.children as VNode[],
+    function (child) {
+      removeVNode(api, parentNode, child)
+    }
+  )
+
 }
 
 export const textVNodeOperator: VNodeOperator = {
@@ -416,14 +465,9 @@ export const componentVNodeOperator: VNodeOperator = {
 export const fragmentVNodeOperator: VNodeOperator = {
   create(api: DomApi, vnode: VNode) {
 
-    array.each(
-      vnode.children as VNode[],
-      function (child) {
-        createVNode(api, child)
-      }
-    )
+    vnodeCreateChildrenOperator(api, vnode)
 
-    vnode.node = getFragmentHostVNode(vnode).node
+    vnode.node = getFragmentHostNode(api, vnode)
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -432,44 +476,17 @@ export const fragmentVNodeOperator: VNodeOperator = {
 
     vnode.node = node
 
-    updateChildren(
+    vnodeUpdateChildrenOperator(
       api,
       api.parent(node) as Node,
-      vnode.children as VNode[],
-      oldVNode ? oldVNode.children as VNode[] : constant.EMPTY_ARRAY as any
+      vnode,
+      oldVNode
     )
 
   },
-  destroy(api: DomApi, vnode: VNode) {
-
-    array.each(
-      vnode.children as VNode[],
-      function (child) {
-        destroyVNode(api, child)
-      }
-    )
-
-  },
-  insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
-
-    array.each(
-      vnode.children as VNode[],
-      function (child) {
-        insertVNode(api, parentNode, child, before)
-      }
-    )
-
-  },
-  remove(api: DomApi, parentNode: Node, vnode: VNode) {
-
-    array.each(
-      vnode.children as VNode[],
-      function (child) {
-        removeVNode(api, parentNode, child)
-      }
-    )
-
-  },
+  destroy: vnodeDestroyChildrenOperator,
+  insert: vnodeInsertChildrenOperator,
+  remove: vnodeRemoveChildrenOperator,
   enter: vnodeEnterOperator,
   leave: vnodeLeaveOperator,
 }
@@ -495,12 +512,7 @@ export const portalVNodeOperator: VNodeOperator = {
 
     vnode.parentNode = parentNode as Node
 
-    array.each(
-      vnode.children as VNode[],
-      function (child) {
-        createVNode(api, child)
-      }
-    )
+    vnodeCreateChildrenOperator(api, vnode)
 
     // 用注释占用节点在模板里的位置
     // 这样删除或替换节点，才有找到它应该在的位置
@@ -514,52 +526,62 @@ export const portalVNodeOperator: VNodeOperator = {
     vnode.node = node
     vnode.parentNode = parentNode
 
-    updateChildren(
+    vnodeUpdateChildrenOperator(api, parentNode as Node, vnode, oldVNode)
+
+  },
+  destroy: vnodeDestroyChildrenOperator,
+  insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
+    vnodeInsertOperator(api, parentNode, vnode)
+    vnodeInsertChildrenOperator(api, vnode.parentNode as Node, vnode)
+  },
+  remove(api: DomApi, parentNode: Node, vnode: VNode) {
+    vnodeRemoveOperator(api, parentNode, vnode)
+    vnodeRemoveChildrenOperator(api, vnode.parentNode as Node, vnode)
+  },
+  enter: vnodeEnterOperator,
+  leave: vnodeLeaveOperator,
+}
+
+export const slotVNodeOperator: VNodeOperator = {
+  create(api: DomApi, vnode: VNode) {
+
+    vnodeCreateChildrenOperator(api, vnode)
+
+    vnode.data = { }
+    vnode.node = getFragmentHostNode(api, vnode)
+
+    ref.update(api, vnode)
+    event.update(api, vnode)
+
+  },
+  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
+
+    const { node, data } = oldVNode
+
+    vnode.node = node
+    vnode.data = data
+
+    ref.update(api, vnode, oldVNode)
+    event.update(api, vnode, oldVNode)
+
+    vnodeUpdateChildrenOperator(
       api,
-      parentNode as Node,
-      vnode.children as VNode[],
-      oldVNode ? oldVNode.children as VNode[] : constant.EMPTY_ARRAY as any
+      api.parent(node) as Node,
+      vnode,
+      oldVNode
     )
 
   },
   destroy(api: DomApi, vnode: VNode) {
 
-    array.each(
-      vnode.children as VNode[],
-      function (child) {
-        destroyVNode(api, child)
-      }
-    )
+    ref.remove(api, vnode)
+    event.remove(api, vnode)
+
+    vnodeDestroyChildrenOperator(api, vnode)
 
   },
-  insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
-
-    vnodeInsertOperator(api, parentNode, vnode)
-
-    const actualParentNode = vnode.parentNode as Node
-
-    array.each(
-      vnode.children as VNode[],
-      function (child) {
-        insertVNode(api, actualParentNode, child)
-      }
-    )
-
-  },
-  remove(api: DomApi, parentNode: Node, vnode: VNode) {
-
-    vnodeRemoveOperator(api, parentNode, vnode)
-
-    const actualParentNode = vnode.parentNode as Node
-
-    array.each(
-      vnode.children as VNode[],
-      function (child) {
-        removeVNode(api, actualParentNode, child)
-      }
-    )
-
-  },
+  insert: vnodeInsertChildrenOperator,
+  remove: vnodeRemoveChildrenOperator,
   enter: vnodeEnterOperator,
   leave: vnodeLeaveOperator,
 }
