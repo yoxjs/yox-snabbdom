@@ -126,10 +126,6 @@ function vnodeRemoveOperator(api: DomApi, parentNode: Node, vnode: VNode) {
   api.remove(parentNode, vnode.node)
 }
 
-function vnodeEnterOperator() {
-
-}
-
 function vnodeLeaveOperator(node: VNode, done: Function) {
   done()
 }
@@ -197,7 +193,7 @@ export const textVNodeOperator: VNodeOperator = {
   destroy: constant.EMPTY_FUNCTION,
   insert: vnodeInsertOperator,
   remove: vnodeRemoveOperator,
-  enter: vnodeEnterOperator,
+  enter: constant.EMPTY_FUNCTION,
   leave: vnodeLeaveOperator,
 }
 
@@ -209,7 +205,7 @@ export const commentVNodeOperator: VNodeOperator = {
   destroy: constant.EMPTY_FUNCTION,
   insert: vnodeInsertOperator,
   remove: vnodeRemoveOperator,
-  enter: vnodeEnterOperator,
+  enter: constant.EMPTY_FUNCTION,
   leave: vnodeLeaveOperator,
 }
 
@@ -499,7 +495,7 @@ export const fragmentVNodeOperator: VNodeOperator = {
   destroy: vnodeDestroyChildrenOperator,
   insert: vnodeInsertChildrenOperator,
   remove: vnodeRemoveChildrenOperator,
-  enter: vnodeEnterOperator,
+  enter: constant.EMPTY_FUNCTION,
   leave: vnodeLeaveOperator,
 }
 
@@ -550,7 +546,7 @@ export const portalVNodeOperator: VNodeOperator = {
     vnodeRemoveOperator(api, parentNode, vnode)
     vnodeRemoveChildrenOperator(api, vnode.parentNode as Node, vnode)
   },
-  enter: vnodeEnterOperator,
+  enter: constant.EMPTY_FUNCTION,
   leave: vnodeLeaveOperator,
 }
 
@@ -594,7 +590,7 @@ export const slotVNodeOperator: VNodeOperator = {
   },
   insert: vnodeInsertChildrenOperator,
   remove: vnodeRemoveChildrenOperator,
-  enter: vnodeEnterOperator,
+  enter: constant.EMPTY_FUNCTION,
   leave: vnodeLeaveOperator,
 }
 
@@ -672,7 +668,7 @@ function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
 
   // 普通元素和组件的占位节点都会走到这里
   // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
-  if (operator.enter !== vnodeEnterOperator) {
+  if (operator.enter !== constant.EMPTY_FUNCTION) {
     // 执行到这时，组件还没有挂载到 DOM 树
     // 如果此时直接触发 enter，外部还需要做多余的工作，比如 setTimeout
     // 索性这里直接等挂载到 DOM 数之后再触发
