@@ -104,7 +104,7 @@ function leaveVNode(vnode: VNode, node: Node, done: Function) {
   }
 }
 
-function textVNodeUpdateOperator(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
+function textVNodeUpdateOperator(api: DomApi, vnode: VNode, oldVNode: VNode) {
   const { node } = oldVNode
   vnode.node = node
   if (vnode.text !== oldVNode.text) {
@@ -237,7 +237,7 @@ export const elementVNodeOperator: VNodeOperator = {
     }
 
   },
-  update(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
+  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
     const { node } = oldVNode
 
@@ -384,7 +384,7 @@ export const componentVNodeOperator: VNodeOperator = {
     }
 
   },
-  update(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
+  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
     const { data } = oldVNode
 
@@ -478,13 +478,13 @@ export const fragmentVNodeOperator: VNodeOperator = {
     vnode.node = getFragmentHostNode(api, vnode)
 
   },
-  update(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
+  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
     vnode.node = oldVNode.node
 
     vnodeUpdateChildrenOperator(
       api,
-      parentNode,
+      vnode.parentNode as Node,
       vnode,
       oldVNode
     )
@@ -500,23 +500,23 @@ export const fragmentVNodeOperator: VNodeOperator = {
 export const portalVNodeOperator: VNodeOperator = {
   create(api: DomApi, vnode: VNode) {
 
-    let parentNode: Element | void = constant.UNDEFINED
+    let target: Element | void = constant.UNDEFINED
 
     if (vnode.to) {
-      parentNode = api.find(vnode.to)
+      target = api.find(vnode.to)
       if (process.env.NODE_ENV === 'development') {
-        if (!parentNode) {
+        if (!target) {
           logger.fatal(`Failed to locate portal target with selector "${vnode.to}".`)
         }
       }
     }
 
     // 用 body 元素兜底
-    if (!parentNode) {
-      parentNode = api.getBodyElement()
+    if (!target) {
+      target = api.getBodyElement()
     }
 
-    vnode.parentNode = parentNode as Node
+    vnode.target = target as Node
 
     vnodeCreateChildrenOperator(api, vnode)
 
@@ -525,24 +525,24 @@ export const portalVNodeOperator: VNodeOperator = {
     vnode.node = api.createComment(constant.EMPTY_STRING)
 
   },
-  update(api: DomApi, _: Node, vnode: VNode, oldVNode: VNode) {
+  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
-    const { node, parentNode } = oldVNode
+    const { node, target } = oldVNode
 
     vnode.node = node
-    vnode.parentNode = parentNode
+    vnode.target = target
 
-    vnodeUpdateChildrenOperator(api, parentNode as Node, vnode, oldVNode)
+    vnodeUpdateChildrenOperator(api, target as Node, vnode, oldVNode)
 
   },
   destroy: vnodeDestroyChildrenOperator,
   insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
     vnodeInsertOperator(api, parentNode, vnode)
-    vnodeInsertChildrenOperator(api, vnode.parentNode as Node, vnode)
+    vnodeInsertChildrenOperator(api, vnode.target as Node, vnode)
   },
   remove(api: DomApi, parentNode: Node, vnode: VNode) {
     vnodeRemoveOperator(api, parentNode, vnode)
-    vnodeRemoveChildrenOperator(api, vnode.parentNode as Node, vnode)
+    vnodeRemoveChildrenOperator(api, vnode.target as Node, vnode)
   },
   enter: constant.EMPTY_FUNCTION,
   leave: vnodeLeaveOperator,
@@ -560,19 +560,17 @@ export const slotVNodeOperator: VNodeOperator = {
     event.update(api, vnode)
 
   },
-  update(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
+  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
-    const { node, data } = oldVNode
-
-    vnode.node = node
-    vnode.data = data
+    vnode.node = oldVNode.node
+    vnode.data = oldVNode.data
 
     ref.update(api, vnode, oldVNode)
     event.update(api, vnode, oldVNode)
 
     vnodeUpdateChildrenOperator(
       api,
-      parentNode,
+      oldVNode.parentNode as Node,
       vnode,
       oldVNode
     )
@@ -664,6 +662,8 @@ function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
 
   operator.insert(api, parentNode, vnode, before)
 
+  vnode.parentNode = parentNode
+
   // 普通元素和组件的占位节点都会走到这里
   // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
   if (operator.enter !== constant.EMPTY_FUNCTION) {
@@ -705,6 +705,7 @@ function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
     vnode,
     function () {
       operator.remove(api, parentNode, vnode)
+      vnode.parentNode = constant.UNDEFINED
     }
   )
 
@@ -743,14 +744,14 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
 
     // 从头到尾比较，位置相同且值得 patch
     else if (isPatchable(startVNode, oldStartVNode)) {
-      updateVNode(api, parentNode, startVNode, oldStartVNode)
+      updateVNode(api, startVNode, oldStartVNode)
       startVNode = children[++startIndex]
       oldStartVNode = oldChildren[++oldStartIndex]
     }
 
     // 从尾到头比较，位置相同且值得 patch
     else if (isPatchable(endVNode, oldEndVNode)) {
-      updateVNode(api, parentNode, endVNode, oldEndVNode)
+      updateVNode(api, endVNode, oldEndVNode)
       endVNode = children[--endIndex]
       oldEndVNode = oldChildren[--oldEndIndex]
     }
@@ -760,7 +761,7 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
     // 当 endVNode 和 oldStartVNode 值得 patch
     // 说明元素被移到右边了
     else if (isPatchable(endVNode, oldStartVNode)) {
-      updateVNode(api, parentNode, endVNode, oldStartVNode)
+      updateVNode(api, endVNode, oldStartVNode)
       insertNodeNatively(
         api,
         parentNode,
@@ -774,7 +775,7 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
     // 当 oldEndVNode 和 startVNode 值得 patch
     // 说明元素被移到左边了
     else if (isPatchable(startVNode, oldEndVNode)) {
-      updateVNode(api, parentNode, startVNode, oldEndVNode)
+      updateVNode(api, startVNode, oldEndVNode)
       insertNodeNatively(
         api,
         parentNode,
@@ -799,7 +800,7 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
 
       // 移动元素
       if (oldIndex !== constant.UNDEFINED) {
-        patch(api, parentNode, startVNode, oldChildren[oldIndex as number] as VNode)
+        patch(api, startVNode, oldChildren[oldIndex as number] as VNode)
         oldChildren[oldIndex as number] = constant.UNDEFINED
       }
       // 新元素
@@ -835,13 +836,13 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
   }
 }
 
-function updateVNode(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
+function updateVNode(api: DomApi, vnode: VNode, oldVNode: VNode) {
   if (vnode !== oldVNode) {
-    vnode.operator.update(api, parentNode, vnode, oldVNode)
+    vnode.operator.update(api, vnode, oldVNode)
   }
 }
 
-export function patch(api: DomApi, parentNode: Node | void, vnode: VNode, oldVNode: VNode) {
+export function patch(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
   if (vnode === oldVNode) {
     return
@@ -852,6 +853,7 @@ export function patch(api: DomApi, parentNode: Node | void, vnode: VNode, oldVNo
     // 同步加载的组件，初始化时不会传入占位节点
     // 它内部会自动生成一个注释节点，当它的根 vnode 和注释节点对比时，必然无法 patch
     // 于是走进此分支，为新组件创建一个 DOM 节点，然后继续 createComponent 后面的流程
+    const parentNode = oldVNode.parentNode
     createVNode(api, vnode)
     if (parentNode) {
       insertVNode(api, parentNode, vnode, oldVNode)
@@ -861,12 +863,13 @@ export function patch(api: DomApi, parentNode: Node | void, vnode: VNode, oldVNo
     return
   }
 
-  updateVNode(api, parentNode as Node, vnode, oldVNode)
+  updateVNode(api, vnode, oldVNode)
 
 }
 
 export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
   const vnode: any = {
+    parentNode: api.parent(node),
     node,
     context,
   }
@@ -898,7 +901,7 @@ export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
 export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
   destroyVNode(api, vnode)
   if (isRemove) {
-    const parentNode = api.parent(vnode.node)
+    const parentNode = vnode.parentNode
     if (process.env.NODE_ENV === 'development') {
       if (!parentNode) {
         logger.fatal(`The vnode can't be destroyed without a parent node.`)
