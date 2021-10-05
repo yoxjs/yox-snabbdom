@@ -41,9 +41,9 @@ import * as component from './module/component'
 
 function getComponentHostVNode(vnode: VNode) {
   const { component } = vnode
-  return component
-    ? component.$vnode as VNode
-    : vnode
+  if (component) {
+    return component.$vnode as VNode
+  }
 }
 
 function getFragmentHostNode(api: DomApi, vnode: VNode): Node {
@@ -429,14 +429,26 @@ export const componentVNodeOperator: VNodeOperator = {
 
   },
   insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
-    insertVNode(api, parentNode, getComponentHostVNode(vnode), before)
+    const hostVNode = getComponentHostVNode(vnode)
+    if (hostVNode) {
+      hostVNode.operator.insert(api, parentNode, vnode, before)
+    }
+    else {
+      vnodeInsertOperator(api, parentNode, vnode, before)
+    }
   },
   remove(api: DomApi, parentNode: Node, vnode: VNode) {
-    removeVNode(api, parentNode, getComponentHostVNode(vnode))
+    const hostVNode = getComponentHostVNode(vnode)
+    if (hostVNode) {
+      hostVNode.operator.remove(api, parentNode, vnode)
+    }
+    else {
+      vnodeRemoveOperator(api, parentNode, vnode)
+    }
   },
   enter(vnode) {
-    if (vnode.component) {
-      const hostVNode = getComponentHostVNode(vnode)
+    const hostVNode = getComponentHostVNode(vnode)
+    if (hostVNode) {
       if (vnode.transition) {
         enterVNode(vnode, hostVNode.node)
       }
@@ -446,8 +458,8 @@ export const componentVNodeOperator: VNodeOperator = {
     }
   },
   leave(vnode, done) {
-    if (vnode.component) {
-      const hostVNode = getComponentHostVNode(vnode)
+    const hostVNode = getComponentHostVNode(vnode)
+    if (hostVNode) {
       if (vnode.transition) {
         if (leaveVNode(vnode, hostVNode.node, done)) {
           return
