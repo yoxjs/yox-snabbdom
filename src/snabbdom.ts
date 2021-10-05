@@ -65,45 +65,6 @@ function insertNodeNatively(api: DomApi, parentNode: Node, node: Node, reference
   }
 }
 
-function enterVNode(vnode: VNode, node: Node) {
-  const { data, transition } = vnode, leaving = data[field.LEAVING]
-  if (leaving) {
-    leaving()
-  }
-  if (transition) {
-    const { enter } = transition
-    if (enter) {
-      enter.call(
-        vnode.context,
-        node as HTMLElement
-      )
-    }
-  }
-}
-
-function leaveVNode(vnode: VNode, node: Node, done: Function) {
-  const { data, transition } = vnode, leaving = data[field.LEAVING]
-  if (leaving) {
-    leaving()
-  }
-  if (transition) {
-    const { leave } = transition
-    if (leave) {
-      leave.call(
-        vnode.context,
-        node as HTMLElement,
-        data[field.LEAVING] = function () {
-          if (data[field.LEAVING]) {
-            done()
-            data[field.LEAVING] = constant.UNDEFINED
-          }
-        }
-      )
-      return constant.TRUE
-    }
-  }
-}
-
 function textVNodeUpdateOperator(api: DomApi, vnode: VNode, oldVNode: VNode) {
   const { node } = oldVNode
   vnode.node = node
@@ -129,7 +90,7 @@ function vnodeRemoveOperator(api: DomApi, parentNode: Node, vnode: VNode) {
   vnode.parentNode = constant.UNDEFINED
 }
 
-function vnodeLeaveOperator(node: VNode, done: Function) {
+function vnodeLeaveOperator(vnode: VNode, done: Function) {
   done()
 }
 
@@ -732,6 +693,45 @@ function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
     }
   )
 
+}
+
+function enterVNode(vnode: VNode, node: Node) {
+  const { data, transition } = vnode, leaving = data[field.LEAVING]
+  if (leaving) {
+    leaving()
+  }
+  if (transition) {
+    const { enter } = transition
+    if (enter) {
+      enter.call(
+        vnode.context,
+        node as HTMLElement
+      )
+    }
+  }
+}
+
+function leaveVNode(vnode: VNode, node: Node, done: Function) {
+  const { data, transition } = vnode, leaving = data[field.LEAVING]
+  if (leaving) {
+    leaving()
+  }
+  if (transition) {
+    const { leave } = transition
+    if (leave) {
+      leave.call(
+        vnode.context,
+        node as HTMLElement,
+        data[field.LEAVING] = function () {
+          if (data[field.LEAVING]) {
+            done()
+            data[field.LEAVING] = constant.UNDEFINED
+          }
+        }
+      )
+      return constant.TRUE
+    }
+  }
 }
 
 function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChildren: (VNode | undefined)[]) {
