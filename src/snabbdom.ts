@@ -104,7 +104,7 @@ function leaveVNode(vnode: VNode, node: Node, done: Function) {
   }
 }
 
-function textVNodeUpdateOperator(api: DomApi, vnode: VNode, oldVNode: VNode) {
+function textVNodeUpdateOperator(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
   const { node } = oldVNode
   vnode.node = node
   if (vnode.text !== oldVNode.text) {
@@ -237,7 +237,7 @@ export const elementVNodeOperator: VNodeOperator = {
     }
 
   },
-  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
+  update(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
 
     const { node } = oldVNode
 
@@ -384,7 +384,7 @@ export const componentVNodeOperator: VNodeOperator = {
     }
 
   },
-  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
+  update(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
 
     const { data } = oldVNode
 
@@ -478,15 +478,13 @@ export const fragmentVNodeOperator: VNodeOperator = {
     vnode.node = getFragmentHostNode(api, vnode)
 
   },
-  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
+  update(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
 
-    const { node } = oldVNode
-
-    vnode.node = node
+    vnode.node = oldVNode.node
 
     vnodeUpdateChildrenOperator(
       api,
-      api.parent(node) as Node,
+      parentNode,
       vnode,
       oldVNode
     )
@@ -527,7 +525,7 @@ export const portalVNodeOperator: VNodeOperator = {
     vnode.node = api.createComment(constant.EMPTY_STRING)
 
   },
-  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
+  update(api: DomApi, _: Node, vnode: VNode, oldVNode: VNode) {
 
     const { node, parentNode } = oldVNode
 
@@ -562,7 +560,7 @@ export const slotVNodeOperator: VNodeOperator = {
     event.update(api, vnode)
 
   },
-  update(api: DomApi, vnode: VNode, oldVNode: VNode) {
+  update(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
 
     const { node, data } = oldVNode
 
@@ -574,7 +572,7 @@ export const slotVNodeOperator: VNodeOperator = {
 
     vnodeUpdateChildrenOperator(
       api,
-      api.parent(node) as Node,
+      parentNode,
       vnode,
       oldVNode
     )
@@ -745,14 +743,14 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
 
     // 从头到尾比较，位置相同且值得 patch
     else if (isPatchable(startVNode, oldStartVNode)) {
-      updateVNode(api, startVNode, oldStartVNode)
+      updateVNode(api, parentNode, startVNode, oldStartVNode)
       startVNode = children[++startIndex]
       oldStartVNode = oldChildren[++oldStartIndex]
     }
 
     // 从尾到头比较，位置相同且值得 patch
     else if (isPatchable(endVNode, oldEndVNode)) {
-      updateVNode(api, endVNode, oldEndVNode)
+      updateVNode(api, parentNode, endVNode, oldEndVNode)
       endVNode = children[--endIndex]
       oldEndVNode = oldChildren[--oldEndIndex]
     }
@@ -762,7 +760,7 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
     // 当 endVNode 和 oldStartVNode 值得 patch
     // 说明元素被移到右边了
     else if (isPatchable(endVNode, oldStartVNode)) {
-      updateVNode(api, endVNode, oldStartVNode)
+      updateVNode(api, parentNode, endVNode, oldStartVNode)
       insertNodeNatively(
         api,
         parentNode,
@@ -776,7 +774,7 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
     // 当 oldEndVNode 和 startVNode 值得 patch
     // 说明元素被移到左边了
     else if (isPatchable(startVNode, oldEndVNode)) {
-      updateVNode(api, startVNode, oldEndVNode)
+      updateVNode(api, parentNode, startVNode, oldEndVNode)
       insertNodeNatively(
         api,
         parentNode,
@@ -801,7 +799,7 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
 
       // 移动元素
       if (oldIndex !== constant.UNDEFINED) {
-        patch(api, startVNode, oldChildren[oldIndex as number] as VNode)
+        patch(api, parentNode, startVNode, oldChildren[oldIndex as number] as VNode)
         oldChildren[oldIndex as number] = constant.UNDEFINED
       }
       // 新元素
@@ -837,13 +835,13 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
   }
 }
 
-function updateVNode(api: DomApi, vnode: VNode, oldVNode: VNode) {
+function updateVNode(api: DomApi, parentNode: Node, vnode: VNode, oldVNode: VNode) {
   if (vnode !== oldVNode) {
-    vnode.operator.update(api, vnode, oldVNode)
+    vnode.operator.update(api, parentNode, vnode, oldVNode)
   }
 }
 
-export function patch(api: DomApi, vnode: VNode, oldVNode: VNode) {
+export function patch(api: DomApi, parentNode: Node | void, vnode: VNode, oldVNode: VNode) {
 
   if (vnode === oldVNode) {
     return
@@ -854,7 +852,6 @@ export function patch(api: DomApi, vnode: VNode, oldVNode: VNode) {
     // 同步加载的组件，初始化时不会传入占位节点
     // 它内部会自动生成一个注释节点，当它的根 vnode 和注释节点对比时，必然无法 patch
     // 于是走进此分支，为新组件创建一个 DOM 节点，然后继续 createComponent 后面的流程
-    const parentNode = api.parent(oldVNode.node)
     createVNode(api, vnode)
     if (parentNode) {
       insertVNode(api, parentNode, vnode, oldVNode)
@@ -864,7 +861,7 @@ export function patch(api: DomApi, vnode: VNode, oldVNode: VNode) {
     return
   }
 
-  updateVNode(api, vnode, oldVNode)
+  updateVNode(api, parentNode as Node, vnode, oldVNode)
 
 }
 
