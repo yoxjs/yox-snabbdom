@@ -82,12 +82,10 @@ function vnodeInsertOperator(api: DomApi, parentNode: Node, vnode: VNode, before
   else {
     api.append(parentNode, vnode.node)
   }
-  vnode.parentNode = parentNode
 }
 
 function vnodeRemoveOperator(api: DomApi, parentNode: Node, vnode: VNode) {
   api.remove(parentNode, vnode.node)
-  vnode.parentNode = constant.UNDEFINED
 }
 
 function vnodeLeaveOperator(vnode: VNode, done: Function) {
@@ -394,7 +392,7 @@ export const componentVNodeOperator: VNodeOperator = {
     const hostVNode = getComponentHostVNode(vnode)
     if (hostVNode) {
       hostVNode.operator.insert(api, parentNode, hostVNode, before)
-      vnode.parentNode = parentNode
+      hostVNode.parentNode = parentNode
     }
     else {
       vnodeInsertOperator(api, parentNode, vnode, before)
@@ -404,7 +402,7 @@ export const componentVNodeOperator: VNodeOperator = {
     const hostVNode = getComponentHostVNode(vnode)
     if (hostVNode) {
       hostVNode.operator.remove(api, parentNode, hostVNode)
-      vnode.parentNode = constant.UNDEFINED
+      hostVNode.parentNode = constant.UNDEFINED
     }
     else {
       vnodeRemoveOperator(api, parentNode, vnode)
@@ -462,14 +460,8 @@ export const fragmentVNodeOperator: VNodeOperator = {
 
   },
   destroy: vnodeDestroyChildrenOperator,
-  insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
-    vnodeInsertChildrenOperator(api, parentNode, vnode, before)
-    vnode.parentNode = parentNode
-  },
-  remove(api: DomApi, parentNode: Node, vnode: VNode) {
-    vnodeRemoveChildrenOperator(api, parentNode, vnode)
-    vnode.parentNode = constant.UNDEFINED
-  },
+  insert: vnodeInsertChildrenOperator,
+  remove: vnodeRemoveChildrenOperator,
   enter: constant.EMPTY_FUNCTION,
   leave: vnodeLeaveOperator,
 }
@@ -514,7 +506,7 @@ export const portalVNodeOperator: VNodeOperator = {
 
   },
   destroy: vnodeDestroyChildrenOperator,
-  insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
+  insert(api: DomApi, parentNode: Node, vnode: VNode) {
     vnodeInsertOperator(api, parentNode, vnode)
     vnodeInsertChildrenOperator(api, vnode.target as Node, vnode)
   },
@@ -565,14 +557,8 @@ export const slotVNodeOperator: VNodeOperator = {
     vnodeDestroyChildrenOperator(api, vnode)
 
   },
-  insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
-    vnodeInsertChildrenOperator(api, parentNode, vnode, before)
-    vnode.parentNode = parentNode
-  },
-  remove(api: DomApi, parentNode: Node, vnode: VNode) {
-    vnodeRemoveChildrenOperator(api, parentNode, vnode)
-    vnode.parentNode = constant.UNDEFINED
-  },
+  insert: vnodeInsertChildrenOperator,
+  remove: vnodeRemoveChildrenOperator,
   enter: constant.EMPTY_FUNCTION,
   leave: vnodeLeaveOperator,
 }
@@ -649,6 +635,8 @@ function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
 
   operator.insert(api, parentNode, vnode, before)
 
+  vnode.parentNode = parentNode
+
   // 普通元素和组件的占位节点都会走到这里
   // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
   if (operator.enter !== constant.EMPTY_FUNCTION) {
@@ -690,6 +678,7 @@ function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
     vnode,
     function () {
       operator.remove(api, parentNode, vnode)
+      vnode.parentNode = constant.UNDEFINED
     }
   )
 
