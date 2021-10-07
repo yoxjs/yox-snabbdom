@@ -528,6 +528,7 @@ export const slotVNodeOperator: VNodeOperator = {
 
     ref.update(api, vnode)
     event.update(api, vnode)
+    nativeStyle.update(api, vnode)
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -540,6 +541,7 @@ export const slotVNodeOperator: VNodeOperator = {
 
     ref.update(api, vnode, oldVNode)
     event.update(api, vnode, oldVNode)
+    nativeStyle.update(api, vnode, oldVNode)
 
     vnodeUpdateChildrenOperator(
       api,
