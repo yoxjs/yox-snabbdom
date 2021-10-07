@@ -74,6 +74,21 @@ function textVNodeUpdateOperator(api: DomApi, vnode: VNode, oldVNode: VNode) {
   }
 }
 
+function elementVNodeEnterOperator(vnode: VNode) {
+  if (vnode.data) {
+    enterVNode(vnode, vnode.node)
+  }
+}
+
+function elementVNodeLeaveOperator(vnode: VNode, done: Function) {
+  if (vnode.data
+    && leaveVNode(vnode, vnode.node, done)
+  ) {
+    return
+  }
+  done()
+}
+
 function vnodeInsertOperator(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
   // 这里不调用 insertNodeNatively，避免判断两次
   if (before) {
@@ -288,19 +303,8 @@ export const elementVNodeOperator: VNodeOperator = {
   },
   insert: vnodeInsertOperator,
   remove: vnodeRemoveOperator,
-  enter(vnode) {
-    if (vnode.data) {
-      enterVNode(vnode, vnode.node)
-    }
-  },
-  leave(vnode, done) {
-    if (vnode.data
-      && leaveVNode(vnode, vnode.node, done)
-    ) {
-      return
-    }
-    done()
-  },
+  enter: elementVNodeEnterOperator,
+  leave: elementVNodeLeaveOperator,
 }
 
 export const componentVNodeOperator: VNodeOperator = {
@@ -528,7 +532,6 @@ export const slotVNodeOperator: VNodeOperator = {
 
     ref.update(api, vnode)
     event.update(api, vnode)
-    nativeStyle.update(api, vnode)
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -541,7 +544,6 @@ export const slotVNodeOperator: VNodeOperator = {
 
     ref.update(api, vnode, oldVNode)
     event.update(api, vnode, oldVNode)
-    nativeStyle.update(api, vnode, oldVNode)
 
     vnodeUpdateChildrenOperator(
       api,
@@ -561,8 +563,8 @@ export const slotVNodeOperator: VNodeOperator = {
   },
   insert: vnodeInsertChildrenOperator,
   remove: vnodeRemoveChildrenOperator,
-  enter: constant.EMPTY_FUNCTION,
-  leave: vnodeLeaveOperator,
+  enter: elementVNodeEnterOperator,
+  leave: elementVNodeLeaveOperator,
 }
 
 
