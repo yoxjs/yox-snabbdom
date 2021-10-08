@@ -1,4 +1,5 @@
 import {
+  Data,
   LazyValue,
 } from 'yox-type/src/type'
 
@@ -75,7 +76,11 @@ function addEvent(api: DomApi, element: HTMLElement | void, component: YoxInterf
 
 export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
-  const { data, lazy, events } = vnode,
+  const data = vnode.data as Data,
+
+  lazy = vnode.lazy,
+
+  events = vnode.events,
 
   oldEvents = oldVNode && oldVNode.events
 
@@ -124,11 +129,18 @@ export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 }
 
 export function remove(api: DomApi, vnode: VNode) {
-  const { data, events } = vnode, destroy = data[field.EVENT]
+
+  const data = vnode.data as Data,
+
+  events = vnode.events,
+
+  destroy = data[field.EVENT]
+
   if (events && destroy) {
     for (let key in events) {
       destroy[key]()
       delete destroy[key]
     }
   }
+
 }

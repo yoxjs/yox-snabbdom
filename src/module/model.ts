@@ -1,4 +1,5 @@
 import {
+  Data,
   Watcher,
   LazyValue,
 } from 'yox-type/src/type'
@@ -235,7 +236,13 @@ export function addModel(api: DomApi, element: HTMLElement | void, component: Yo
 
 export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
-  const { data, node, component, model } = vnode,
+  const data = vnode.data as Data,
+
+  node = vnode.node,
+
+  component = vnode.component,
+
+  model = vnode.model,
 
   oldModel = oldVNode && oldVNode.model
 
@@ -256,7 +263,7 @@ export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 }
 
 export function remove(api: DomApi, vnode: VNode) {
-  const { data } = vnode
+  const data = vnode.data as Data
   if (data[field.MODEL]) {
     data[field.MODEL]()
     delete data[field.MODEL]

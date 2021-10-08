@@ -5,6 +5,10 @@ import {
 } from 'yox-config/src/config'
 
 import {
+  Data,
+} from 'yox-type/src/type'
+
+import {
   DomApi,
 } from 'yox-type/src/api'
 
@@ -53,7 +57,7 @@ function getFragmentHostNode(api: DomApi, vnode: VNode): Node {
       ? getFragmentHostNode(api, child)
       : api.createComment(constant.EMPTY_STRING)
   }
-  return vnode.node
+  return vnode.node as Node
 }
 
 function insertNodeNatively(api: DomApi, parentNode: Node, node: Node, referenceNode: Node | void) {
@@ -66,7 +70,7 @@ function insertNodeNatively(api: DomApi, parentNode: Node, node: Node, reference
 }
 
 function textVNodeUpdateOperator(api: DomApi, vnode: VNode, oldVNode: VNode) {
-  const { node } = oldVNode
+  const node = oldVNode.node as Node
   vnode.node = node
   vnode.parentNode = oldVNode.parentNode
   if (vnode.text !== oldVNode.text) {
@@ -76,13 +80,13 @@ function textVNodeUpdateOperator(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
 function elementVNodeEnterOperator(vnode: VNode) {
   if (vnode.data) {
-    enterVNode(vnode, vnode.node)
+    enterVNode(vnode, vnode.node as Node)
   }
 }
 
 function elementVNodeLeaveOperator(vnode: VNode, done: Function) {
   if (vnode.data
-    && leaveVNode(vnode, vnode.node, done)
+    && leaveVNode(vnode, vnode.node as Node, done)
   ) {
     return
   }
@@ -92,15 +96,15 @@ function elementVNodeLeaveOperator(vnode: VNode, done: Function) {
 function vnodeInsertOperator(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
   // 这里不调用 insertNodeNatively，避免判断两次
   if (before) {
-    api.before(parentNode, vnode.node, before.node)
+    api.before(parentNode, vnode.node as Node, before.node as Node)
   }
   else {
-    api.append(parentNode, vnode.node)
+    api.append(parentNode, vnode.node as Node)
   }
 }
 
 function vnodeRemoveOperator(api: DomApi, parentNode: Node, vnode: VNode) {
-  api.remove(parentNode, vnode.node)
+  api.remove(parentNode, vnode.node as Node)
 }
 
 function vnodeLeaveOperator(vnode: VNode, done: Function) {
@@ -216,7 +220,7 @@ export const elementVNodeOperator: VNodeOperator = {
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
-    const { node } = oldVNode
+    const node = oldVNode.node as Node
 
     vnode.node = node
     vnode.parentNode = oldVNode.parentNode
@@ -353,7 +357,7 @@ export const componentVNodeOperator: VNodeOperator = {
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
-    const { data } = oldVNode
+    const data = oldVNode.data as Data
 
     vnode.data = data
     vnode.node = oldVNode.node
@@ -388,7 +392,7 @@ export const componentVNodeOperator: VNodeOperator = {
       component.remove(api, vnode)
     }
     else {
-      vnode.data[field.LOADING] = constant.FALSE
+      (vnode.data as Data)[field.LOADING] = constant.FALSE
     }
 
   },
@@ -407,6 +411,8 @@ export const componentVNodeOperator: VNodeOperator = {
     if (hostVNode) {
       hostVNode.operator.remove(api, parentNode, hostVNode)
       hostVNode.parentNode = constant.UNDEFINED
+      // 清空节点，这样下次渲染才会重新创建组件
+      vnode.node = constant.UNDEFINED
     }
     else {
       vnodeRemoveOperator(api, parentNode, vnode)
@@ -416,7 +422,7 @@ export const componentVNodeOperator: VNodeOperator = {
     const hostVNode = getComponentHostVNode(vnode)
     if (hostVNode) {
       if (vnode.transition) {
-        enterVNode(vnode, hostVNode.node)
+        enterVNode(vnode, hostVNode.node as Node)
       }
       else {
         hostVNode.operator.enter(hostVNode)
@@ -427,7 +433,7 @@ export const componentVNodeOperator: VNodeOperator = {
     const hostVNode = getComponentHostVNode(vnode)
     if (hostVNode) {
       if (vnode.transition) {
-        if (leaveVNode(vnode, hostVNode.node, done)) {
+        if (leaveVNode(vnode, hostVNode.node as Node, done)) {
           return
         }
       }
@@ -601,9 +607,9 @@ function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 
   const child = (vnode.parent || vnode.context).createComponent(options, vnode)
 
-  vnode.component = child
+  vnode.component = child as YoxInterface
 
-  vnode.data[field.LOADING] = constant.FALSE
+  (vnode.data as Data)[field.LOADING] = constant.FALSE
 
   ref.update(api, vnode)
   event.update(api, vnode)
@@ -689,7 +695,13 @@ function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
 }
 
 function enterVNode(vnode: VNode, node: Node) {
-  const { data, transition } = vnode, leaving = data[field.LEAVING]
+
+  const data = vnode.data as Data,
+
+  transition = vnode.transition,
+
+  leaving = data[field.LEAVING]
+
   if (leaving) {
     leaving()
   }
@@ -702,10 +714,17 @@ function enterVNode(vnode: VNode, node: Node) {
       )
     }
   }
+
 }
 
 function leaveVNode(vnode: VNode, node: Node, done: Function) {
-  const { data, transition } = vnode, leaving = data[field.LEAVING]
+
+  const data = vnode.data as Data,
+
+  transition = vnode.transition,
+
+  leaving = data[field.LEAVING]
+
   if (leaving) {
     leaving()
   }
@@ -725,6 +744,7 @@ function leaveVNode(vnode: VNode, node: Node, done: Function) {
       return constant.TRUE
     }
   }
+
 }
 
 function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChildren: (VNode | undefined)[]) {
@@ -781,8 +801,8 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
       insertNodeNatively(
         api,
         parentNode,
-        oldStartVNode.node,
-        api.next(oldEndVNode.node)
+        oldStartVNode.node as Node,
+        api.next(oldEndVNode.node as Node)
       )
       endVNode = children[--endIndex]
       oldStartVNode = oldChildren[++oldStartIndex]
@@ -795,8 +815,8 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
       insertNodeNatively(
         api,
         parentNode,
-        oldEndVNode.node,
-        oldStartVNode.node
+        oldEndVNode.node as Node,
+        oldStartVNode.node as Node
       )
       startVNode = children[++startIndex]
       oldEndVNode = oldChildren[--oldEndIndex]
