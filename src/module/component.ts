@@ -36,6 +36,8 @@ export function remove(api: DomApi, vnode: VNode) {
   const { component } = vnode
   if (component) {
     component.destroy()
+    // 移除时，组件可能已经发生过变化，即 shadow 不是创建时那个对象了
+    vnode.shadow = component.$vnode
     vnode.component = constant.UNDEFINED
   }
 }

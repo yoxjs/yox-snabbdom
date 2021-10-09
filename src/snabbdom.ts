@@ -96,10 +96,7 @@ function vnodeInsertOperator(api: DomApi, parentNode: Node, vnode: VNode, before
 }
 
 function vnodeRemoveOperator(api: DomApi, vnode: VNode) {
-  const { parentNode } = vnode
-  if (parentNode) {
-    api.remove(parentNode, vnode.node as Node)
-  }
+  api.remove(vnode.parentNode as Node, vnode.node as Node)
 }
 
 function vnodeLeaveOperator(vnode: VNode, done: Function) {
