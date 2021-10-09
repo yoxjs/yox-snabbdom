@@ -42,14 +42,6 @@ import * as model from './module/model'
 import * as directive from './module/directive'
 import * as component from './module/component'
 
-
-function getComponentHostVNode(vnode: VNode) {
-  const { component } = vnode
-  if (component) {
-    return component.$vnode as VNode
-  }
-}
-
 function getFragmentHostNode(api: DomApi, vnode: VNode): Node {
   if (vnode.isFragment || vnode.isSlot) {
     const child = (vnode.children as VNode[])[0]
@@ -397,48 +389,46 @@ export const componentVNodeOperator: VNodeOperator = {
 
   },
   insert(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
-    const hostVNode = getComponentHostVNode(vnode)
-    if (hostVNode) {
-      hostVNode.operator.insert(api, parentNode, hostVNode, before)
-      hostVNode.parentNode = parentNode
+    const { shadow } = vnode
+    if (shadow) {
+      shadow.operator.insert(api, parentNode, shadow, before)
+      shadow.parentNode = parentNode
     }
     else {
       vnodeInsertOperator(api, parentNode, vnode, before)
     }
   },
   remove(api: DomApi, parentNode: Node, vnode: VNode) {
-    const hostVNode = getComponentHostVNode(vnode)
-    if (hostVNode) {
-      hostVNode.operator.remove(api, parentNode, hostVNode)
-      hostVNode.parentNode = constant.UNDEFINED
-      // 清空节点，这样下次渲染才会重新创建组件
-      vnode.node = constant.UNDEFINED
+    const { shadow } = vnode
+    if (shadow) {
+      shadow.operator.remove(api, parentNode, shadow)
+      shadow.parentNode = constant.UNDEFINED
     }
     else {
       vnodeRemoveOperator(api, parentNode, vnode)
     }
   },
   enter(vnode) {
-    const hostVNode = getComponentHostVNode(vnode)
-    if (hostVNode) {
+    const { shadow } = vnode
+    if (shadow) {
       if (vnode.transition) {
-        enterVNode(vnode, hostVNode.node as Node)
+        enterVNode(vnode, shadow.node as Node)
       }
       else {
-        hostVNode.operator.enter(hostVNode)
+        shadow.operator.enter(shadow)
       }
     }
   },
   leave(vnode, done) {
-    const hostVNode = getComponentHostVNode(vnode)
-    if (hostVNode) {
+    const { shadow } = vnode
+    if (shadow) {
       if (vnode.transition) {
-        if (leaveVNode(vnode, hostVNode.node as Node, done)) {
+        if (leaveVNode(vnode, shadow.node as Node, done)) {
           return
         }
       }
       else {
-        hostVNode.operator.leave(hostVNode, done)
+        shadow.operator.leave(shadow, done)
         return
       }
     }
@@ -605,11 +595,14 @@ function createKeyToIndex(vnodes: (VNode | void)[], startIndex: number, endIndex
 
 function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 
-  const child = (vnode.parent || vnode.context).createComponent(options, vnode)
+  const data = vnode.data as Data,
 
-  vnode.component = child as YoxInterface
+  child = (vnode.parent || vnode.context).createComponent(options, vnode)
 
-  (vnode.data as Data)[field.LOADING] = constant.FALSE
+  vnode.component = child
+  vnode.shadow = child.$vnode
+
+  data[field.LOADING] = constant.FALSE
 
   ref.update(api, vnode)
   event.update(api, vnode)
@@ -622,11 +615,9 @@ function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 }
 
 function createVNode(api: DomApi, vnode: VNode) {
-
   if (!vnode.node) {
     vnode.operator.create(api, vnode)
   }
-
 }
 
 function addVNodes(api: DomApi, parentNode: Node, vnodes: VNode[], startIndex?: number, endIndex?: number, before?: VNode) {

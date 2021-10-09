@@ -7,6 +7,7 @@ import {
 } from 'yox-type/src/api'
 
 import * as object from 'yox-common/src/util/object'
+import * as constant from 'yox-common/src/util/constant'
 
 export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
@@ -35,5 +36,6 @@ export function remove(api: DomApi, vnode: VNode) {
   const { component } = vnode
   if (component) {
     component.destroy()
+    vnode.component = constant.UNDEFINED
   }
 }
