@@ -95,8 +95,11 @@ function vnodeInsertOperator(api: DomApi, parentNode: Node, vnode: VNode, before
   }
 }
 
-function vnodeRemoveOperator(api: DomApi, parentNode: Node, vnode: VNode) {
-  api.remove(parentNode, vnode.node as Node)
+function vnodeRemoveOperator(api: DomApi, vnode: VNode) {
+  const { parentNode } = vnode
+  if (parentNode) {
+    api.remove(parentNode, vnode.node as Node)
+  }
 }
 
 function vnodeLeaveOperator(vnode: VNode, done: Function) {
@@ -147,12 +150,12 @@ function vnodeInsertChildrenOperator(api: DomApi, parentNode: Node, vnode: VNode
 
 }
 
-function vnodeRemoveChildrenOperator(api: DomApi, parentNode: Node, vnode: VNode) {
+function vnodeRemoveChildrenOperator(api: DomApi, vnode: VNode) {
 
   array.each(
     vnode.children as VNode[],
     function (child) {
-      removeVNode(api, parentNode, child)
+      removeVNode(api, child)
     }
   )
 
@@ -237,7 +240,7 @@ export const elementVNodeOperator: VNodeOperator = {
 
     if (is.string(text)) {
       if (oldChildren) {
-        removeVNodes(api, node, oldChildren)
+        removeVNodes(api, oldChildren)
       }
       if (text !== oldText) {
         api.setText(node, text as string, isStyle, isOption)
@@ -245,7 +248,7 @@ export const elementVNodeOperator: VNodeOperator = {
     }
     else if (is.string(html)) {
       if (oldChildren) {
-        removeVNodes(api, node, oldChildren)
+        removeVNodes(api, oldChildren)
       }
       if (html !== oldHtml) {
         api.setHtml(node as Element, html as string, isStyle, isOption)
@@ -268,7 +271,7 @@ export const elementVNodeOperator: VNodeOperator = {
     }
     // 有旧的没新的 - 删除节点
     else if (oldChildren) {
-      removeVNodes(api, node, oldChildren)
+      removeVNodes(api, oldChildren)
     }
     // 有旧的 text 没有新的 text
     else if (oldText || oldHtml) {
@@ -398,14 +401,14 @@ export const componentVNodeOperator: VNodeOperator = {
       vnodeInsertOperator(api, parentNode, vnode, before)
     }
   },
-  remove(api: DomApi, parentNode: Node, vnode: VNode) {
+  remove(api: DomApi, vnode: VNode) {
     const { shadow } = vnode
     if (shadow) {
-      shadow.operator.remove(api, parentNode, shadow)
+      shadow.operator.remove(api, shadow)
       shadow.parentNode = constant.UNDEFINED
     }
     else {
-      vnodeRemoveOperator(api, parentNode, vnode)
+      vnodeRemoveOperator(api, vnode)
     }
   },
   enter(vnode) {
@@ -510,9 +513,9 @@ export const portalVNodeOperator: VNodeOperator = {
     vnodeInsertOperator(api, parentNode, vnode)
     vnodeInsertChildrenOperator(api, vnode.target as Node, vnode)
   },
-  remove(api: DomApi, parentNode: Node, vnode: VNode) {
-    vnodeRemoveOperator(api, parentNode, vnode)
-    vnodeRemoveChildrenOperator(api, vnode.target as Node, vnode)
+  remove(api: DomApi, vnode: VNode) {
+    vnodeRemoveOperator(api, vnode)
+    vnodeRemoveChildrenOperator(api, vnode)
   },
   enter: constant.EMPTY_FUNCTION,
   leave: vnodeLeaveOperator,
@@ -655,13 +658,13 @@ function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
 
 }
 
-function removeVNodes(api: DomApi, parentNode: Node, vnodes: (VNode | void)[], startIndex?: number, endIndex?: number) {
+function removeVNodes(api: DomApi, vnodes: (VNode | void)[], startIndex?: number, endIndex?: number) {
   let vnode: VNode | void, start = startIndex || 0, end = endIndex !== constant.UNDEFINED ? endIndex as number : vnodes.length - 1
   while (start <= end) {
     vnode = vnodes[start]
     if (vnode) {
       destroyVNode(api, vnode)
-      removeVNode(api, parentNode, vnode)
+      removeVNode(api, vnode)
     }
     start++
   }
@@ -671,14 +674,14 @@ function destroyVNode(api: DomApi, vnode: VNode) {
   vnode.operator.destroy(api, vnode)
 }
 
-function removeVNode(api: DomApi, parentNode: Node, vnode: VNode) {
+function removeVNode(api: DomApi, vnode: VNode) {
 
   const { operator } = vnode
 
   operator.leave(
     vnode,
     function () {
-      operator.remove(api, parentNode, vnode)
+      operator.remove(api, vnode)
       vnode.parentNode = constant.UNDEFINED
     }
   )
@@ -855,7 +858,6 @@ function updateChildren(api: DomApi, parentNode: Node, children: VNode[], oldChi
   else if (startIndex > endIndex) {
     removeVNodes(
       api,
-      parentNode,
       oldChildren,
       oldStartIndex,
       oldEndIndex
@@ -885,7 +887,7 @@ export function patch(api: DomApi, vnode: VNode, oldVNode: VNode) {
     if (parentNode) {
       insertVNode(api, parentNode, vnode, oldVNode)
       destroyVNode(api, oldVNode)
-      removeVNode(api, parentNode, oldVNode)
+      removeVNode(api, oldVNode)
     }
     return
   }
@@ -926,13 +928,7 @@ export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
 export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
   destroyVNode(api, vnode)
   if (isRemove) {
-    const parentNode = vnode.parentNode
-    if (process.env.NODE_ENV === 'development') {
-      if (!parentNode) {
-        logger.fatal(`The vnode can't be destroyed without a parent node.`)
-      }
-    }
-    removeVNode(api, parentNode as Node, vnode)
+    removeVNode(api, vnode)
   }
 }
 
