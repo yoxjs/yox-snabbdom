@@ -143,4 +143,6 @@ export function remove(api: DomApi, vnode: VNode) {
     }
   }
 
+  data[field.EVENT] = constant.UNDEFINED
+
 }
