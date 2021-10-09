@@ -964,6 +964,7 @@ export function clone(vnode: VNode): VNode {
     text: vnode.text,
     html: vnode.html,
     children: vnode.children,
+    parent: vnode.parent,
     context: vnode.context,
     operator: vnode.operator,
   }
