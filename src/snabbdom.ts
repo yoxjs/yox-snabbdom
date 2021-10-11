@@ -120,7 +120,7 @@ function vnodeUpdateChildrenOperator(api: DomApi, parentNode: Node, vnode: VNode
     api,
     parentNode,
     vnode.children as VNode[],
-    oldVNode.children || constant.EMPTY_ARRAY as any
+    oldVNode.children as VNode[]
   )
 
 }
@@ -487,11 +487,17 @@ export const portalVNodeOperator: VNodeOperator = {
 
     vnode.target = target as Node
 
-    vnodeCreateChildrenOperator(api, vnode)
-
     // 用注释占用节点在模板里的位置
     // 这样删除或替换节点，才有找到它应该在的位置
     vnode.node = api.createComment(constant.EMPTY_STRING)
+
+    array.each(
+      vnode.children as VNode[],
+      function (child) {
+        createVNode(api, child)
+        insertVNode(api, target as Node, child)
+      }
+    )
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -505,15 +511,19 @@ export const portalVNodeOperator: VNodeOperator = {
     vnodeUpdateChildrenOperator(api, target as Node, vnode, oldVNode)
 
   },
-  destroy: vnodeDestroyChildrenOperator,
-  insert(api: DomApi, parentNode: Node, vnode: VNode) {
-    vnodeInsertOperator(api, parentNode, vnode)
-    vnodeInsertChildrenOperator(api, vnode.target as Node, vnode)
+  destroy(api: DomApi, vnode: VNode) {
+
+    array.each(
+      vnode.children as VNode[],
+      function (child) {
+        destroyVNode(api, child)
+        removeVNode(api, child)
+      }
+    )
+
   },
-  remove(api: DomApi, vnode: VNode) {
-    vnodeRemoveOperator(api, vnode)
-    vnodeRemoveChildrenOperator(api, vnode)
-  },
+  insert: vnodeInsertOperator,
+  remove: vnodeRemoveOperator,
   enter: constant.EMPTY_FUNCTION,
   leave: vnodeLeaveOperator,
 }
@@ -895,9 +905,9 @@ export function patch(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
 export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
   const vnode: any = {
-    parentNode: api.parent(node),
-    node,
     context,
+    node,
+    parentNode: api.parent(node),
   }
   switch (node.nodeType) {
     case 1:
