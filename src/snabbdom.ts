@@ -684,9 +684,9 @@ function removeVNode(api: DomApi, vnode: VNode) {
 
 function enterVNode(vnode: VNode, node: Node) {
 
-  const data = vnode.data as Data,
+  const { context, transition } = vnode,
 
-  transition = vnode.transition,
+  data = vnode.data as Data,
 
   leaving = data[field.LEAVING]
 
@@ -696,13 +696,9 @@ function enterVNode(vnode: VNode, node: Node) {
   if (transition) {
     const { enter } = transition
     if (enter) {
-      (vnode.context as any).$nextTask.prepend(
-        function () {
-          enter.call(
-            vnode.context,
-            node as HTMLElement
-          )
-        }
+      enter.call(
+        context,
+        node as HTMLElement
       )
     }
   }
@@ -711,9 +707,9 @@ function enterVNode(vnode: VNode, node: Node) {
 
 function leaveVNode(vnode: VNode, node: Node, done: Function) {
 
-  const data = vnode.data as Data,
+  const { context, transition } = vnode,
 
-  transition = vnode.transition,
+  data = vnode.data as Data,
 
   leaving = data[field.LEAVING]
 
@@ -724,7 +720,7 @@ function leaveVNode(vnode: VNode, node: Node, done: Function) {
     const { leave } = transition
     if (leave) {
       leave.call(
-        vnode.context,
+        context,
         node as HTMLElement,
         data[field.LEAVING] = function () {
           if (data[field.LEAVING]) {
