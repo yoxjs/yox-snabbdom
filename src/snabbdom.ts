@@ -648,20 +648,7 @@ function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
 
   vnode.parentNode = parentNode
 
-  // 普通元素和组件的占位节点都会走到这里
-  // 但是占位节点不用 enter，而是等组件加载回来之后再调 enter
-  if (operator.enter !== constant.EMPTY_FUNCTION) {
-    // 执行到这时，组件还没有挂载到 DOM 树
-    // 如果此时直接触发 enter，外部还需要做多余的工作，比如 setTimeout
-    // 索性这里直接等挂载到 DOM 数之后再触发
-    // 注意：YoxInterface 没有声明 $nextTask，因为不想让外部访问，
-    // 但是这里要用一次，所以加了 as any
-    (vnode.context as any).$nextTask.prepend(
-      function () {
-        operator.enter(vnode)
-      }
-    )
-  }
+  operator.enter(vnode)
 
 }
 
@@ -709,9 +696,13 @@ function enterVNode(vnode: VNode, node: Node) {
   if (transition) {
     const { enter } = transition
     if (enter) {
-      enter.call(
-        vnode.context,
-        node as HTMLElement
+      (vnode.context as any).$nextTask.prepend(
+        function () {
+          enter.call(
+            vnode.context,
+            node as HTMLElement
+          )
+        }
       )
     }
   }
