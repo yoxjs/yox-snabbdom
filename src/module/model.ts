@@ -140,7 +140,7 @@ selectControl: NativeControl = {
 
 export function addModel(api: DomApi, element: HTMLElement | void, component: YoxInterface | void, vnode: VNode) {
 
-  let { context, model, lazy, nativeProps } = vnode,
+  let { context, model, lazy, nativeAttrs } = vnode,
 
   { keypath, value } = model as ModelValue,
 
@@ -184,7 +184,7 @@ export function addModel(api: DomApi, element: HTMLElement | void, component: Yo
     eventName = constant.EVENT_CHANGE
 
     if (control === inputControl) {
-      const type = nativeProps && nativeProps.type
+      const type = nativeAttrs && nativeAttrs.type
       if (type === 'radio') {
         control = radioControl
       }

@@ -34,7 +34,6 @@ import * as constant from 'yox-common/src/util/constant'
 import * as field from './field'
 
 import * as nativeAttr from './module/nativeAttr'
-import * as nativeProp from './module/nativeProp'
 import * as nativeStyle from './module/nativeStyle'
 import * as ref from './module/ref'
 import * as event from './module/event'
@@ -198,7 +197,6 @@ export const elementVNodeOperator: VNodeOperator = {
     }
 
     nativeAttr.update(api, vnode)
-    nativeProp.update(api, vnode)
     nativeStyle.update(api, vnode)
 
     if (!vnode.isPure) {
@@ -219,7 +217,6 @@ export const elementVNodeOperator: VNodeOperator = {
     vnode.data = oldVNode.data
 
     nativeAttr.update(api, vnode, oldVNode)
-    nativeProp.update(api, vnode, oldVNode)
     nativeStyle.update(api, vnode, oldVNode)
 
     if (!vnode.isPure) {
@@ -940,7 +937,6 @@ export function clone(vnode: VNode): VNode {
     isPure: vnode.isPure,
     slots: vnode.slots,
     props: vnode.props,
-    nativeProps: vnode.nativeProps,
     nativeAttrs: vnode.nativeAttrs,
     nativeStyles: vnode.nativeStyles,
     directives: vnode.directives,
