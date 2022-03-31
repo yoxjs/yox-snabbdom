@@ -922,36 +922,3 @@ export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
     removeVNode(api, vnode)
   }
 }
-
-export function clone(vnode: VNode): VNode {
-  return {
-    type: vnode.type,
-    tag: vnode.tag,
-    isComponent: vnode.isComponent,
-    isFragment: vnode.isFragment,
-    isSlot: vnode.isSlot,
-    isSvg: vnode.isSvg,
-    isStyle: vnode.isStyle,
-    isOption: vnode.isOption,
-    isStatic: vnode.isStatic,
-    isPure: vnode.isPure,
-    slots: vnode.slots,
-    props: vnode.props,
-    nativeAttrs: vnode.nativeAttrs,
-    nativeStyles: vnode.nativeStyles,
-    directives: vnode.directives,
-    events: vnode.events,
-    lazy: vnode.lazy,
-    transition: vnode.transition,
-    model: vnode.model,
-    to: vnode.to,
-    ref: vnode.ref,
-    key: vnode.key,
-    text: vnode.text,
-    html: vnode.html,
-    children: vnode.children,
-    parent: vnode.parent,
-    context: vnode.context,
-    operator: vnode.operator,
-  }
-}

@@ -6,7 +6,6 @@ import {
   DomApi,
 } from 'yox-type/src/api'
 
-import * as object from 'yox-common/src/util/object'
 import * as constant from 'yox-common/src/util/constant'
 
 export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
@@ -24,9 +23,13 @@ export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
       }
     }
 
-    const result = object.merge(props, slots)
-    if (result) {
-      component.forceUpdate(result)
+    let nextProps = props
+    if (slots) {
+      component.renderSlots(nextProps || (nextProps = {}), slots)
+    }
+
+    if (nextProps) {
+      component.forceUpdate(nextProps)
     }
   }
 
