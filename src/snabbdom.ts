@@ -2,6 +2,8 @@ import {
   VNODE_TYPE_TEXT,
   VNODE_TYPE_COMMENT,
   VNODE_TYPE_ELEMENT,
+  VNODE_TYPE_FRAGMENT,
+  VNODE_TYPE_SLOT,
 } from 'yox-config/src/config'
 
 import {
@@ -42,7 +44,9 @@ import * as directive from './module/directive'
 import * as component from './module/component'
 
 function getFragmentHostNode(api: DomApi, vnode: VNode): Node {
-  if (vnode.isFragment || vnode.isSlot) {
+  if (vnode.type === VNODE_TYPE_FRAGMENT
+    || vnode.type === VNODE_TYPE_SLOT
+  ) {
     const child = (vnode.children as VNode[])[0]
     return child
       ? getFragmentHostNode(api, child)
