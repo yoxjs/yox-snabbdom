@@ -22,7 +22,6 @@ import {
 
 import debounce from 'yox-common/src/function/debounce'
 
-import * as object from 'yox-common/src/util/object'
 import * as constant from 'yox-common/src/util/constant'
 
 import * as field from '../field'
@@ -106,8 +105,7 @@ export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
           destroy[key] = addEvent(api, element, component, lazy, event)
         }
         else if (oldEvent.runtime && event.runtime) {
-          object.extend(oldEvent.runtime, event.runtime)
-          // 在当前节点传递 oldEvent.runtime 的引用
+          oldEvent.runtime.execute = event.runtime.execute
           event.runtime = oldEvent.runtime
         }
 

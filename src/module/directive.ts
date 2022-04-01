@@ -6,7 +6,6 @@ import {
   DomApi,
 } from 'yox-type/src/api'
 
-import * as object from 'yox-common/src/util/object'
 import * as constant from 'yox-common/src/util/constant'
 
 export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
@@ -39,8 +38,7 @@ export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
           bind(node, directive, vnode)
         }
         else if (oldDirective.runtime && directive.runtime) {
-          object.extend(oldDirective.runtime, directive.runtime)
-          // 在当前节点传递 oldDirective.runtime 的引用
+          oldDirective.runtime.execute = directive.runtime.execute
           directive.runtime = oldDirective.runtime
         }
 
