@@ -36,8 +36,6 @@ interface NativeControl {
 
   sync(node: HTMLElement, keypath: string, context: YoxInterface): void
 
-  name: string
-
 }
 
 function debounceIfNeeded<T extends Function>(fn: T, lazy: LazyValue | void): T {
@@ -54,7 +52,6 @@ const inputControl: NativeControl = {
   sync(node: HTMLInputElement, keypath: string, context: YoxInterface) {
     context.set(keypath, node.value)
   },
-  name: 'value'
 },
 
 radioControl: NativeControl = {
@@ -66,7 +63,6 @@ radioControl: NativeControl = {
       context.set(keypath, node.value)
     }
   },
-  name: 'checked'
 },
 
 checkboxControl: NativeControl = {
@@ -92,40 +88,32 @@ checkboxControl: NativeControl = {
       context.set(keypath, node.checked)
     }
   },
-  name: 'checked'
 },
 
 selectControl: NativeControl = {
   set(node: HTMLSelectElement, value: any) {
-    array.each(
-      array.toArray(node.options),
-      node.multiple
-        ? function (option) {
-          option.selected = array.has(value, option.value, constant.FALSE)
-        }
-        : function (option, index) {
-          if (option.value == value) {
-            node.selectedIndex = index
-            return constant.FALSE
-          }
-        }
-    )
+    const { multiple, options } = node
+    for (let i = 0, length = options.length; i < length; i++) {
+      if (multiple) {
+        options[i].selected = array.has(value, options[i].value, constant.FALSE)
+      }
+      else if (options[i].value == value) {
+        node.selectedIndex = i
+        break
+      }
+    }
   },
   sync(node: HTMLSelectElement, keypath: string, context: YoxInterface) {
-    const { options } = node
-    if (node.multiple) {
+    const { multiple, options } = node
+    if (multiple) {
       const values: string[] = []
-      array.each(
-        array.toArray(options),
-        function (option) {
-          if (option.selected) {
-            array.push(
-              values,
-              option.value
-            )
-          }
+      for (let i = 0, length = options.length; i < length; i++) {
+        if (options[i].selected) {
+          values.push(
+            options[i].value
+          )
         }
-      )
+      }
       context.set(keypath, values)
     }
     else {
@@ -135,10 +123,9 @@ selectControl: NativeControl = {
       )
     }
   },
-  name: 'value'
 }
 
-export function addModel(api: DomApi, element: HTMLElement | void, component: YoxInterface | void, vnode: VNode) {
+function addModel(api: DomApi, element: HTMLElement | void, component: YoxInterface | void, vnode: VNode) {
 
   let { context, model, lazy, nativeAttrs } = vnode,
 
