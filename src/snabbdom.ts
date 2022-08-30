@@ -104,12 +104,11 @@ function vnodeLeaveOperator(vnode: VNode, done: Function) {
 
 function vnodeCreateChildrenOperator(api: DomApi, vnode: VNode) {
 
-  array.each(
-    vnode.children as VNode[],
-    function (child) {
-      createVNode(api, child)
-    }
-  )
+  const children = vnode.children as VNode[]
+
+  for (let i = 0, length = children.length; i < length; i++) {
+    createVNode(api, children[i])
+  }
 
 }
 
@@ -126,34 +125,31 @@ function vnodeUpdateChildrenOperator(api: DomApi, parentNode: Node, vnode: VNode
 
 function vnodeDestroyChildrenOperator(api: DomApi, vnode: VNode) {
 
-  array.each(
-    vnode.children as VNode[],
-    function (child) {
-      destroyVNode(api, child)
-    }
-  )
+  const children = vnode.children as VNode[]
+
+  for (let i = 0, length = children.length; i < length; i++) {
+    destroyVNode(api, children[i])
+  }
 
 }
 
 function vnodeInsertChildrenOperator(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode) {
 
-  array.each(
-    vnode.children as VNode[],
-    function (child) {
-      insertVNode(api, parentNode, child, before)
-    }
-  )
+  const children = vnode.children as VNode[]
+
+  for (let i = 0, length = children.length; i < length; i++) {
+    insertVNode(api, parentNode, children[i], before)
+  }
 
 }
 
 function vnodeRemoveChildrenOperator(api: DomApi, vnode: VNode) {
 
-  array.each(
-    vnode.children as VNode[],
-    function (child) {
-      removeVNode(api, child)
-    }
-  )
+  const children = vnode.children as VNode[]
+
+  for (let i = 0, length = children.length; i < length; i++) {
+    removeVNode(api, children[i])
+  }
 
 }
 
@@ -284,13 +280,11 @@ export const elementVNodeOperator: VNodeOperator = {
     model.remove(api, vnode)
     directive.remove(api, vnode)
 
-    if (vnode.children) {
-      array.each(
-        vnode.children,
-        function (child) {
-          destroyVNode(api, child)
-        }
-      )
+    const { children } = vnode
+    if (children) {
+      for (let i = 0, length = children.length; i < length; i++) {
+        destroyVNode(api, children[i])
+      }
     }
 
   },
@@ -488,13 +482,12 @@ export const portalVNodeOperator: VNodeOperator = {
     // 这样删除或替换节点，才有找到它应该在的位置
     vnode.node = api.createComment(constant.EMPTY_STRING)
 
-    array.each(
-      vnode.children as VNode[],
-      function (child) {
-        createVNode(api, child)
-        insertVNode(api, target as Node, child)
-      }
-    )
+    const children = vnode.children as VNode[]
+
+    for (let i = 0, length = children.length; i < length; i++) {
+      createVNode(api, children[i])
+      insertVNode(api, target as Node, children[i])
+    }
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -510,13 +503,12 @@ export const portalVNodeOperator: VNodeOperator = {
   },
   destroy(api: DomApi, vnode: VNode) {
 
-    array.each(
-      vnode.children as VNode[],
-      function (child) {
-        destroyVNode(api, child)
-        removeVNode(api, child)
-      }
-    )
+    const children = vnode.children as VNode[]
+
+    for (let i = 0, length = children.length; i < length; i++) {
+      destroyVNode(api, children[i])
+      removeVNode(api, children[i])
+    }
 
   },
   insert: vnodeInsertOperator,
