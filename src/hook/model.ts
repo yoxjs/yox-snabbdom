@@ -1,6 +1,5 @@
 import {
   Data,
-  Watcher,
   LazyValue,
 } from 'yox-type/src/type'
 
@@ -92,16 +91,23 @@ checkboxControl: NativeControl = {
 
 selectControl: NativeControl = {
   set(node: HTMLSelectElement, value: any) {
+
     const { multiple, options } = node
+
     for (let i = 0, length = options.length; i < length; i++) {
       if (multiple) {
         options[i].selected = array.has(value, options[i].value, constant.FALSE)
       }
       else if (options[i].value == value) {
         node.selectedIndex = i
-        break
+        return
       }
     }
+
+    if (!multiple) {
+      node.selectedIndex = -1
+    }
+
   },
   sync(node: HTMLSelectElement, keypath: string, context: YoxInterface) {
     const { multiple, options } = node
@@ -125,17 +131,13 @@ selectControl: NativeControl = {
   },
 }
 
-function addModel(api: DomApi, element: HTMLElement | void, component: YoxInterface | void, vnode: VNode) {
+function addModel(api: DomApi, element: HTMLElement | void, component: YoxInterface | void, data: Data, vnode: VNode) {
 
   let { context, model, lazy, nativeAttrs } = vnode,
 
   { keypath, value } = model as ModelValue,
 
-  lazyValue = lazy && (lazy[DIRECTIVE_MODEL] || lazy[constant.EMPTY_STRING]),
-
-  update: Watcher | void,
-
-  destroy: Function
+  lazyValue = lazy && (lazy[DIRECTIVE_MODEL] || lazy[constant.EMPTY_STRING])
 
   if (component) {
 
@@ -148,17 +150,12 @@ function addModel(api: DomApi, element: HTMLElement | void, component: YoxInterf
       lazyValue
     )
 
-    update = function (newValue: any) {
-      if (update) {
-        component.set(viewBinding, newValue)
-      }
-    }
-
-    destroy = function () {
-      component.unwatch(viewBinding, viewSyncing)
-    }
-
     component.watch(viewBinding, viewSyncing)
+
+    data[field.MODEL_DESTROY] = function () {
+      component.unwatch(viewBinding, viewSyncing)
+      delete data[field.MODEL_DESTROY]
+    }
 
   }
   else {
@@ -186,12 +183,6 @@ function addModel(api: DomApi, element: HTMLElement | void, component: YoxInterf
       }
     }
 
-    update = function (newValue: any) {
-      if (update) {
-        control.set(element as HTMLElement, newValue)
-      }
-    }
-
     const sync = debounceIfNeeded(
       function () {
         control.sync(element as HTMLElement, keypath, context)
@@ -199,60 +190,79 @@ function addModel(api: DomApi, element: HTMLElement | void, component: YoxInterf
       lazyValue
     )
 
-    destroy = function () {
-      api.off(element as HTMLElement, eventName, sync)
-    }
-
     api.on(element as HTMLElement, eventName, sync)
 
     control.set(element as HTMLElement, value)
 
-  }
+    data[field.MODEL_CONTROL] = control
+    data[field.MODEL_DESTROY] = function () {
+      api.off(element as HTMLElement, eventName, sync)
+      delete data[field.MODEL_DESTROY]
+      delete data[field.MODEL_CONTROL]
+    }
 
-  // 监听数据，修改界面
-  context.watch(keypath, update as Watcher)
-
-  return function () {
-    context.unwatch(keypath, update as Watcher)
-    update = constant.UNDEFINED
-    destroy()
   }
 
 }
 
+export function afterCreate(api: DomApi, vnode: VNode) {
 
-export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
+  const model = vnode.model
+  if (model) {
+    addModel(
+      api,
+      vnode.node as HTMLElement,
+      vnode.component,
+      vnode.data as Data,
+      vnode
+    )
+  }
+
+}
+
+export function afterUpdate(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
   const data = vnode.data as Data,
 
-  node = vnode.node,
+  newModel = vnode.model,
 
-  component = vnode.component,
+  oldModel = oldVNode.model
 
-  model = vnode.model,
+  if (newModel) {
 
-  oldModel = oldVNode && oldVNode.model
+    const element = vnode.node as HTMLElement,
 
-  if (model) {
+    component = vnode.component
+
     if (!oldModel) {
-      data[field.MODEL] = addModel(api, node as HTMLElement, component, vnode)
+      addModel(api, element, component, data, vnode)
     }
-    else if (model.keypath !== oldModel.keypath) {
-      data[field.MODEL]()
-      data[field.MODEL] = addModel(api, node as HTMLElement, component, vnode)
+    else if (newModel.keypath !== oldModel.keypath) {
+      data[field.MODEL_DESTROY]()
+      addModel(api, element, component, data, vnode)
     }
+    else {
+      if (component) {
+        component.set(component.$model as string, newModel.value)
+      }
+      else {
+        const control = data[field.MODEL_CONTROL]
+        if (control) {
+          control.set(element, newModel.value)
+        }
+      }
+    }
+
   }
   else if (oldModel) {
-    data[field.MODEL]()
-    delete data[field.MODEL]
+    data[field.MODEL_DESTROY]()
   }
 
 }
 
-export function remove(api: DomApi, vnode: VNode) {
-  const data = vnode.data as Data
-  if (data[field.MODEL]) {
-    data[field.MODEL]()
-    delete data[field.MODEL]
+export function beforeDestroy(api: DomApi, vnode: VNode) {
+  const data = vnode.data as Data, destroy = data[field.MODEL_DESTROY]
+  if (destroy) {
+    destroy()
   }
 }

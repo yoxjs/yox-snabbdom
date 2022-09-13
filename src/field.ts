@@ -6,6 +6,7 @@ export const LOADING = '$loading'
 
 export const LEAVING = '$leaving'
 
-export const MODEL = '$model'
+export const MODEL_CONTROL = '$model_control'
+export const MODEL_DESTROY = '$model_destroy'
 
-export const EVENT = '$event'
+export const EVENT_DESTROY = '$event_destroy'

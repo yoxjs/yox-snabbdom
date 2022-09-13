@@ -26,7 +26,7 @@ import * as constant from 'yox-common/src/util/constant'
 
 import * as field from '../field'
 
-function addEvent(api: DomApi, element: HTMLElement | void, component: YoxInterface | void, lazy: Record<string, LazyValue> | void, event: EventValue) {
+function addEvent(api: DomApi, element: HTMLElement | void, component: YoxInterface | void, data: Data, key: string, lazy: Record<string, LazyValue> | void, event: EventValue) {
 
   let { name, listener } = event
 
@@ -68,41 +68,63 @@ function addEvent(api: DomApi, element: HTMLElement | void, component: YoxInterf
   }
 
   api.on(element as HTMLElement, name, listener)
-  return function () {
-    api.off(element as HTMLElement, name, listener)
+
+  data[field.EVENT_DESTROY + key] = function () {
+    api.off(element as HTMLElement, key, listener)
+    delete data[field.EVENT_DESTROY + key]
   }
+
 }
 
-export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
+export function afterCreate(api: DomApi, vnode: VNode) {
 
-  const data = vnode.data as Data,
-
-  lazy = vnode.lazy,
-
-  events = vnode.events,
-
-  oldEvents = oldVNode && oldVNode.events
-
-  if (events !== oldEvents) {
+  const { events } = vnode
+  if (events) {
 
     const element = vnode.node as HTMLElement,
 
     component = vnode.component,
 
-    destroy = data[field.EVENT] || (data[field.EVENT] = { })
+    lazy = vnode.lazy,
 
-    if (events) {
+    data = vnode.data as Data
+
+    for (let key in events) {
+      addEvent(api, element, component, data, key, lazy, events[key])
+    }
+
+  }
+
+}
+
+export function afterUpdate(api: DomApi, vnode: VNode, oldVNode: VNode) {
+
+  const newEvents = vnode.events, oldEvents = oldVNode.events
+  if (newEvents !== oldEvents) {
+
+    const element = vnode.node as HTMLElement,
+
+    component = vnode.component,
+
+    lazy = vnode.lazy,
+
+    data = vnode.data as Data
+
+    if (newEvents) {
       const oldValue = oldEvents || constant.EMPTY_OBJECT
-      for (let key in events) {
+      for (let key in newEvents) {
 
-        const event = events[key], oldEvent = oldValue[key]
+        const event = newEvents[key], oldEvent = oldValue[key]
 
         if (!oldEvent) {
-          destroy[key] = addEvent(api, element, component, lazy, event)
+          addEvent(api, element, component, data, key, lazy, event)
         }
         else if (event.value !== oldEvent.value) {
-          destroy[key]()
-          destroy[key] = addEvent(api, element, component, lazy, event)
+          const destroy = data[field.EVENT_DESTROY + key]
+          if (destroy) {
+            destroy()
+          }
+          addEvent(api, element, component, data, key, lazy, event)
         }
         else if (oldEvent.runtime && event.runtime) {
           oldEvent.runtime.execute = event.runtime.execute
@@ -113,11 +135,13 @@ export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
     }
 
     if (oldEvents) {
-      const newValue = events || constant.EMPTY_OBJECT
+      const newValue = newEvents || constant.EMPTY_OBJECT
       for (let key in oldEvents) {
         if (!newValue[key]) {
-          destroy[key]()
-          delete destroy[key]
+          const destroy = data[field.EVENT_DESTROY + key]
+          if (destroy) {
+            destroy()
+          }
         }
       }
     }
@@ -126,21 +150,16 @@ export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
 }
 
-export function remove(api: DomApi, vnode: VNode) {
+export function beforeDestroy(api: DomApi, vnode: VNode) {
 
-  const data = vnode.data as Data,
-
-  events = vnode.events,
-
-  destroy = data[field.EVENT]
-
-  if (events && destroy) {
+  const events = vnode.events, data = vnode.data as Data
+  if (events) {
     for (let key in events) {
-      destroy[key]()
-      delete destroy[key]
+      const destroy = data[field.EVENT_DESTROY + key]
+      if (destroy) {
+        destroy()
+      }
     }
   }
-
-  data[field.EVENT] = constant.UNDEFINED
 
 }

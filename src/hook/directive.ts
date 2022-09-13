@@ -8,21 +8,42 @@ import {
 
 import * as constant from 'yox-common/src/util/constant'
 
-export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
+export function afterCreate(api: DomApi, vnode: VNode) {
 
-  const { directives } = vnode,
-
-  oldDirectives = oldVNode && oldVNode.directives
-
-  if (directives !== oldDirectives) {
+  const { directives } = vnode
+  if (directives) {
 
     const node = vnode.component || vnode.node as HTMLElement
 
-    if (directives) {
-      const oldValue = oldDirectives || constant.EMPTY_OBJECT
-      for (let name in directives) {
+    for (let name in directives) {
 
-        const directive = directives[name],
+      const directive = directives[name],
+
+      { bind } = directive.hooks
+
+      bind(node, directive, vnode)
+
+    }
+
+  }
+
+}
+
+export function afterUpdate(api: DomApi, vnode: VNode, oldVNode: VNode) {
+
+  const newDirectives = vnode.directives,
+
+  oldDirectives = oldVNode && oldVNode.directives
+
+  if (newDirectives !== oldDirectives) {
+
+    const node = vnode.component || vnode.node as HTMLElement
+
+    if (newDirectives) {
+      const oldValue = oldDirectives || constant.EMPTY_OBJECT
+      for (let name in newDirectives) {
+
+        const directive = newDirectives[name],
 
         oldDirective = oldValue[name],
 
@@ -46,7 +67,7 @@ export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
     }
 
     if (oldDirectives) {
-      const newValue = directives || constant.EMPTY_OBJECT
+      const newValue = newDirectives || constant.EMPTY_OBJECT
       for (let name in oldDirectives) {
         if (!newValue[name]) {
           const { unbind } = oldDirectives[name].hooks
@@ -61,7 +82,7 @@ export function update(api: DomApi, vnode: VNode, oldVNode?: VNode) {
 
 }
 
-export function remove(api: DomApi, vnode: VNode) {
+export function beforeDestroy(api: DomApi, vnode: VNode) {
   const { directives } = vnode
   if (directives) {
     const node = vnode.component || vnode.node as HTMLElement

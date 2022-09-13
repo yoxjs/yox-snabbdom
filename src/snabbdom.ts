@@ -26,20 +26,18 @@ import {
 } from 'yox-type/src/yox'
 
 import * as is from 'yox-common/src/util/is'
-import * as array from 'yox-common/src/util/array'
 import * as object from 'yox-common/src/util/object'
 import * as logger from 'yox-common/src/util/logger'
 import * as constant from 'yox-common/src/util/constant'
 
-import * as field from './field'
+import * as directiveHook from './hook/directive'
+import * as eventHook from './hook/event'
+import * as modelHook from './hook/model'
+import * as nativeAttrHook from './hook/nativeAttr'
+import * as nativeStyleHook from './hook/nativeStyle'
+import * as refHook from './hook/ref'
 
-import * as nativeAttr from './module/nativeAttr'
-import * as nativeStyle from './module/nativeStyle'
-import * as ref from './module/ref'
-import * as event from './module/event'
-import * as model from './module/model'
-import * as directive from './module/directive'
-import * as component from './module/component'
+import * as field from './field'
 
 function getFragmentHostNode(api: DomApi, vnode: VNode): Node {
   if (vnode.isFragment || vnode.isSlot) {
@@ -177,6 +175,33 @@ export const commentVNodeOperator: VNodeOperator = {
   leave: vnodeLeaveOperator,
 }
 
+interface VNodeHooks {
+  afterCreate?: (api: DomApi, vnode: VNode) => void | void
+  afterMount?: (api: DomApi, vnode: VNode) => void | void
+  beforeUpdate?: (api: DomApi, vnode: VNode, oldVNode: VNode) => void | void
+  afterUpdate?: (api: DomApi, vnode: VNode, oldVNode: VNode) => void | void
+  beforeDestroy?: (api: DomApi, vnode: VNode) => void | void
+}
+
+const vnodeHooksList: VNodeHooks[] = [
+  nativeAttrHook,
+  nativeStyleHook,
+  refHook,
+  eventHook,
+  modelHook,
+  directiveHook,
+]
+const vnodeHooksLength = vnodeHooksList.length
+
+function callVNodeHooks(name: string, api: DomApi, vnode: VNode, oldVNode?: VNode) {
+  for (let i = 0; i < vnodeHooksLength; i++) {
+    const hook = vnodeHooksList[i][name]
+    if (hook) {
+      hook(api, vnode, oldVNode)
+    }
+  }
+}
+
 export const elementVNodeOperator: VNodeOperator = {
   create(api: DomApi, vnode: VNode) {
 
@@ -192,16 +217,11 @@ export const elementVNodeOperator: VNodeOperator = {
       api.setHtml(node as Element, vnode.html, vnode.isStyle, vnode.isOption)
     }
 
-    nativeAttr.update(api, vnode)
-    nativeStyle.update(api, vnode)
-
     if (!vnode.isPure) {
       vnode.data = { }
-      ref.update(api, vnode)
-      event.update(api, vnode)
-      model.update(api, vnode)
-      directive.update(api, vnode)
     }
+
+    callVNodeHooks('afterCreate', api, vnode)
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -212,15 +232,7 @@ export const elementVNodeOperator: VNodeOperator = {
     vnode.parentNode = oldVNode.parentNode
     vnode.data = oldVNode.data
 
-    nativeAttr.update(api, vnode, oldVNode)
-    nativeStyle.update(api, vnode, oldVNode)
-
-    if (!vnode.isPure) {
-      ref.update(api, vnode, oldVNode)
-      event.update(api, vnode, oldVNode)
-      model.update(api, vnode, oldVNode)
-      directive.update(api, vnode, oldVNode)
-    }
+    callVNodeHooks('beforeUpdate', api, vnode, oldVNode)
 
     const { text, html, children, isStyle, isOption } = vnode,
 
@@ -268,6 +280,8 @@ export const elementVNodeOperator: VNodeOperator = {
       api.setText(node, constant.EMPTY_STRING, isStyle)
     }
 
+    callVNodeHooks('afterUpdate', api, vnode, oldVNode)
+
   },
   destroy(api: DomApi, vnode: VNode) {
 
@@ -275,10 +289,7 @@ export const elementVNodeOperator: VNodeOperator = {
       return
     }
 
-    ref.remove(api, vnode)
-    event.remove(api, vnode)
-    model.remove(api, vnode)
-    directive.remove(api, vnode)
+    callVNodeHooks('beforeDestroy', api, vnode)
 
     const { children } = vnode
     if (children) {
@@ -354,25 +365,44 @@ export const componentVNodeOperator: VNodeOperator = {
       return
     }
 
-    // 先处理 directive 再处理 component
-    // 因为组件只是单纯的更新 props，而 directive 则有可能要销毁
-    // 如果顺序反过来，会导致某些本该销毁的指令先被数据的变化触发执行了
-    ref.update(api, vnode, oldVNode)
-    event.update(api, vnode, oldVNode)
-    model.update(api, vnode, oldVNode)
-    directive.update(api, vnode, oldVNode)
+    callVNodeHooks('beforeUpdate', api, vnode, oldVNode)
 
-    component.update(api, vnode, oldVNode)
+    const { component, props, slots } = vnode
+
+    if (component) {
+      if (process.env.NODE_ENV === 'development') {
+        if (props) {
+          for (let key in props) {
+            component.checkProp(key, props[key])
+          }
+        }
+      }
+
+      let nextProps = props
+      if (slots) {
+        component.renderSlots(nextProps || (nextProps = {}), slots)
+      }
+
+      if (nextProps) {
+        component.forceUpdate(nextProps)
+      }
+    }
+
+    callVNodeHooks('afterUpdate', api, vnode, oldVNode)
 
   },
   destroy(api: DomApi, vnode: VNode) {
 
-    if (vnode.component) {
-      ref.remove(api, vnode)
-      event.remove(api, vnode)
-      model.remove(api, vnode)
-      directive.remove(api, vnode)
-      component.remove(api, vnode)
+    const { component } = vnode
+    if (component) {
+
+      callVNodeHooks('beforeDestroy', api, vnode)
+
+      component.destroy()
+      // 移除时，组件可能已经发生过变化，即 shadow 不是创建时那个对象了
+      vnode.shadow = component.$vnode
+      vnode.component = constant.UNDEFINED
+
     }
     else {
       (vnode.data as Data)[field.LOADING] = constant.FALSE
@@ -525,8 +555,7 @@ export const slotVNodeOperator: VNodeOperator = {
     vnode.data = { }
     vnode.node = getFragmentHostNode(api, vnode)
 
-    ref.update(api, vnode)
-    event.update(api, vnode)
+    callVNodeHooks('afterCreate', api, vnode)
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -537,8 +566,7 @@ export const slotVNodeOperator: VNodeOperator = {
     vnode.parentNode = parentNode
     vnode.data = oldVNode.data
 
-    ref.update(api, vnode, oldVNode)
-    event.update(api, vnode, oldVNode)
+    callVNodeHooks('beforeUpdate', api, vnode, oldVNode)
 
     vnodeUpdateChildrenOperator(
       api,
@@ -547,11 +575,12 @@ export const slotVNodeOperator: VNodeOperator = {
       oldVNode
     )
 
+    callVNodeHooks('afterUpdate', api, vnode, oldVNode)
+
   },
   destroy(api: DomApi, vnode: VNode) {
 
-    ref.remove(api, vnode)
-    event.remove(api, vnode)
+    callVNodeHooks('beforeDestroy', api, vnode)
 
     vnodeDestroyChildrenOperator(api, vnode)
 
@@ -603,11 +632,7 @@ function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 
   data[field.LOADING] = constant.FALSE
 
-  ref.update(api, vnode)
-  event.update(api, vnode)
-  model.update(api, vnode)
-  directive.update(api, vnode)
-  component.update(api, vnode)
+  callVNodeHooks('afterCreate', api, vnode)
 
   return child
 
@@ -634,8 +659,8 @@ function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
   const { operator } = vnode
 
   operator.insert(api, parentNode, vnode, before)
-
   vnode.parentNode = parentNode
+  callVNodeHooks('afterMount', api, vnode)
 
   operator.enter(vnode)
 
