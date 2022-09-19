@@ -31,10 +31,7 @@ export function afterCreate(api: DomApi, vnode: VNode) {
 
 export function afterUpdate(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
-  const newDirectives = vnode.directives,
-
-  oldDirectives = oldVNode && oldVNode.directives
-
+  const newDirectives = vnode.directives, oldDirectives = oldVNode.directives
   if (newDirectives !== oldDirectives) {
 
     const node = vnode.component || vnode.node as HTMLElement
