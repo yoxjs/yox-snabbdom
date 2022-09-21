@@ -367,7 +367,7 @@ export const componentVNodeOperator: VNodeOperator = {
 
     callVNodeHooks('beforeUpdate', api, vnode, oldVNode)
 
-    const { component, props, slots } = vnode
+    const { component, props } = vnode
 
     if (component) {
       if (process.env.NODE_ENV === 'development') {
@@ -377,14 +377,10 @@ export const componentVNodeOperator: VNodeOperator = {
           }
         }
       }
-
-      let nextProps = props
-      if (slots) {
-        component.renderSlots(nextProps || (nextProps = {}), slots)
-      }
-
-      if (nextProps) {
-        component.forceUpdate(nextProps)
+      // slots 渲染函数在组件创建时就确定下来了，更新时也不会变
+      // 因此这里不涉及 slots 的更新
+      if (props) {
+        component.forceUpdate(props)
       }
     }
 
