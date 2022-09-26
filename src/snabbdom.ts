@@ -193,11 +193,11 @@ const vnodeHooksList: VNodeHooks[] = [
 ]
 const vnodeHooksLength = vnodeHooksList.length
 
-function callVNodeHooks(name: string, api: DomApi, vnode: VNode, oldVNode?: VNode) {
+function callVNodeHooks(name: string, args: any[]) {
   for (let i = 0; i < vnodeHooksLength; i++) {
     const hook = vnodeHooksList[i][name]
     if (hook) {
-      hook(api, vnode, oldVNode)
+      hook.apply(constant.UNDEFINED, args)
     }
   }
 }
@@ -221,7 +221,7 @@ export const elementVNodeOperator: VNodeOperator = {
       vnode.data = { }
     }
 
-    callVNodeHooks('afterCreate', api, vnode)
+    callVNodeHooks('afterCreate', [api, vnode])
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -232,7 +232,7 @@ export const elementVNodeOperator: VNodeOperator = {
     vnode.parentNode = oldVNode.parentNode
     vnode.data = oldVNode.data
 
-    callVNodeHooks('beforeUpdate', api, vnode, oldVNode)
+    callVNodeHooks('beforeUpdate', [api, vnode, oldVNode])
 
     const { text, html, children, isStyle, isOption } = vnode,
 
@@ -280,7 +280,7 @@ export const elementVNodeOperator: VNodeOperator = {
       api.setText(node, constant.EMPTY_STRING, isStyle)
     }
 
-    callVNodeHooks('afterUpdate', api, vnode, oldVNode)
+    callVNodeHooks('afterUpdate', [api, vnode, oldVNode])
 
   },
   destroy(api: DomApi, vnode: VNode) {
@@ -289,7 +289,7 @@ export const elementVNodeOperator: VNodeOperator = {
       return
     }
 
-    callVNodeHooks('beforeDestroy', api, vnode)
+    callVNodeHooks('beforeDestroy', [api, vnode])
 
     const { children } = vnode
     if (children) {
@@ -365,26 +365,28 @@ export const componentVNodeOperator: VNodeOperator = {
       return
     }
 
-    callVNodeHooks('beforeUpdate', api, vnode, oldVNode)
+    callVNodeHooks('beforeUpdate', [api, vnode, oldVNode])
 
-    const { component, props } = vnode
+    const { component, slots } = vnode
 
     if (component) {
+      let nextProps = vnode.props
       if (process.env.NODE_ENV === 'development') {
-        if (props) {
-          for (let key in props) {
-            component.checkProp(key, props[key])
+        if (nextProps) {
+          for (let key in nextProps) {
+            component.checkProp(key, nextProps[key])
           }
         }
       }
-      // slots 渲染函数在组件创建时就确定下来了，更新时也不会变
-      // 因此这里不涉及 slots 的更新
-      if (props) {
-        component.forceUpdate(props)
+      if (slots) {
+        nextProps = object.extend(nextProps || { }, slots)
+      }
+      if (nextProps) {
+        component.forceUpdate(nextProps)
       }
     }
 
-    callVNodeHooks('afterUpdate', api, vnode, oldVNode)
+    callVNodeHooks('afterUpdate', [api, vnode, oldVNode])
 
   },
   destroy(api: DomApi, vnode: VNode) {
@@ -392,7 +394,7 @@ export const componentVNodeOperator: VNodeOperator = {
     const { component } = vnode
     if (component) {
 
-      callVNodeHooks('beforeDestroy', api, vnode)
+      callVNodeHooks('beforeDestroy', [api, vnode])
 
       component.destroy()
       // 移除时，组件可能已经发生过变化，即 shadow 不是创建时那个对象了
@@ -551,7 +553,7 @@ export const slotVNodeOperator: VNodeOperator = {
     vnode.data = { }
     vnode.node = getFragmentHostNode(api, vnode)
 
-    callVNodeHooks('afterCreate', api, vnode)
+    callVNodeHooks('afterCreate', [api, vnode])
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -562,7 +564,7 @@ export const slotVNodeOperator: VNodeOperator = {
     vnode.parentNode = parentNode
     vnode.data = oldVNode.data
 
-    callVNodeHooks('beforeUpdate', api, vnode, oldVNode)
+    callVNodeHooks('beforeUpdate', [api, vnode, oldVNode])
 
     vnodeUpdateChildrenOperator(
       api,
@@ -571,13 +573,12 @@ export const slotVNodeOperator: VNodeOperator = {
       oldVNode
     )
 
-    callVNodeHooks('afterUpdate', api, vnode, oldVNode)
+    callVNodeHooks('afterUpdate', [api, vnode, oldVNode])
 
   },
   destroy(api: DomApi, vnode: VNode) {
 
-    callVNodeHooks('beforeDestroy', api, vnode)
-
+    callVNodeHooks('beforeDestroy', [api, vnode])
     vnodeDestroyChildrenOperator(api, vnode)
 
   },
@@ -628,7 +629,7 @@ function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
 
   data[field.LOADING] = constant.FALSE
 
-  callVNodeHooks('afterCreate', api, vnode)
+  callVNodeHooks('afterCreate', [api, vnode])
 
   return child
 
@@ -656,7 +657,7 @@ function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
 
   operator.insert(api, parentNode, vnode, before)
   vnode.parentNode = parentNode
-  callVNodeHooks('afterMount', api, vnode)
+  callVNodeHooks('afterMount', [api, vnode])
 
   operator.enter(vnode)
 
@@ -933,5 +934,48 @@ export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
   destroyVNode(api, vnode)
   if (isRemove) {
     removeVNode(api, vnode)
+  }
+}
+
+export function clone(vnode: VNode): VNode {
+  return {
+    type: vnode.type,
+    data: vnode.data,
+    node: vnode.node,
+    parentNode: vnode.parentNode,
+    target: vnode.target,
+    shadow: vnode.shadow,
+    parent: vnode.parent,
+    component: vnode.component,
+    context: vnode.context,
+    operator: vnode.operator,
+    tag: vnode.tag,
+    isComponent: vnode.isComponent,
+    isComment: vnode.isComment,
+    isFragment: vnode.isFragment,
+    isPortal: vnode.isPortal,
+    isSlot: vnode.isSlot,
+    isSvg: vnode.isSvg,
+    isStyle: vnode.isStyle,
+    isOption: vnode.isOption,
+    isStatic: vnode.isStatic,
+    isPure: vnode.isPure,
+    slots: vnode.slots,
+    props: vnode.props,
+    nativeAttrs: vnode.nativeAttrs,
+    nativeStyles: vnode.nativeStyles,
+    directives: vnode.directives,
+    events: vnode.events,
+    lazy: vnode.lazy,
+    transition: vnode.transition,
+    model: vnode.model,
+    to: vnode.to,
+    ref: vnode.ref,
+    key: vnode.key,
+    text: vnode.text,
+    html: vnode.html,
+    children: vnode.children
+      ? vnode.children.map(clone)
+      : vnode.children,
   }
 }
