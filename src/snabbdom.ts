@@ -2,6 +2,8 @@ import {
   VNODE_TYPE_TEXT,
   VNODE_TYPE_COMMENT,
   VNODE_TYPE_ELEMENT,
+  VNODE_TYPE_FRAGMENT,
+  VNODE_TYPE_SLOT,
 } from 'yox-config/src/config'
 
 import {
@@ -40,7 +42,9 @@ import * as refHook from './hook/ref'
 import * as field from './field'
 
 function getFragmentHostNode(api: DomApi, vnode: VNode): Node {
-  if (vnode.isFragment || vnode.isSlot) {
+  if (vnode.type === VNODE_TYPE_FRAGMENT
+    || vnode.type === VNODE_TYPE_SLOT
+  ) {
     const child = (vnode.children as VNode[])[0]
     return child
       ? getFragmentHostNode(api, child)
@@ -211,10 +215,10 @@ export const elementVNodeOperator: VNodeOperator = {
       addVNodes(api, node, vnode.children)
     }
     else if (vnode.text) {
-      api.setText(node as Element, vnode.text, vnode.isStyle, vnode.isOption)
+      api.setText(node, vnode.text, vnode.isStyle, vnode.isOption)
     }
     else if (vnode.html) {
-      api.setHtml(node as Element, vnode.html, vnode.isStyle, vnode.isOption)
+      api.setHtml(node, vnode.html, vnode.isStyle, vnode.isOption)
     }
 
     if (!vnode.isPure) {
@@ -951,10 +955,6 @@ export function clone(vnode: VNode): VNode {
     operator: vnode.operator,
     tag: vnode.tag,
     isComponent: vnode.isComponent,
-    isComment: vnode.isComment,
-    isFragment: vnode.isFragment,
-    isPortal: vnode.isPortal,
-    isSlot: vnode.isSlot,
     isSvg: vnode.isSvg,
     isStyle: vnode.isStyle,
     isOption: vnode.isOption,
