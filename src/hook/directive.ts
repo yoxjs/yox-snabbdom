@@ -1,4 +1,8 @@
 import {
+  Data,
+} from 'yox-type/src/type'
+
+import {
   VNode,
 } from 'yox-type/src/vnode'
 
@@ -6,88 +10,51 @@ import {
   DomApi,
 } from 'yox-type/src/api'
 
-import * as constant from 'yox-common/src/util/constant'
+import { DIRECTIVE_HOOKS } from '../field'
 
 export function afterCreate(api: DomApi, vnode: VNode) {
 
-  const { directives } = vnode
+  const { directives, component, node } = vnode
   if (directives) {
-
-    const node = vnode.component || vnode.node as HTMLElement
-
-    for (let name in directives) {
-
-      const directive = directives[name],
-
-      { bind } = directive.hooks
-
-      bind(node, directive, vnode)
-
+    const data = vnode.data as Data, element = component ? component.$el : node
+    if (element) {
+      for (let key in directives) {
+        const directive = directives[key], { create } = directive
+        data[DIRECTIVE_HOOKS + directive.name] = create(element as HTMLElement, directive)
+      }
     }
-
   }
 
+}
+
+function callDirectiveHooks(vnode: VNode, name: string) {
+  const { directives } = vnode
+  if (directives) {
+    const data = vnode.data as Data
+    for (let key in directives) {
+      const directive = directives[key], hooks = data[DIRECTIVE_HOOKS + directive.name]
+      if (hooks) {
+        const hook = hooks[name]
+        if (hook) {
+          hook(directive)
+        }
+      }
+    }
+  }
+}
+
+export function afterMount(api: DomApi, vnode: VNode) {
+  callDirectiveHooks(vnode, 'afterMount')
+}
+
+export function beforeUpdate(api: DomApi, vnode: VNode, oldVNode: VNode) {
+  callDirectiveHooks(vnode, 'beforeUpdate')
 }
 
 export function afterUpdate(api: DomApi, vnode: VNode, oldVNode: VNode) {
-
-  const newDirectives = vnode.directives, oldDirectives = oldVNode.directives
-  if (newDirectives !== oldDirectives) {
-
-    const node = vnode.component || vnode.node as HTMLElement
-
-    if (newDirectives) {
-      const oldValue = oldDirectives || constant.EMPTY_OBJECT
-      for (let name in newDirectives) {
-
-        const directive = newDirectives[name],
-
-        oldDirective = oldValue[name],
-
-        { bind, unbind } = directive.hooks
-
-        if (!oldDirective) {
-          bind(node, directive, vnode)
-        }
-        else if (directive.value !== oldDirective.value) {
-          if (unbind) {
-            unbind(node, oldDirective, oldVNode as VNode)
-          }
-          bind(node, directive, vnode)
-        }
-        else if (oldDirective.runtime && directive.runtime) {
-          oldDirective.runtime.execute = directive.runtime.execute
-          directive.runtime = oldDirective.runtime
-        }
-
-      }
-    }
-
-    if (oldDirectives) {
-      const newValue = newDirectives || constant.EMPTY_OBJECT
-      for (let name in oldDirectives) {
-        if (!newValue[name]) {
-          const { unbind } = oldDirectives[name].hooks
-          if (unbind) {
-            unbind(node, oldDirectives[name], oldVNode as VNode)
-          }
-        }
-      }
-    }
-
-  }
-
+  callDirectiveHooks(vnode, 'afterUpdate')
 }
 
 export function beforeDestroy(api: DomApi, vnode: VNode) {
-  const { directives } = vnode
-  if (directives) {
-    const node = vnode.component || vnode.node as HTMLElement
-    for (let name in directives) {
-      const { unbind } = directives[name].hooks
-      if (unbind) {
-        unbind(node, directives[name], vnode)
-      }
-    }
-  }
+  callDirectiveHooks(vnode, 'beforeDestroy')
 }

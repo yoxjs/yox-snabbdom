@@ -954,7 +954,6 @@ export function clone(vnode: VNode): VNode {
     context: vnode.context,
     operator: vnode.operator,
     tag: vnode.tag,
-    isComponent: vnode.isComponent,
     isSvg: vnode.isSvg,
     isStyle: vnode.isStyle,
     isOption: vnode.isOption,
