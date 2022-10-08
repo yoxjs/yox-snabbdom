@@ -32,12 +32,16 @@ import * as object from 'yox-common/src/util/object'
 import * as logger from 'yox-common/src/util/logger'
 import * as constant from 'yox-common/src/util/constant'
 
-import * as directiveHook from './hook/directive'
 import * as eventHook from './hook/event'
 import * as modelHook from './hook/model'
 import * as nativeAttrHook from './hook/nativeAttr'
 import * as nativeStyleHook from './hook/nativeStyle'
 import * as refHook from './hook/ref'
+
+import {
+  createDirective,
+  callDirectiveHooks,
+} from './hook/directive'
 
 import * as field from './field'
 
@@ -193,7 +197,6 @@ const vnodeHooksList: VNodeHooks[] = [
   refHook,
   eventHook,
   modelHook,
-  directiveHook,
 ]
 const vnodeHooksLength = vnodeHooksList.length
 
@@ -226,6 +229,7 @@ export const elementVNodeOperator: VNodeOperator = {
     }
 
     callVNodeHooks('afterCreate', [api, vnode])
+    createDirective(vnode)
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -237,6 +241,7 @@ export const elementVNodeOperator: VNodeOperator = {
     vnode.data = oldVNode.data
 
     callVNodeHooks('beforeUpdate', [api, vnode, oldVNode])
+    callDirectiveHooks(vnode, 'beforeUpdate')
 
     const { text, html, children, isStyle, isOption } = vnode,
 
@@ -285,6 +290,7 @@ export const elementVNodeOperator: VNodeOperator = {
     }
 
     callVNodeHooks('afterUpdate', [api, vnode, oldVNode])
+    callDirectiveHooks(vnode, 'afterUpdate')
 
   },
   destroy(api: DomApi, vnode: VNode) {
@@ -294,6 +300,7 @@ export const elementVNodeOperator: VNodeOperator = {
     }
 
     callVNodeHooks('beforeDestroy', [api, vnode])
+    callDirectiveHooks(vnode, 'beforeDestroy')
 
     const { children } = vnode
     if (children) {
@@ -370,6 +377,7 @@ export const componentVNodeOperator: VNodeOperator = {
     }
 
     callVNodeHooks('beforeUpdate', [api, vnode, oldVNode])
+    callDirectiveHooks(vnode, 'beforeUpdate')
 
     const { component, slots } = vnode
 
@@ -391,6 +399,7 @@ export const componentVNodeOperator: VNodeOperator = {
     }
 
     callVNodeHooks('afterUpdate', [api, vnode, oldVNode])
+    callDirectiveHooks(vnode, 'afterUpdate')
 
   },
   destroy(api: DomApi, vnode: VNode) {
@@ -399,6 +408,7 @@ export const componentVNodeOperator: VNodeOperator = {
     if (component) {
 
       callVNodeHooks('beforeDestroy', [api, vnode])
+      callDirectiveHooks(vnode, 'beforeDestroy')
 
       component.destroy()
       // 移除时，组件可能已经发生过变化，即 shadow 不是创建时那个对象了
@@ -558,6 +568,7 @@ export const slotVNodeOperator: VNodeOperator = {
     vnode.node = getFragmentHostNode(api, vnode)
 
     callVNodeHooks('afterCreate', [api, vnode])
+    createDirective(vnode)
 
   },
   update(api: DomApi, vnode: VNode, oldVNode: VNode) {
@@ -569,6 +580,7 @@ export const slotVNodeOperator: VNodeOperator = {
     vnode.data = oldVNode.data
 
     callVNodeHooks('beforeUpdate', [api, vnode, oldVNode])
+    callDirectiveHooks(vnode, 'beforeUpdate')
 
     vnodeUpdateChildrenOperator(
       api,
@@ -578,11 +590,14 @@ export const slotVNodeOperator: VNodeOperator = {
     )
 
     callVNodeHooks('afterUpdate', [api, vnode, oldVNode])
+    callDirectiveHooks(vnode, 'afterUpdate')
 
   },
   destroy(api: DomApi, vnode: VNode) {
 
     callVNodeHooks('beforeDestroy', [api, vnode])
+    callDirectiveHooks(vnode, 'beforeDestroy')
+
     vnodeDestroyChildrenOperator(api, vnode)
 
   },
@@ -634,6 +649,7 @@ function createComponent(api: DomApi, vnode: VNode, options: ComponentOptions) {
   data[field.LOADING] = constant.FALSE
 
   callVNodeHooks('afterCreate', [api, vnode])
+  createDirective(vnode)
 
   return child
 
@@ -662,6 +678,7 @@ function insertVNode(api: DomApi, parentNode: Node, vnode: VNode, before?: VNode
   operator.insert(api, parentNode, vnode, before)
   vnode.parentNode = parentNode
   callVNodeHooks('afterMount', [api, vnode])
+  callDirectiveHooks(vnode, 'afterMount')
 
   operator.enter(vnode)
 
@@ -942,6 +959,7 @@ export function destroy(api: DomApi, vnode: VNode, isRemove?: boolean) {
 }
 
 export function clone(vnode: VNode): VNode {
+  const { children } = vnode
   return {
     type: vnode.type,
     data: vnode.data,
@@ -973,8 +991,8 @@ export function clone(vnode: VNode): VNode {
     key: vnode.key,
     text: vnode.text,
     html: vnode.html,
-    children: vnode.children
-      ? vnode.children.map(clone)
-      : vnode.children,
+    children: children
+      ? children.map(clone)
+      : children,
   }
 }
