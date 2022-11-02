@@ -71,7 +71,7 @@ function textVNodeUpdateOperator(api: DomApi, vnode: VNode, oldVNode: VNode) {
   vnode.node = node
   vnode.parentNode = oldVNode.parentNode
   if (vnode.text !== oldVNode.text) {
-    api.setText(node, vnode.text as string, vnode.isStyle, vnode.isOption)
+    api.setNodeText(node, vnode.text as string)
   }
 }
 
@@ -218,10 +218,10 @@ export const elementVNodeOperator: VNodeOperator = {
       addVNodes(api, node, vnode.children)
     }
     else if (vnode.text) {
-      api.setText(node, vnode.text, vnode.isStyle, vnode.isOption)
+      api.setElementText(node, vnode.text)
     }
     else if (vnode.html) {
-      api.setHtml(node, vnode.html, vnode.isStyle, vnode.isOption)
+      api.setHtml(node, vnode.html)
     }
 
     if (!vnode.isPure) {
@@ -243,7 +243,7 @@ export const elementVNodeOperator: VNodeOperator = {
     callVNodeHooks('beforeUpdate', [api, vnode, oldVNode])
     callDirectiveHooks(vnode, 'beforeUpdate')
 
-    const { text, html, children, isStyle, isOption } = vnode,
+    const { text, html, children } = vnode,
 
     oldText = oldVNode.text,
     oldHtml = oldVNode.html,
@@ -254,7 +254,7 @@ export const elementVNodeOperator: VNodeOperator = {
         removeVNodes(api, oldChildren)
       }
       if (text !== oldText) {
-        api.setText(node, text as string, isStyle, isOption)
+        api.setElementText(node, text as string)
       }
     }
     else if (is.string(html)) {
@@ -262,7 +262,7 @@ export const elementVNodeOperator: VNodeOperator = {
         removeVNodes(api, oldChildren)
       }
       if (html !== oldHtml) {
-        api.setHtml(node as Element, html as string, isStyle, isOption)
+        api.setHtml(node as Element, html as string)
       }
     }
     else if (children) {
@@ -275,7 +275,7 @@ export const elementVNodeOperator: VNodeOperator = {
       // 有新的没旧的 - 新增节点
       else {
         if (oldText || oldHtml) {
-          api.setText(node, constant.EMPTY_STRING, isStyle)
+          api.setElementText(node, constant.EMPTY_STRING)
         }
         addVNodes(api, node, children)
       }
@@ -286,7 +286,7 @@ export const elementVNodeOperator: VNodeOperator = {
     }
     // 有旧的 text 没有新的 text
     else if (oldText || oldHtml) {
-      api.setText(node, constant.EMPTY_STRING, isStyle)
+      api.setElementText(node, constant.EMPTY_STRING)
     }
 
     callVNodeHooks('afterUpdate', [api, vnode, oldVNode])
@@ -929,19 +929,19 @@ export function create(api: DomApi, node: Node, context: YoxInterface): VNode {
     parentNode: api.parent(node),
   }
   switch (node.nodeType) {
-    case 1:
+    case constant.NODE_TYPE_ELEMENT:
       vnode.data = { }
       vnode.tag = api.tag(node)
       vnode.type = VNODE_TYPE_ELEMENT
       vnode.operator = elementVNodeOperator
       break
-    case 3:
+    case constant.NODE_TYPE_TEXT:
       vnode.isPure = constant.TRUE
       vnode.text = node.nodeValue
       vnode.type = VNODE_TYPE_TEXT
       vnode.operator = textVNodeOperator
       break
-    case 8:
+    case constant.NODE_TYPE_COMMENT:
       vnode.isPure = constant.TRUE
       vnode.text = node.nodeValue
       vnode.type = VNODE_TYPE_COMMENT
@@ -973,8 +973,6 @@ export function clone(vnode: VNode): VNode {
     operator: vnode.operator,
     tag: vnode.tag,
     isSvg: vnode.isSvg,
-    isStyle: vnode.isStyle,
-    isOption: vnode.isOption,
     isStatic: vnode.isStatic,
     isPure: vnode.isPure,
     slots: vnode.slots,
