@@ -240,6 +240,10 @@ export const elementVNodeOperator: VNodeOperator = {
     vnode.parentNode = oldVNode.parentNode
     vnode.data = oldVNode.data
 
+    if (!vnode.isPure && oldVNode.isPure) {
+      vnode.data = { }
+    }
+
     callVNodeHooks('beforeUpdate', [api, vnode, oldVNode])
     callDirectiveHooks(vnode, 'beforeUpdate')
 
