@@ -12,3 +12,4 @@ export const MODEL_DESTROY = '$model_destroy'
 export const EVENT_DESTROY = '$event_destroy'
 
 export const DIRECTIVE_HOOKS = '$directive_hooks'
+export const DIRECTIVE_UPDATING = '$directive_updating'
