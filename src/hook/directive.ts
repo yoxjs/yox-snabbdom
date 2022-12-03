@@ -68,18 +68,19 @@ export function beforeUpdate(api: DomApi, vnode: VNode, oldVNode: VNode) {
   if (newDirectives) {
     const oldValue = oldDirectives || constant.EMPTY_OBJECT, updatingDirectives: Directive[] = []
     for (let name in newDirectives) {
+      const directive = newDirectives[name]
       if (oldValue[name] === constant.UNDEFINED) {
-        callDirectiveCreate(data, vnode, newDirectives[name])
+        callDirectiveCreate(data, vnode, directive)
       }
-      else {
+      else if (directive.value !== oldValue[name].value) {
         callDirectiveHook(
           data,
           vnode,
-          newDirectives[name],
+          directive,
           'beforeUpdate'
         )
         updatingDirectives.push(
-          newDirectives[name]
+          directive
         )
       }
     }
