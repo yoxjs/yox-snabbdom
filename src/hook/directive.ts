@@ -90,17 +90,20 @@ export function beforeUpdate(api: DomApi, vnode: VNode, oldVNode: VNode) {
 }
 
 export function afterUpdate(api: DomApi, vnode: VNode, oldVNode: VNode) {
-  const data = vnode.data as Data, directives = data[DIRECTIVE_UPDATING]
-  if (directives) {
-    for (let i = 0, length = directives.length; i < length; i++) {
-      callDirectiveHook(
-        data,
-        vnode,
-        directives[i],
-        'afterUpdate'
-      )
+  const { data } = vnode
+  if (data) {
+    const directives = data[DIRECTIVE_UPDATING]
+    if (directives) {
+      for (let i = 0, length = directives.length; i < length; i++) {
+        callDirectiveHook(
+          data,
+          vnode,
+          directives[i],
+          'afterUpdate'
+        )
+      }
+      data[DIRECTIVE_UPDATING] = constant.UNDEFINED
     }
-    data[DIRECTIVE_UPDATING] = constant.UNDEFINED
   }
 }
 
