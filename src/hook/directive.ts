@@ -30,6 +30,23 @@ function callDirectiveHook(data: Data, vnode: VNode, directive: Directive, hookN
   }
 }
 
+function genetateDirectiveHook(hookName: string) {
+  return function (api: DomApi, vnode: VNode) {
+    const { directives } = vnode
+    if (directives) {
+      const data = vnode.data as Data
+      for (let name in directives) {
+        callDirectiveHook(
+          data,
+          vnode,
+          directives[name],
+          hookName
+        )
+      }
+    }
+  }
+}
+
 export function afterCreate(api: DomApi, vnode: VNode) {
 
   const { directives } = vnode
@@ -107,19 +124,5 @@ export function afterUpdate(api: DomApi, vnode: VNode, oldVNode: VNode) {
   }
 }
 
-export function beforeDestroy(api: DomApi, vnode: VNode) {
-
-  const { directives } = vnode
-  if (directives) {
-    const data = vnode.data as Data
-    for (let name in directives) {
-      callDirectiveHook(
-        data,
-        vnode,
-        directives[name],
-        'beforeDestroy'
-      )
-    }
-  }
-
-}
+export const afterMount = genetateDirectiveHook('afterMount')
+export const beforeDestroy = genetateDirectiveHook('beforeDestroy')
