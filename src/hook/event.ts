@@ -61,17 +61,22 @@ function addEvent(api: DomApi, element: HTMLElement | void, component: YoxInterf
 
     // event 有 ns 和 listener 两个字段，满足 ThisListenerOptions 的要求
     component.on(name, event as ThisListenerOptions)
-    return function () {
+
+    data[field.EVENT_DESTROY + key] = function () {
       component.off(name, event as ThisListenerOptions)
+      delete data[field.EVENT_DESTROY + key]
     }
 
   }
+  else {
 
-  api.on(element as HTMLElement, name, listener)
+    api.on(element as HTMLElement, name, listener)
 
-  data[field.EVENT_DESTROY + key] = function () {
-    api.off(element as HTMLElement, key, listener)
-    delete data[field.EVENT_DESTROY + key]
+    data[field.EVENT_DESTROY + key] = function () {
+      api.off(element as HTMLElement, key, listener)
+      delete data[field.EVENT_DESTROY + key]
+    }
+
   }
 
 }
@@ -110,6 +115,18 @@ export function afterUpdate(api: DomApi, vnode: VNode, oldVNode: VNode) {
 
     data = vnode.data as Data
 
+    if (oldEvents) {
+      const newValue = newEvents || constant.EMPTY_OBJECT
+      for (let key in oldEvents) {
+        if (!newValue[key]) {
+          const destroy = data[field.EVENT_DESTROY + key]
+          if (destroy) {
+            destroy()
+          }
+        }
+      }
+    }
+
     if (newEvents) {
       const oldValue = oldEvents || constant.EMPTY_OBJECT
       for (let key in newEvents) {
@@ -131,18 +148,6 @@ export function afterUpdate(api: DomApi, vnode: VNode, oldVNode: VNode) {
           event.runtime = oldEvent.runtime
         }
 
-      }
-    }
-
-    if (oldEvents) {
-      const newValue = newEvents || constant.EMPTY_OBJECT
-      for (let key in oldEvents) {
-        if (!newValue[key]) {
-          const destroy = data[field.EVENT_DESTROY + key]
-          if (destroy) {
-            destroy()
-          }
-        }
       }
     }
 
